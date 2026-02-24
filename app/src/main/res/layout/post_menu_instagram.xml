@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:elevation="16dp"
+    android:padding="0dp"
+    android:layout_margin="0dp">
+
+    <!-- Header with user info -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="#F8F8F8">
+
+        <TextView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:text="🐶"
+            android:textSize="24sp"
+            android:background="#7A4F2B"
+            android:textColor="#FFFFFF" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:id="@+id/menu_username"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="username"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/menu_post_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="pet_name • Lost"
+                android:textColor="#666666"
+                android:textSize="14sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btn_close"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:text="✕"
+            android:textSize="20sp"
+            android:textColor="#999999"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:background="#F0F0F0" />
+
+    <!-- Menu Options -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="400dp"
+        android:background="#FFFFFF"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="0dp">
+
+            <!-- Add to favorites - using faved.png -->
+            <LinearLayout
+                android:id="@+id/option_add_favorites"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/iv_favorite_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/faved"
+                    android:tint="#000000" />
+
+                <TextView
+                    android:id="@+id/tv_favorite_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Add to favorites"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+            <!-- Follow/Unfollow - dynamic using add.png/delete.png -->
+            <LinearLayout
+                android:id="@+id/option_follow"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/iv_follow_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/add"
+                    android:tint="#000000" />
+
+                <TextView
+                    android:id="@+id/tv_follow_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Follow"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+            <!-- Why you're seeing this post - using information.png -->
+            <LinearLayout
+                android:id="@+id/option_why_seeing"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/information"
+                    android:tint="#000000" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Why you're seeing this post"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+            <!-- Hide - using ic_eye_closed.png -->
+            <LinearLayout
+                android:id="@+id/option_hide"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_eye_closed"
+                    android:tint="#000000" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Hide"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+            <!-- About this account - using profile.png -->
+            <LinearLayout
+                android:id="@+id/option_about_account"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/profile"
+                    android:tint="#000000" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="About this account"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:background="#F0F0F0" />
+
+            <!-- Report - using report.png (RED) -->
+            <LinearLayout
+                android:id="@+id/option_report"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/report"
+                    android:tint="#F44336" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Report"
+                    android:textColor="#F44336"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+            <!-- Delete (only for own posts) - using delete.png (RED) -->
+            <LinearLayout
+                android:id="@+id/option_delete"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/delete"
+                    android:tint="#F44336" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Delete Post"
+                    android:textColor="#F44336"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Bottom handle (like Instagram) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:padding="10dp">
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:background="#DDDDDD" />
+    </LinearLayout>
+
+</LinearLayout>

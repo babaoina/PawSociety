@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.PawSociety" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Customize your theme here -->
+        <item name="colorPrimary">#7A4F2B</item>
+        <item name="colorPrimaryDark">#5A3F1B</item>
+        <item name="colorAccent">#FF6B35</item>
+    </style>
+</resources>

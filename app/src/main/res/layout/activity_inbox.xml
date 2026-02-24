@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/paws1">
+
+    <!-- Top Bar - PURE WHITE (not affected by bg) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#FFFFFF"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:gravity="center_vertical"
+        android:elevation="4dp">
+
+        <TextView
+            android:id="@+id/tv_username"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="mark_18"
+            android:textColor="#000000"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- New Message Icon -->
+        <ImageButton
+            android:id="@+id/btn_new_message"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/newmessage"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="New Message"
+            android:tint="#666666" />
+
+    </LinearLayout>
+
+    <!-- Search Bar and Filter Row (like find.xml) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@android:color/transparent">
+
+        <!-- Search Input Field (oval background) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:gravity="center_vertical"
+            android:background="@drawable/input_oval">
+
+            <!-- Find icon -->
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/find"
+                android:tint="#7A4F2B" />
+
+            <EditText
+                android:id="@+id/search_input"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:hint="Search users..."
+                android:textColorHint="#666666"
+                android:textColor="#000000"
+                android:textSize="14sp"
+                android:background="@null"
+                android:layout_marginStart="8dp"
+                android:maxLines="1"
+                android:imeOptions="actionSearch" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Messages List with RecyclerView -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/inbox_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <!-- Empty State -->
+        <LinearLayout
+            android:id="@+id/empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
+            android:visibility="visible"
+            android:background="@android:color/transparent">
+
+            <!-- Group icon - GLASS background -->
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/group"
+                android:background="@drawable/input_oval"
+                android:backgroundTint="#80FFFFFF"
+                android:padding="20dp"
+                android:tint="#000000" />
+
+            <!-- Text below - BLACK -->
+            <TextView
+                android:id="@+id/empty_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No other users yet"
+                android:textColor="#000000"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="When other people register, they will appear here"
+                android:textColor="#000000"
+                android:textSize="14sp"
+                android:layout_marginTop="8dp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- Bottom Navigation -->
+    <include
+        layout="@layout/bottom_nav_unified"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>

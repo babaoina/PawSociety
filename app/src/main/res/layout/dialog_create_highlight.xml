@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#FFFFFF"
+    android:elevation="8dp"
+    android:radius="16dp">
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Create New Highlight"
+        android:textColor="#7A4F2B"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_gravity="center"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Highlight Image Preview -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Highlight Cover"
+        android:textColor="#7A4F2B"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/input_oval"
+        android:padding="8dp">
+
+        <!-- Image Preview -->
+        <ImageView
+            android:id="@+id/highlight_image_preview"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_centerInParent="true"
+            android:src="@drawable/ic_image_placeholder"
+            android:scaleType="centerCrop"
+            android:background="@drawable/circle_solid_white"
+            android:padding="2dp"
+            android:visibility="visible" />
+
+        <!-- Select Image Button -->
+        <LinearLayout
+            android:id="@+id/btn_select_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:gravity="center"
+                android:text="📸"
+                android:textSize="32sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tap to select image"
+                android:textColor="#7A4F2B"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+    </RelativeLayout>
+
+    <!-- Highlight Name -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Highlight Name"
+        android:textColor="#7A4F2B"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp" />
+
+    <EditText
+        android:id="@+id/et_highlight_name"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="e.g., My Dogs, Vacations, etc."
+        android:padding="12dp"
+        android:background="@drawable/input_oval"
+        android:layout_marginBottom="20dp"
+        android:textSize="14sp" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#F0F0F0"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Optional: Choose from existing posts -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Or choose from your posts"
+        android:textColor="#666666"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp"
+        android:layout_gravity="center" />
+
+    <!-- Horizontal scroll of user's posts -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:id="@+id/posts_container"
+            android:layout_width="wrap_content"
+            android:layout_height="80dp"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <!-- Sample post items - these will be populated dynamically -->
+            <FrameLayout
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/circle_border_gray"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_image_placeholder"
+                    android:scaleType="centerCrop"
+                    android:layout_margin="3dp"
+                    android:background="@drawable/circle_solid_white" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/circle_border_gray"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_image_placeholder"
+                    android:scaleType="centerCrop"
+                    android:layout_margin="3dp"
+                    android:background="@drawable/circle_solid_white" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/circle_border_gray"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/ic_image_placeholder"
+                    android:scaleType="centerCrop"
+                    android:layout_margin="3dp"
+                    android:background="@drawable/circle_solid_white" />
+            </FrameLayout>
+        </LinearLayout>
+    </HorizontalScrollView>
+
+</LinearLayout>

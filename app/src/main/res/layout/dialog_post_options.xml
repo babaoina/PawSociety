@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="280dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:elevation="8dp"
+    android:padding="8dp">
+
+    <!-- View Details Option - using eye.png -->
+    <LinearLayout
+        android:id="@+id/option_view"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/eye"
+            android:tint="#000000" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="View details"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Share Option - using share.png -->
+    <LinearLayout
+        android:id="@+id/option_share"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/share"
+            android:tint="#000000" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Share"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Follow/Unfollow Option (dynamic) - using add.png/delete.png -->
+    <LinearLayout
+        android:id="@+id/option_follow"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/iv_follow_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/add"
+            android:tint="#000000" />
+
+        <TextView
+            android:id="@+id/tv_follow_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Follow"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#F0F0F0"
+        android:layout_marginVertical="8dp" />
+
+    <!-- Why you're seeing this post - using information.png -->
+    <LinearLayout
+        android:id="@+id/option_why_seeing"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/information"
+            android:tint="#000000" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Why you're seeing this post"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Hide Option - using ic_eye_closed.png -->
+    <LinearLayout
+        android:id="@+id/option_hide"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_eye_closed"
+            android:tint="#000000" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hide"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Report Option - using report.png (red) -->
+    <LinearLayout
+        android:id="@+id/option_report"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/report"
+            android:tint="#F44336" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Report"
+            android:textColor="#F44336"
+            android:textSize="16sp"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Delete Option (only for user's own posts) - using delete.png (red) -->
+    <LinearLayout
+        android:id="@+id/option_delete"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/delete"
+            android:tint="#F44336" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Delete Post"
+            android:textColor="#F44336"
+            android:textSize="16sp"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "807156891924",
+    "project_id": "device-streaming-5f25c661",
+    "storage_bucket": "device-streaming-5f25c661.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:807156891924:android:fd22fd34aee12251dfc201",
+        "android_client_info": {
+          "package_name": "com.example.pawsociety"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0Nqi5hqfcg5vC8axwyzM8dvyjfXRihO0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

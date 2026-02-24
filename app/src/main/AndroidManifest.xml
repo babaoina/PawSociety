@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Internet permission for API calls -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:name=".MyApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="PawSociety"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+    <!-- Splash Activity -->
+    <activity
+        android:name=".SplashActivity"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+
+    <!-- Login Activity -->
+    <activity
+        android:name=".LoginActivity"
+        android:exported="false" />
+
+    <!-- Home Activity -->
+    <activity
+        android:name=".HomeActivity"
+        android:exported="false" />
+
+    <!-- Register Activity -->
+    <activity
+        android:name=".RegisterActivity"
+        android:exported="false" />
+
+    <!-- Inbox Activity -->
+    <activity
+        android:name=".InboxActivity"
+        android:exported="false" />
+
+    <!-- Find Activity -->
+    <activity
+        android:name=".FindActivity"
+        android:exported="false" />
+
+    <!-- Profile Activity -->
+    <activity
+        android:name=".ProfileActivity"
+        android:exported="false" />
+
+        <!-- User Profile Activity -->
+    <activity android:name=".UserProfileActivity" />
+
+
+        <activity android:name=".FollowersFollowingActivity" />
+
+    <!-- Create Post Activity -->
+    <activity
+        android:name=".CreatePostActivity"
+        android:exported="false" />
+
+    <!-- Chat Activity -->
+    <activity
+        android:name=".ChatActivity"
+        android:exported="false" />
+
+    <!-- Notifications Activity -->
+    <activity
+        android:name=".NotificationsActivity"
+        android:exported="false" />
+
+    <!-- Settings Activity -->
+    <activity
+        android:name=".SettingsActivity"
+        android:exported="false" />
+
+</application>
+
+    </manifest>

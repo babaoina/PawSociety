@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Text Sizes -->
+    <dimen name="text_size_xxxxs">8sp</dimen>
+    <dimen name="text_size_xxxs">9sp</dimen>
+    <dimen name="text_size_xxs">10sp</dimen>
+    <dimen name="text_size_xs">11sp</dimen>
+    <dimen name="text_size_small">12sp</dimen>
+    <dimen name="text_size_normal">14sp</dimen>
+    <dimen name="text_size_medium">16sp</dimen>
+    <dimen name="text_size_large">18sp</dimen>
+    <dimen name="text_size_xlarge">20sp</dimen>
+    <dimen name="text_size_xxlarge">22sp</dimen>
+    <dimen name="text_size_xxxlarge">24sp</dimen>
+
+    <!-- Button Sizes -->
+    <dimen name="button_height">40dp</dimen>
+    <dimen name="button_height_small">32dp</dimen>
+    <dimen name="button_padding">12dp</dimen>
+
+    <!-- Margins and Padding -->
+    <dimen name="margin_micro">2dp</dimen>
+    <dimen name="margin_tiny">4dp</dimen>
+    <dimen name="margin_small">6dp</dimen>
+    <dimen name="margin_normal">8dp</dimen>
+    <dimen name="margin_medium">12dp</dimen>
+    <dimen name="margin_large">16dp</dimen>
+    <dimen name="margin_xlarge">20dp</dimen>
+    <dimen name="margin_xxlarge">24dp</dimen>
+
+    <!-- Profile Picture Sizes -->
+    <dimen name="profile_pic_size">90dp</dimen>
+    <dimen name="profile_pic_inner">84dp</dimen>
+    <dimen name="profile_pic_small">70dp</dimen>
+    <dimen name="profile_pic_inner_small">64dp</dimen>
+
+    <!-- Icon Sizes -->
+    <dimen name="icon_size_tiny">16dp</dimen>
+    <dimen name="icon_size_small">20dp</dimen>
+    <dimen name="icon_size">24dp</dimen>
+    <dimen name="icon_size_medium">28dp</dimen>
+    <dimen name="icon_size_large">32dp</dimen>
+    <dimen name="icon_size_xlarge">36dp</dimen>
+
+    <!-- Avatar Sizes -->
+    <dimen name="avatar_size">50dp</dimen>
+    <dimen name="avatar_size_small">40dp</dimen>
+    <dimen name="avatar_size_tiny">32dp</dimen>
+
+    <!-- Corner Radius -->
+    <dimen name="radius_small">4dp</dimen>
+    <dimen name="radius_normal">8dp</dimen>
+    <dimen name="radius_large">12dp</dimen>
+    <dimen name="radius_xlarge">16dp</dimen>
+    <dimen name="radius_round">25dp</dimen>
+
+    <!-- Grid Spacing -->
+    <dimen name="grid_spacing">2dp</dimen>
+    <dimen name="grid_spacing_large">4dp</dimen>
+</resources>

@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Top Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="#FFFFFF"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:gravity="center_vertical"
+            android:elevation="4dp">
+
+            <!-- Back Button as ImageView -->
+            <ImageView
+                android:id="@+id/btn_back"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/back"
+                android:contentDescription="Back"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:tint="#000000" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Settings"
+                android:textColor="#000000"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginStart="16px"
+                android:fontFamily="sans-serif-medium" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#F0F0F0" />
+
+        <!-- Settings List -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingVertical="8px">
+
+            <!-- Account -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Account"
+                android:textColor="#666666"
+                android:textSize="14sp"
+                android:paddingStart="16px"
+                android:paddingTop="24px"
+                android:paddingBottom="8px" />
+
+            <!-- Follow and invite friends -->
+            <LinearLayout
+                android:id="@+id/option_follow_friends"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16px"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/group"
+                    android:layout_marginEnd="16px" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Follow and invite friends"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textSize="24sp"
+                    android:textColor="#666666" />
+
+            </LinearLayout>
+
+            <!-- Notifications -->
+            <LinearLayout
+                android:id="@+id/option_notifications"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16px"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/notification"
+                    android:layout_marginEnd="16px" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notifications"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textSize="24sp"
+                    android:textColor="#666666" />
+
+            </LinearLayout>
+
+            <!-- Privacy -->
+            <LinearLayout
+                android:id="@+id/option_privacy"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16px"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/privacy"
+                    android:layout_marginEnd="16px" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Privacy"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textSize="24sp"
+                    android:textColor="#666666" />
+
+            </LinearLayout>
+
+            <!-- Security -->
+            <LinearLayout
+                android:id="@+id/option_security"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16px"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/security"
+                    android:layout_marginEnd="16px" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Security"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textSize="24sp"
+                    android:textColor="#666666" />
+
+            </LinearLayout>
+
+            <!-- Help -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Help"
+                android:textColor="#666666"
+                android:textSize="14sp"
+                android:paddingStart="16px"
+                android:paddingTop="24px"
+                android:paddingBottom="8px" />
+
+            <!-- Help Center -->
+            <LinearLayout
+                android:id="@+id/option_help_center"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16px"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/help"
+                    android:layout_marginEnd="16px" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Help Center"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textSize="24sp"
+                    android:textColor="#666666" />
+
+            </LinearLayout>
+
+            <!-- About -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="About"
+                android:textColor="#666666"
+                android:textSize="14sp"
+                android:paddingStart="16px"
+                android:paddingTop="24px"
+                android:paddingBottom="8px" />
+
+            <!-- About PawSociety -->
+            <LinearLayout
+                android:id="@+id/option_about"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16px"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/information"
+                    android:layout_marginEnd="16px" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="About PawSociety"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textSize="24sp"
+                    android:textColor="#666666" />
+
+            </LinearLayout>
+
+            <!-- LOGOUT SECTION -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="24dp" />
+
+            <!-- Log Out -->
+            <LinearLayout
+                android:id="@+id/btn_logout"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16px"
+                android:background="?android:attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/logout"
+                    android:layout_marginEnd="16px"
+                    android:tint="#F44336" />  <!-- Red tint for logout -->
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Log Out"
+                    android:textColor="#F44336"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textSize="24sp"
+                    android:textColor="#F44336" />
+
+            </LinearLayout>
+
+            <!-- App Version -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="PawSociety v1.0.0"
+                android:textColor="#999999"
+                android:textSize="12sp"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="32dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>
