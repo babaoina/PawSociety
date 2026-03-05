@@ -5,12 +5,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class PostRepository {
-    
+
     private val apiService = ApiClient.apiService
-    
-    /**
-     * Get all posts with optional filters
-     */
+
     suspend fun getPosts(
         status: String? = null,
         firebaseUid: String? = null,
@@ -19,7 +16,7 @@ class PostRepository {
     ): Result<List<ApiPost>> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getPosts(status, firebaseUid, limit, skip)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.posts != null) {
@@ -34,14 +31,11 @@ class PostRepository {
             Result.failure(e)
         }
     }
-    
-    /**
-     * Get single post by ID
-     */
+
     suspend fun getPost(postId: String): Result<ApiPost> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getPost(postId)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.data != null) {
@@ -56,10 +50,7 @@ class PostRepository {
             Result.failure(e)
         }
     }
-    
-    /**
-     * Create a new post
-     */
+
     suspend fun createPost(
         firebaseUid: String,
         petName: String,
@@ -92,7 +83,6 @@ class PostRepository {
                 val body = response.body()
                 println("📦 Response body: success=${body?.success}, message=${body?.message}")
                 if (body != null && body.success) {
-                    // Backend returns post in 'data' field (from ApiResponse wrapper)
                     val createdPost = body.data
                     if (createdPost != null) {
                         println("✅ Post created successfully with ID: ${createdPost.postId}")
@@ -117,36 +107,46 @@ class PostRepository {
             Result.failure(e)
         }
     }
-    
-    /**
-     * Delete a post
-     */
+
     suspend fun deletePost(postId: String, firebaseUid: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val response = apiService.deletePost(postId, mapOf("firebaseUid" to firebaseUid))
-            
+            println("🗑️ Attempting to delete post: $postId by user: $firebaseUid")
+            val response = apiService.deletePost(postId, firebaseUid)
+            println("📥 Delete response code: ${response.code()}")
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success) {
+                    println("✅ Post deleted successfully")
                     Result.success(Unit)
                 } else {
-                    Result.failure(Exception(body?.message ?: "Failed to delete post"))
+                    val errorMsg = body?.message ?: "Failed to delete post"
+                    println("❌ Delete failed: $errorMsg")
+                    Result.failure(Exception(errorMsg))
                 }
             } else {
-                Result.failure(Exception(response.errorBody()?.string() ?: "Failed to delete post"))
+                val errorBody = response.errorBody()?.string()
+                println("❌ HTTP error: ${response.message()}, body: $errorBody")
+
+                // Check if it's "not found" error
+                if (errorBody?.contains("not found") == true) {
+                    // Post doesn't exist, consider it already deleted
+                    println("⚠️ Post not found, considering it already deleted")
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception(errorBody ?: "Failed to delete post"))
+                }
             }
         } catch (e: Exception) {
+            println("❌ Exception during delete: ${e.message}")
             Result.failure(e)
         }
     }
-    
-    /**
-     * Like/unlike a post
-     */
+
     suspend fun likePost(postId: String, firebaseUid: String): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.likePost(postId, mapOf("firebaseUid" to firebaseUid))
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success) {
@@ -164,8 +164,44 @@ class PostRepository {
     }
 
     /**
-     * Check if user liked a post
+     * Update a post
      */
+    /**
+     * Update a post
+     */
+    /**
+     * Update a post
+     */
+    /**
+     * Update a post
+     */
+    suspend fun updatePost(postId: String, updates: Map<String, String>, firebaseUid: String): Result<ApiPost> = withContext(Dispatchers.IO) {
+        try {
+            println("📝 Updating post: $postId")
+            println("📝 Updates: $updates")
+
+            val response = apiService.updatePost(postId, updates)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.success && body.data != null) {
+                    println("✅ Post updated successfully")
+                    Result.success(body.data)
+                } else {
+                    println("❌ Update failed: ${body?.message}")
+                    Result.failure(Exception(body?.message ?: "Failed to update post"))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                println("❌ HTTP error ${response.code()}: $errorBody")
+                Result.failure(Exception(errorBody ?: "HTTP error ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            println("❌ Exception: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
     suspend fun checkLikeStatus(postId: String, firebaseUid: String): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.checkPostLikeStatus(postId, firebaseUid)

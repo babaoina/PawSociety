@@ -5,9 +5,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class PetRepository {
-    
+
     private val apiService = ApiClient.apiService
-    
+
     /**
      * Get all pets with optional filters
      */
@@ -19,7 +19,7 @@ class PetRepository {
     ): Result<List<ApiPet>> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getPets(ownerUid, type, limit, skip)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.pets != null) {
@@ -34,14 +34,14 @@ class PetRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Get single pet by ID
      */
     suspend fun getPet(petId: String): Result<ApiPet> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getPet(petId)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.data != null) {
@@ -56,7 +56,7 @@ class PetRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Add a new pet
      */
@@ -81,9 +81,9 @@ class PetRepository {
                 age = age,
                 gender = gender
             )
-            
+
             val response = apiService.createPet(request)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.data != null) {
@@ -98,7 +98,7 @@ class PetRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Update a pet
      */
@@ -122,9 +122,9 @@ class PetRepository {
             imageUrl?.let { request["imageUrl"] = it }
             age?.let { request["age"] = it }
             gender?.let { request["gender"] = it }
-            
+
             val response = apiService.updatePet(petId, request)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.data != null) {
@@ -139,14 +139,15 @@ class PetRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Delete a pet
      */
     suspend fun deletePet(petId: String, ownerUid: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val response = apiService.deletePet(petId, mapOf("ownerUid" to ownerUid))
-            
+            // Changed from using request body to query parameter
+            val response = apiService.deletePet(petId, ownerUid)
+
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {

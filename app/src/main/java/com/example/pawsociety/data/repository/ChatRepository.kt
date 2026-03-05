@@ -5,16 +5,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class ChatRepository {
-    
+
     private val apiService = ApiClient.apiService
-    
+
     /**
      * Get all conversations for a user
      */
     suspend fun getConversations(firebaseUid: String): Result<List<ApiConversation>> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getConversations(firebaseUid)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.conversations != null) {
@@ -29,7 +29,7 @@ class ChatRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Get messages in a chat
      */
@@ -40,7 +40,7 @@ class ChatRepository {
     ): Result<List<ApiMessage>> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getMessages(chatId, limit, skip)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.messages != null) {
@@ -55,7 +55,7 @@ class ChatRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Send a message
      */
@@ -72,9 +72,9 @@ class ChatRepository {
                 text = text,
                 imageUrl = imageUrl
             )
-            
+
             val response = apiService.sendMessage(request)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.data != null) {
@@ -89,14 +89,15 @@ class ChatRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Mark message as read
      */
+    // Make sure this function exists in your ChatRepository.kt
     suspend fun markMessageAsRead(messageId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.markMessageAsRead(messageId)
-            
+
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
@@ -106,14 +107,14 @@ class ChatRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Mark all messages in chat as read
      */
     suspend fun markAllMessagesAsRead(chatId: String, firebaseUid: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.markAllMessagesAsRead(chatId, mapOf("firebaseUid" to firebaseUid))
-            
+
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
@@ -123,14 +124,15 @@ class ChatRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Delete a message
      */
-    suspend fun deleteMessage(messageId: String, firebaseUid: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteMessage(messageId: String, senderUid: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val response = apiService.deleteMessage(messageId, mapOf("firebaseUid" to firebaseUid))
-            
+            // Changed from using request body to query parameter
+            val response = apiService.deleteMessage(messageId, senderUid)
+
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {

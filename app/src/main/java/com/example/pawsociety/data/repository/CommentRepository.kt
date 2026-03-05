@@ -5,16 +5,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class CommentRepository {
-    
+
     private val apiService = ApiClient.apiService
-    
+
     /**
      * Get all comments for a post
      */
     suspend fun getComments(postId: String): Result<List<ApiComment>> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getComments(postId)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.comments != null) {
@@ -29,7 +29,7 @@ class CommentRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Add a comment to a post
      */
@@ -46,9 +46,9 @@ class CommentRepository {
                 userName = userName,
                 text = text
             )
-            
+
             val response = apiService.createComment(request)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.data != null) {
@@ -63,14 +63,15 @@ class CommentRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Delete a comment
      */
     suspend fun deleteComment(commentId: String, firebaseUid: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val response = apiService.deleteComment(commentId, mapOf("firebaseUid" to firebaseUid))
-            
+            // Changed from using request body to query parameter
+            val response = apiService.deleteComment(commentId, firebaseUid)
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success) {
@@ -85,14 +86,14 @@ class CommentRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Like/unlike a comment
      */
     suspend fun likeComment(commentId: String, firebaseUid: String): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.likeComment(commentId, mapOf("firebaseUid" to firebaseUid))
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success) {

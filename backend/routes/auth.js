@@ -58,7 +58,7 @@ const verifyFirebaseToken = async (req, res, next) => {
 /**
  * POST /api/auth/firebase-login
  * Login/Register using Firebase UID
- * Body: { firebaseUid, email, username?, fullName? }
+ * Body: { firebaseUid, email, username?, fullName?, phone? }
  */
 router.post('/firebase-login', async (req, res) => {
   try {
@@ -66,6 +66,7 @@ router.post('/firebase-login', async (req, res) => {
 
     console.log(`📝 Firebase login request - UID: ${firebaseUid}, Email: ${email}, Username: ${username}`);
 
+    // Validate required fields
     if (!firebaseUid || !email) {
       return res.status(400).json({
         success: false,
@@ -73,47 +74,122 @@ router.post('/firebase-login', async (req, res) => {
       });
     }
 
-    // Find or create user
+    // Find user by Firebase UID
     let user = await User.findOne({ firebaseUid });
     console.log(`🔍 User lookup result: ${user ? 'FOUND' : 'NOT FOUND'}`);
 
     if (!user) {
-      // Create new user
-      console.log(`➕ Creating new user with UID: ${firebaseUid}`);
-      user = new User({
-        firebaseUid,
-        email,
-        username: username || `user_${firebaseUid.substring(0, 8)}`,
-        fullName: fullName || email.split('@')[0],
-        phone: phone || ''
-      });
-      await user.save();
-      console.log(`✅ User created successfully: ${user.username}`);
+      // Check if email already exists with different UID (rare case)
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        console.log(`⚠️ Email ${email} already exists with different UID`);
+        // Update the existing user with this Firebase UID
+        existingEmail.firebaseUid = firebaseUid;
+        await existingEmail.save();
+        user = existingEmail;
+        console.log(`✅ Updated existing user with new Firebase UID: ${user.username}`);
+      } else {
+        // Create new user
+        console.log(`➕ Creating new user with UID: ${firebaseUid}`);
+        
+        // Generate username if not provided
+        const finalUsername = username || email.split('@')[0] + '_' + Math.random().toString(36).substring(2, 6);
+        
+        // Generate full name if not provided
+        const finalFullName = fullName || email.split('@')[0];
+        
+        user = new User({
+          firebaseUid,
+          email,
+          username: finalUsername,
+          fullName: finalFullName,
+          phone: phone || '',
+          profileImageUrl: '',
+          bio: '',
+          location: ''
+        });
+        
+        await user.save();
+        console.log(`✅ User created successfully: ${user.username} (ID: ${user._id})`);
+      }
     } else {
       console.log(`👤 Existing user logged in: ${user.username}`);
+      
+      // Update user info if needed (optional)
+      let updated = false;
+      if (username && user.username !== username) {
+        user.username = username;
+        updated = true;
+      }
+      if (fullName && user.fullName !== fullName) {
+        user.fullName = fullName;
+        updated = true;
+      }
+      if (phone && user.phone !== phone) {
+        user.phone = phone;
+        updated = true;
+      }
+      
+      if (updated) {
+        await user.save();
+        console.log(`✅ User info updated: ${user.username}`);
+      }
     }
 
+    // Return user data (excluding sensitive fields)
     res.json({
       success: true,
-      message: user.createdAt.getTime() === user.updatedAt.getTime() ? 'User created' : 'User logged in',
+      message: 'Login successful',
       data: {
         firebaseUid: user.firebaseUid,
         username: user.username,
         email: user.email,
         fullName: user.fullName,
-        phone: user.phone,
-        profileImageUrl: user.profileImageUrl,
-        bio: user.bio,
-        location: user.location,
+        phone: user.phone || '',
+        profileImageUrl: user.profileImageUrl || '',
+        bio: user.bio || '',
+        location: user.location || '',
         createdAt: user.createdAt
       }
     });
+
   } catch (error) {
     console.error('❌ Firebase login error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Internal server error during login'
     });
+  }
+});
+
+/**
+ * POST /api/auth/check-status
+ * Check if user is still active/suspended
+ */
+router.post('/check-status', async (req, res) => {
+  try {
+    const { firebaseUid } = req.body;
+    
+    const user = await User.findOne({ firebaseUid });
+    
+    if (!user) {
+      return res.json({ 
+        success: false, 
+        message: 'User not found',
+        status: 'deleted'
+      });
+    }
+    
+    // Return user status
+    res.json({
+      success: true,
+      status: user.status || 'Active',
+      message: user.status === 'Suspended' ? 'Account suspended' : 'Account active'
+    });
+    
+  } catch (error) {
+    console.error('Check status error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
@@ -134,7 +210,7 @@ router.post('/verify-token', verifyFirebaseToken, async (req, res) => {
 
     res.json({
       success: true,
-      user: {
+      data: {
         firebaseUid: user.firebaseUid,
         username: user.username,
         email: user.email,
@@ -148,6 +224,31 @@ router.post('/verify-token', verifyFirebaseToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Verify token error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/auth/check-user/:firebaseUid
+ * Check if user exists in MongoDB (helper endpoint)
+ */
+router.get('/check-user/:firebaseUid', async (req, res) => {
+  try {
+    const user = await User.findOne({ firebaseUid: req.params.firebaseUid });
+    res.json({
+      success: true,
+      exists: !!user,
+      user: user ? {
+        firebaseUid: user.firebaseUid,
+        username: user.username,
+        email: user.email
+      } : null
+    });
+  } catch (error) {
+    console.error('Check user error:', error);
     res.status(500).json({
       success: false,
       message: error.message

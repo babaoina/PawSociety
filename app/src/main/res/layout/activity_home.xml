@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@drawable/paws1">
+    android:background="#FAF0E6">
 
     <!-- Top Bar -->
     <LinearLayout
@@ -29,15 +29,48 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <ImageView
-            android:id="@+id/btn_notifications"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/heart"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless" />
+        <!-- Notification Icon with Badge -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp">
+
+            <ImageView
+                android:id="@+id/btn_notifications"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/heart"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+            <TextView
+                android:id="@+id/notification_badge"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="top|end"
+                android:background="@drawable/circle_solid_red"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:visibility="gone"
+                android:layout_marginTop="-2dp"
+                android:layout_marginEnd="-2dp" />
+        </FrameLayout>
     </LinearLayout>
+
+    <!-- Offline Indicator (ADD THIS) -->
+    <TextView
+        android:id="@+id/tv_offline_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="You are offline - showing cached content"
+        android:textColor="#FFFFFF"
+        android:background="#F44336"
+        android:gravity="center"
+        android:padding="4dp"
+        android:visibility="gone" />
 
     <!-- Divider -->
     <View
@@ -45,85 +78,96 @@
         android:layout_height="1dp"
         android:background="#F0F0F0" />
 
-    <!-- Feed -->
-    <ScrollView
-        android:id="@+id/feed_scrollview"
+    <!-- Feed with Pull-to-Refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:background="#FAF0E6">
 
-        <FrameLayout
+        <ScrollView
+            android:id="@+id/feed_scrollview"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="match_parent"
+            android:background="#FAF0E6">
 
-            <!-- Progress Bar -->
-            <ProgressBar
-                android:id="@+id/progress_bar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:visibility="gone" />
-
-            <!-- Posts Container -->
-            <LinearLayout
-                android:id="@+id/posts_container"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="8dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-                <!-- Posts will be added here dynamically -->
-            </LinearLayout>
+                android:layout_height="wrap_content">
 
-            <!-- Empty State -->
-            <LinearLayout
-                android:id="@+id/empty_state"
-                android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:visibility="gone"
-                android:padding="16dp">
+                <!-- Progress Bar -->
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:visibility="gone" />
 
-                <TextView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                <!-- Posts Container -->
+                <LinearLayout
+                    android:id="@+id/posts_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="8dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:background="#FAF0E6">
+                    <!-- Posts will be added here dynamically -->
+                </LinearLayout>
+
+                <!-- Empty State -->
+                <LinearLayout
+                    android:id="@+id/empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="300dp"
+                    android:orientation="vertical"
                     android:gravity="center"
-                    android:text="🐾"
-                    android:textSize="48sp" />
+                    android:visibility="gone"
+                    android:padding="16dp"
+                    android:background="#FAF0E6">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="No posts yet"
-                    android:textColor="#7A4F2B"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp" />
+                    <TextView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:gravity="center"
+                        android:text="🐾"
+                        android:textSize="48sp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Be the first to share a pet story!"
-                    android:textColor="#666666"
-                    android:textSize="14sp"
-                    android:layout_marginTop="8dp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No posts yet"
+                        android:textColor="#7A4F2B"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="16dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Tap the paw button below to create your first post"
-                    android:textColor="#999999"
-                    android:textSize="12sp"
-                    android:layout_marginTop="4dp" />
-            </LinearLayout>
-        </FrameLayout>
-    </ScrollView>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Be the first to share a pet story!"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:layout_marginTop="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tap the paw button below to create your first post"
+                        android:textColor="#999999"
+                        android:textSize="12sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </FrameLayout>
+        </ScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Bottom Navigation -->
     <include
         layout="@layout/bottom_nav_unified"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
+
 </LinearLayout>

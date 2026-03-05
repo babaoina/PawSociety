@@ -2,7 +2,6 @@ package com.example.pawsociety
 
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.PorterDuff
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -15,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.pawsociety.api.ApiUser
+import com.example.pawsociety.data.repository.FollowRepository
 import com.example.pawsociety.data.repository.UserRepository
 import com.example.pawsociety.util.SessionManager
 import kotlinx.coroutines.launch
@@ -31,22 +31,27 @@ class FollowersFollowingActivity : AppCompatActivity() {
     private lateinit var tabIndicator: View
 
     private lateinit var sessionManager: SessionManager
-    private val userRepository = UserRepository()
+    private lateinit var followRepository: FollowRepository
 
     private var currentMode = "followers" // "followers" or "following"
     private var targetUserId: String = ""
     private var targetUserName: String = ""
     private var usersList = listOf<ApiUser>()
+    private var currentUser: ApiUser? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_followers_following)
 
         sessionManager = SessionManager(this)
+        currentUser = sessionManager.getCurrentUser()
+        followRepository = FollowRepository()
 
         targetUserId = intent.getStringExtra("userId") ?: ""
         targetUserName = intent.getStringExtra("userName") ?: "User"
         currentMode = intent.getStringExtra("mode") ?: "followers"
+
+        println("📋 FollowersFollowingActivity - Mode: $currentMode for user: $targetUserName (UID: $targetUserId)")
 
         initializeViews()
         setupClickListeners()
@@ -112,12 +117,15 @@ class FollowersFollowingActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // TODO: Replace with actual API calls to get followers/following
-                // For now, simulate with sample data
-                val result = userRepository.getUsers(limit = 20)
+                val result = if (currentMode == "followers") {
+                    followRepository.getFollowers(targetUserId)
+                } else {
+                    followRepository.getFollowing(targetUserId)
+                }
 
                 if (result.isSuccess) {
-                    usersList = result.getOrNull()?.filter { it.firebaseUid != targetUserId } ?: emptyList()
+                    usersList = result.getOrNull() ?: emptyList()
+                    println("✅ Loaded ${usersList.size} ${currentMode}")
 
                     if (usersList.isEmpty()) {
                         showEmptyState()
@@ -125,9 +133,12 @@ class FollowersFollowingActivity : AppCompatActivity() {
                         showUserList()
                     }
                 } else {
+                    val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                    println("❌ Failed to load $currentMode: $error")
                     showEmptyState()
                 }
             } catch (e: Exception) {
+                println("❌ Exception loading $currentMode: ${e.message}")
                 e.printStackTrace()
                 showEmptyState()
             } finally {
@@ -140,12 +151,18 @@ class FollowersFollowingActivity : AppCompatActivity() {
         recyclerView.visibility = View.VISIBLE
         emptyState.visibility = View.GONE
 
-        val adapter = FollowersAdapter(usersList, currentMode) { user ->
+        val adapter = FollowersAdapter(usersList, currentMode, currentUser) { user ->
             // Open user profile when clicked
-            val intent = Intent(this, UserProfileActivity::class.java)
-            intent.putExtra("userId", user.firebaseUid)
-            intent.putExtra("userName", user.username)
-            startActivity(intent)
+            if (user.firebaseUid == currentUser?.firebaseUid) {
+                val intent = Intent(this, ProfileActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                startActivity(intent)
+            } else {
+                val intent = Intent(this, UserProfileActivity::class.java)
+                intent.putExtra("userId", user.firebaseUid)
+                intent.putExtra("userName", user.username)
+                startActivity(intent)
+            }
         }
         recyclerView.adapter = adapter
     }
@@ -167,13 +184,16 @@ class FollowersFollowingActivity : AppCompatActivity() {
 class FollowersAdapter(
     private val users: List<ApiUser>,
     private val mode: String,
+    private val currentUser: ApiUser?,
     private val onUserClick: (ApiUser) -> Unit
 ) : RecyclerView.Adapter<FollowersAdapter.FollowerViewHolder>() {
 
     class FollowerViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val profileIcon: TextView = itemView.findViewById(R.id.profile_icon)
+        val profileImage: ImageView = itemView.findViewById(R.id.profile_image)
         val username: TextView = itemView.findViewById(R.id.username)
         val btnAction: Button = itemView.findViewById(R.id.btn_action)
+        val fullName: TextView = itemView.findViewById(R.id.full_name)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FollowerViewHolder {
@@ -185,24 +205,56 @@ class FollowersAdapter(
     override fun onBindViewHolder(holder: FollowerViewHolder, position: Int) {
         val user = users[position]
 
-        // Set profile icon
-        val firstLetter = if (user.username.isNotEmpty()) {
-            user.username.first().toString().uppercase()
-        } else {
-            "?"
-        }
-        holder.profileIcon.text = firstLetter
-        holder.profileIcon.background = ContextCompat.getDrawable(holder.itemView.context, R.drawable.circle_solid_profile)
-
         holder.username.text = user.username
+        holder.fullName.text = user.fullName
 
-        // Set action button based on mode
-        if (mode == "followers") {
-            holder.btnAction.text = "Follow Back"
-            holder.btnAction.setBackgroundColor(Color.parseColor("#7A4F2B"))
+        // Set profile picture or icon
+        if (!user.profileImageUrl.isNullOrEmpty()) {
+            val fullImageUrl = if (user.profileImageUrl.startsWith("http")) {
+                user.profileImageUrl
+            } else {
+                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}${user.profileImageUrl}"
+            }
+
+            holder.profileIcon.visibility = View.GONE
+            holder.profileImage.visibility = View.VISIBLE
+
+            Glide.with(holder.itemView.context)
+                .load(fullImageUrl)
+                .circleCrop()
+                .placeholder(android.R.drawable.ic_menu_gallery)
+                .error(android.R.drawable.ic_menu_report_image)
+                .into(holder.profileImage)
         } else {
-            holder.btnAction.text = "Following"
-            holder.btnAction.setBackgroundColor(Color.parseColor("#4CAF50"))
+            holder.profileImage.visibility = View.GONE
+            holder.profileIcon.visibility = View.VISIBLE
+
+            val firstLetter = if (user.username.isNotEmpty()) {
+                user.username.first().toString().uppercase()
+            } else {
+                "?"
+            }
+            holder.profileIcon.text = firstLetter
+
+            val colors = listOf(
+                "#7A4F2B", "#B88B4A", "#4CAF50", "#2196F3", "#FF9800", "#9C27B0", "#E91E63"
+            )
+            val colorIndex = Math.abs(user.firebaseUid.hashCode()) % colors.size
+            holder.profileIcon.setBackgroundColor(Color.parseColor(colors[colorIndex]))
+        }
+
+        // Set action button based on mode and relationship
+        if (user.firebaseUid == currentUser?.firebaseUid) {
+            holder.btnAction.visibility = View.GONE
+        } else {
+            holder.btnAction.visibility = View.VISIBLE
+            if (mode == "followers") {
+                holder.btnAction.text = "Follow Back"
+                holder.btnAction.setBackgroundColor(Color.parseColor("#7A4F2B"))
+            } else {
+                holder.btnAction.text = "Following"
+                holder.btnAction.setBackgroundColor(Color.parseColor("#4CAF50"))
+            }
         }
 
         holder.itemView.setOnClickListener {
@@ -211,7 +263,7 @@ class FollowersAdapter(
 
         holder.btnAction.setOnClickListener {
             // TODO: Handle follow/unfollow action
-            Toast.makeText(holder.itemView.context, "Follow action", Toast.LENGTH_SHORT).show()
+            Toast.makeText(holder.itemView.context, "Follow action for ${user.username}", Toast.LENGTH_SHORT).show()
         }
     }
 

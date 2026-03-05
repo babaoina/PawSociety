@@ -2,8 +2,12 @@ package com.example.pawsociety
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -12,13 +16,17 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
 import com.example.pawsociety.data.repository.PostRepository
 import com.example.pawsociety.data.repository.UploadRepository
 import com.example.pawsociety.util.FileHelper
+import com.example.pawsociety.util.PermissionHelper
 import com.example.pawsociety.util.SessionManager
+import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -52,20 +60,32 @@ class CreatePostActivity : AppCompatActivity() {
 
     // Adapter for breed suggestions
     private lateinit var breedAdapter: SuggestionsAdapter
-    
-    // Image upload
+
+    // Image upload with cropping
     private val uploadRepository = UploadRepository()
-    private val selectedImages = mutableListOf<android.net.Uri>()
+    private val selectedImages = mutableListOf<Uri>()
+    private val tempUris = mutableListOf<Uri>()
+    private var currentImageUri: Uri? = null
+
     private lateinit var btnAddPhoto: TextView
     private lateinit var photoCountBadge: TextView
-    
+    private lateinit var imagePreviewContainer: LinearLayout
+
     private lateinit var sessionManager: SessionManager
     private val postRepository = PostRepository()
+
+    companion object {
+        private const val REQUEST_PICK_IMAGE = 1001
+        private const val REQUEST_CROP_IMAGE = 1002
+        private const val REQUEST_IMAGE_CAPTURE = 1003
+        private const val REQUEST_CODE_CAMERA = 1004
+        private const val REQUEST_CODE_STORAGE = 1005
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_post)
-        
+
         sessionManager = SessionManager(this)
 
         // Check if user is logged in
@@ -75,6 +95,16 @@ class CreatePostActivity : AppCompatActivity() {
             finish()
             return
         }
+
+        // Verify user has valid UID
+        if (currentUser.firebaseUid.isNullOrEmpty()) {
+            println("❌ CreatePostActivity: User has null/empty UID!")
+            Toast.makeText(this, "User account error: Missing UID. Please logout and login again.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        println("✅ CreatePostActivity: User verified - ${currentUser.username} with UID: ${currentUser.firebaseUid}")
 
         initializeViews()
         setupAdapters()
@@ -99,6 +129,10 @@ class CreatePostActivity : AppCompatActivity() {
 
         btnPost = findViewById(R.id.btn_post)
         btnCancel = findViewById(R.id.btn_cancel)
+
+        btnAddPhoto = findViewById(R.id.btn_add_photo)
+        photoCountBadge = findViewById(R.id.tv_photo_count)
+        imagePreviewContainer = findViewById(R.id.image_preview_container)
 
         // Create error TextViews
         errorPetName = createErrorTextView()
@@ -125,6 +159,7 @@ class CreatePostActivity : AppCompatActivity() {
         // Initialize location TextView
         tvLocation.text = ""
         tvLocation.visibility = View.GONE
+        updatePhotoCountBadge()
     }
 
     private fun createErrorTextView(): TextView {
@@ -169,11 +204,9 @@ class CreatePostActivity : AppCompatActivity() {
         // Pet Name validation
         etPetName.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 validatePetName()
             }
-
             override fun afterTextChanged(s: Editable?) {
                 if (!s.isNullOrEmpty() && s.length == 1) {
                     etPetName.removeTextChangedListener(this)
@@ -184,7 +217,6 @@ class CreatePostActivity : AppCompatActivity() {
             }
         })
 
-        // Fix enter key
         etPetName.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT) {
                 actPetType.requestFocus()
@@ -215,41 +247,28 @@ class CreatePostActivity : AppCompatActivity() {
         // REWARD FIELD - With formatting and 1 million limit
         etReward.addTextChangedListener(object : TextWatcher {
             private var isUpdating = false
-
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-
             override fun afterTextChanged(s: Editable?) {
                 if (isUpdating) return
-
                 val input = s.toString()
                 if (input.isEmpty()) return
-
-                // Remove existing commas for processing
                 val rawInput = input.replace(",", "")
-
                 try {
                     val number = rawInput.toLongOrNull()
                     if (number != null) {
                         isUpdating = true
-
-                        // Limit to 1 million
                         val limitedNumber = if (number > 1000000) {
                             Toast.makeText(this@CreatePostActivity, "Maximum reward is ₱1,000,000", Toast.LENGTH_SHORT).show()
                             1000000
                         } else {
                             number
                         }
-
-                        // Format with commas
                         val formatted = String.format("%,d", limitedNumber)
-
                         if (formatted != input) {
                             etReward.setText(formatted)
                             etReward.setSelection(formatted.length)
                         }
-
                         isUpdating = false
                     }
                 } catch (e: Exception) {
@@ -335,10 +354,6 @@ class CreatePostActivity : AppCompatActivity() {
         }
 
         // Add photo button
-        btnAddPhoto = findViewById(R.id.btn_add_photo)
-        photoCountBadge = findViewById(R.id.tv_photo_count)
-        updatePhotoCountBadge()
-        
         btnAddPhoto.setOnClickListener {
             showImagePicker()
         }
@@ -407,7 +422,6 @@ class CreatePostActivity : AppCompatActivity() {
 
     private fun validatePetName(): Boolean {
         val name = etPetName.text.toString().trim()
-
         return when {
             name.isEmpty() -> {
                 etPetName.setBackgroundResource(R.drawable.edittext_error_bg)
@@ -431,7 +445,6 @@ class CreatePostActivity : AppCompatActivity() {
 
     private fun validatePetType(): Boolean {
         val type = actPetType.text.toString().trim()
-
         return when {
             type.isEmpty() -> {
                 actPetType.setBackgroundResource(R.drawable.edittext_error_bg)
@@ -460,7 +473,6 @@ class CreatePostActivity : AppCompatActivity() {
 
     private fun validateLocation(): Boolean {
         val location = tvLocation.text.toString()
-
         return when {
             location.isEmpty() -> {
                 btnSelectLocation.setBackgroundResource(R.drawable.edittext_error_bg)
@@ -478,7 +490,6 @@ class CreatePostActivity : AppCompatActivity() {
 
     private fun validateContact(): Boolean {
         val contact = etContact.text.toString().trim()
-
         return when {
             contact.isEmpty() -> {
                 etContact.setBackgroundResource(R.drawable.edittext_error_bg)
@@ -502,7 +513,6 @@ class CreatePostActivity : AppCompatActivity() {
 
     private fun validateDescription(): Boolean {
         val description = etDescription.text.toString().trim()
-
         return when {
             description.isEmpty() -> {
                 etDescription.setBackgroundResource(R.drawable.edittext_error_bg)
@@ -542,7 +552,252 @@ class CreatePostActivity : AppCompatActivity() {
                 isLocationValid && isContactValid && isDescriptionValid
     }
 
+    // ==================== IMAGE PICKER WITH CROP ====================
+
+    private fun showImagePicker() {
+        if (selectedImages.size >= 5) {
+            Toast.makeText(this, "Maximum 5 images allowed", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
+        AlertDialog.Builder(this)
+            .setTitle("Add Photo")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> checkCameraPermission()
+                    1 -> checkStoragePermission()
+                    2 -> { /* Cancel */ }
+                }
+            }
+            .show()
+    }
+
+    private fun checkCameraPermission() {
+        if (PermissionHelper.hasCameraPermission(this)) {
+            openCamera()
+        } else {
+            PermissionHelper.requestCameraPermission(this)
+        }
+    }
+
+    private fun checkStoragePermission() {
+        if (PermissionHelper.hasStoragePermission(this)) {
+            openGallery()
+        } else {
+            PermissionHelper.requestStoragePermission(this)
+        }
+    }
+
+    private fun openCamera() {
+        try {
+            val photoFile = createImageFile()
+            val uri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                photoFile
+            )
+            currentImageUri = uri
+
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, uri)
+            }
+            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Failed to open camera: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openGallery() {
+        val intent = Intent(Intent.ACTION_PICK).apply {
+            type = "image/*"
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        }
+        startActivityForResult(intent, REQUEST_PICK_IMAGE)
+    }
+
+    private fun createImageFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir = externalCacheDir ?: cacheDir
+        return File.createTempFile(
+            "JPEG_${timeStamp}_",
+            ".jpg",
+            storageDir
+        )
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode == RESULT_OK) {
+            when (requestCode) {
+                REQUEST_IMAGE_CAPTURE -> {
+                    currentImageUri?.let { uri ->
+                        startCrop(uri)
+                    }
+                }
+                REQUEST_PICK_IMAGE -> {
+                    data?.let {
+                        val clipData = it.clipData
+                        if (clipData != null) {
+                            // Multiple images selected
+                            tempUris.clear()
+                            for (i in 0 until clipData.itemCount) {
+                                if (selectedImages.size + tempUris.size < 5) {
+                                    val uri = clipData.getItemAt(i).uri
+                                    tempUris.add(uri)
+                                }
+                            }
+                            // Start cropping the first one
+                            if (tempUris.isNotEmpty()) {
+                                startCrop(tempUris[0])
+                            }
+                        } else {
+                            // Single image selected
+                            it.data?.let { uri ->
+                                startCrop(uri)
+                            }
+                        }
+                    }
+                }
+                REQUEST_CROP_IMAGE -> {
+                    data?.let {
+                        val resultUri = UCrop.getOutput(it)
+                        resultUri?.let { croppedUri ->
+                            // Add the cropped square image to selected images
+                            selectedImages.add(croppedUri)
+
+                            // Update preview
+                            addImageToPreview(croppedUri)
+
+                            // Update the temp list if we're processing multiple
+                            if (tempUris.isNotEmpty()) {
+                                tempUris.removeAt(0)
+                                if (tempUris.isNotEmpty()) {
+                                    // Crop the next one
+                                    startCrop(tempUris[0])
+                                }
+                            }
+
+                            updatePhotoCountBadge()
+                            Toast.makeText(this, "Image added (${selectedImages.size}/5)", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                UCrop.RESULT_ERROR -> {
+                    val error = UCrop.getError(data!!)
+                    Toast.makeText(this, "Crop error: ${error?.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun startCrop(uri: Uri) {
+        val destinationUri = Uri.fromFile(File(cacheDir, "cropped_${System.currentTimeMillis()}.jpg"))
+
+        val options = UCrop.Options().apply {
+            setCompressionFormat(Bitmap.CompressFormat.JPEG)
+            setCompressionQuality(90)
+            setCircleDimmedLayer(false)  // Square crop, not circle
+            setShowCropFrame(true)
+            setCropFrameColor(Color.parseColor("#7A4F2B"))
+            setCropFrameStrokeWidth(4)
+            setShowCropGrid(true)
+            setCropGridColor(Color.parseColor("#FFFFFF"))
+            setCropGridStrokeWidth(2)
+            setToolbarColor(Color.parseColor("#7A4F2B"))
+            setStatusBarColor(Color.parseColor("#7A4F2B"))
+            setActiveControlsWidgetColor(Color.parseColor("#7A4F2B"))
+            setToolbarTitle("Crop Image")
+        }
+
+        UCrop.of(uri, destinationUri)
+            .withAspectRatio(1f, 1f)  // FORCE SQUARE (1:1 aspect ratio)
+            .withMaxResultSize(1024, 1024)  // Max size 1024x1024
+            .withOptions(options)
+            .start(this, REQUEST_CROP_IMAGE)
+    }
+
+    private fun addImageToPreview(uri: Uri) {
+        val imageView = LayoutInflater.from(this).inflate(R.layout.item_image_preview, imagePreviewContainer, false) as ImageView
+        val params = LinearLayout.LayoutParams(200, 200)
+        params.setMargins(0, 0, 8, 0)
+        imageView.layoutParams = params
+        imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+        Glide.with(this)
+            .load(uri)
+            .centerCrop()
+            .into(imageView)
+
+        imageView.setOnClickListener {
+            // Show remove option
+            AlertDialog.Builder(this)
+                .setTitle("Remove Image")
+                .setMessage("Do you want to remove this image?")
+                .setPositiveButton("Remove") { _, _ ->
+                    val index = imagePreviewContainer.indexOfChild(imageView)
+                    if (index >= 0 && index < selectedImages.size) {
+                        selectedImages.removeAt(index)
+                        imagePreviewContainer.removeView(imageView)
+                        updatePhotoCountBadge()
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+        imagePreviewContainer.addView(imageView)
+    }
+
+    private fun updatePhotoCountBadge() {
+        if (selectedImages.isNotEmpty()) {
+            photoCountBadge.text = "${selectedImages.size}/5"
+            photoCountBadge.visibility = View.VISIBLE
+            btnAddPhoto.text = "Change Photos"
+        } else {
+            photoCountBadge.visibility = View.GONE
+            btnAddPhoto.text = "Add Photos (Optional)"
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        when (requestCode) {
+            REQUEST_CODE_CAMERA -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openCamera()
+                } else {
+                    Toast.makeText(this, "Camera permission required", Toast.LENGTH_SHORT).show()
+                }
+            }
+            REQUEST_CODE_STORAGE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openGallery()
+                } else {
+                    Toast.makeText(this, "Storage permission required", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    // ==================== POST CREATION ====================
+
     private fun createNewPost(currentUser: com.example.pawsociety.api.ApiUser) {
+        // Double-check user and UID before proceeding
+        if (currentUser.firebaseUid.isNullOrEmpty()) {
+            Toast.makeText(this, "Error: User ID is missing. Please logout and login again.", Toast.LENGTH_LONG).show()
+            btnPost.text = "Post"
+            btnPost.isEnabled = true
+            return
+        }
+
         val petName = etPetName.text.toString().trim()
         val petType = actPetType.text.toString().trim()
 
@@ -553,6 +808,11 @@ class CreatePostActivity : AppCompatActivity() {
         val location = tvLocation.text.toString()
         val contact = etContact.text.toString().trim()
         val description = etDescription.text.toString().trim()
+
+        println("📝 Creating post with:")
+        println("   - User: ${currentUser.username} (UID: ${currentUser.firebaseUid})")
+        println("   - Pet: $petName")
+        println("   - Status: $selectedStatus")
 
         // Show loading state
         btnPost.text = "Posting..."
@@ -589,16 +849,47 @@ class CreatePostActivity : AppCompatActivity() {
                     startActivity(intent)
                     finish()
                 } else {
-                    Toast.makeText(this@CreatePostActivity, "❌ Failed to create post: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                    val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
+                    println("❌ Failed to create post: $errorMsg")
+                    Toast.makeText(this@CreatePostActivity, "❌ Failed: $errorMsg", Toast.LENGTH_SHORT).show()
                     btnPost.text = "Post"
                     btnPost.isEnabled = true
                 }
             } catch (e: Exception) {
+                println("❌ Exception: ${e.message}")
+                e.printStackTrace()
                 Toast.makeText(this@CreatePostActivity, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 btnPost.text = "Post"
                 btnPost.isEnabled = true
             }
         }
+    }
+
+    private suspend fun uploadImages(): List<String> {
+        if (selectedImages.isEmpty()) {
+            return emptyList()
+        }
+
+        val imageFiles = selectedImages.mapNotNull { uri ->
+            FileHelper.uriToFile(this, uri)?.let { file ->
+                FileHelper.compressImage(file)
+            }
+        }
+
+        if (imageFiles.isEmpty()) {
+            throw Exception("Failed to process selected images")
+        }
+
+        val result = uploadRepository.uploadPostImages(imageFiles)
+
+        // Clean up temp files
+        imageFiles.forEach { file ->
+            if (file.name.startsWith("compressed_") || file.name.startsWith("upload_") || file.name.startsWith("cropped_")) {
+                FileHelper.deleteFile(file)
+            }
+        }
+
+        return result.getOrNull() ?: emptyList()
     }
 
     private fun clearForm() {
@@ -609,6 +900,9 @@ class CreatePostActivity : AppCompatActivity() {
         tvLocation.visibility = View.GONE
         etContact.text.clear()
         etDescription.text.clear()
+        selectedImages.clear()
+        imagePreviewContainer.removeAllViews()
+        updatePhotoCountBadge()
 
         // Reset to Lost as default
         updateStatusButtons(btnStatusLost)
@@ -630,106 +924,5 @@ class CreatePostActivity : AppCompatActivity() {
         errorDescription.visibility = View.GONE
 
         updateCharCounter()
-    }
-    
-    // ==================== IMAGE UPLOAD FUNCTIONS ====================
-    
-    private fun showImagePicker() {
-        if (selectedImages.size >= 5) {
-            Toast.makeText(this, "Maximum 5 images allowed", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        val options = arrayOf("Camera", "Gallery")
-        AlertDialog.Builder(this)
-            .setTitle("Add Photo")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> openCamera()
-                    1 -> openGallery()
-                }
-            }
-            .show()
-    }
-    
-    private fun openCamera() {
-        // For simplicity, using gallery intent for camera
-        // In production, implement proper camera intent with FileProvider
-        openGallery()
-    }
-    
-    private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK).apply {
-            type = "image/*"
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        }
-        startActivityForResult(intent, REQUEST_PICK_IMAGE)
-    }
-    
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        
-        if (requestCode == REQUEST_PICK_IMAGE && resultCode == RESULT_OK) {
-            data?.let {
-                // Handle multiple images
-                val clipData = it.clipData
-                if (clipData != null) {
-                    for (i in 0 until clipData.itemCount) {
-                        if (selectedImages.size < 5) {
-                            selectedImages.add(clipData.getItemAt(i).uri)
-                        }
-                    }
-                } else {
-                    // Single image
-                    it.data?.let { uri ->
-                        selectedImages.add(uri)
-                    }
-                }
-                updatePhotoCountBadge()
-                Toast.makeText(this, "${selectedImages.size} image(s) selected", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-    
-    private fun updatePhotoCountBadge() {
-        if (selectedImages.isNotEmpty()) {
-            photoCountBadge.text = "${selectedImages.size}/5"
-            photoCountBadge.visibility = View.VISIBLE
-            btnAddPhoto.text = "Change Photos"
-        } else {
-            photoCountBadge.visibility = View.GONE
-            btnAddPhoto.text = "Add Photos (Optional)"
-        }
-    }
-    
-    private suspend fun uploadImages(): List<String> {
-        if (selectedImages.isEmpty()) {
-            return emptyList()
-        }
-        
-        val imageFiles = selectedImages.mapNotNull { uri ->
-            FileHelper.uriToFile(this, uri)?.let { file ->
-                FileHelper.compressImage(file)
-            }
-        }
-        
-        if (imageFiles.isEmpty()) {
-            throw Exception("Failed to process selected images")
-        }
-        
-        val result = uploadRepository.uploadPostImages(imageFiles)
-        
-        // Clean up temp files
-        imageFiles.forEach { file ->
-            if (file.name.startsWith("compressed_") || file.name.startsWith("upload_")) {
-                FileHelper.deleteFile(file)
-            }
-        }
-        
-        return result.getOrNull() ?: emptyList()
-    }
-    
-    companion object {
-        private const val REQUEST_PICK_IMAGE = 1001
     }
 }

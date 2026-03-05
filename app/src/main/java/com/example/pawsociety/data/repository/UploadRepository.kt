@@ -10,11 +10,12 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 class UploadRepository {
-    
+
     private val uploadService: UploadApi = com.example.pawsociety.api.ApiClient.uploadService
-    
+
     /**
      * Upload post images (multiple, max 5)
+     * HIGH QUALITY - 1024px max width, 90% quality
      */
     suspend fun uploadPostImages(images: List<File>): Result<List<String>> = withContext(Dispatchers.IO) {
         try {
@@ -22,9 +23,9 @@ class UploadRepository {
                 val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
                 MultipartBody.Part.createFormData("images", file.name, requestBody)
             }
-            
+
             val response = uploadService.uploadPostImages(imageParts)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.imageUrls != null) {
@@ -39,17 +40,18 @@ class UploadRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Upload pet image (single)
+     * HIGH QUALITY - 1024px max width, 90% quality
      */
     suspend fun uploadPetImage(image: File): Result<String> = withContext(Dispatchers.IO) {
         try {
             val requestBody = image.asRequestBody("image/*".toMediaTypeOrNull())
             val imagePart = MultipartBody.Part.createFormData("image", image.name, requestBody)
-            
+
             val response = uploadService.uploadPetImage(imagePart)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.imageUrl != null) {
@@ -64,17 +66,18 @@ class UploadRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Upload profile picture (single)
+     * HIGH QUALITY - 800px max width, 90% quality (profile pics can be smaller)
      */
     suspend fun uploadProfilePicture(image: File): Result<String> = withContext(Dispatchers.IO) {
         try {
             val requestBody = image.asRequestBody("image/*".toMediaTypeOrNull())
             val imagePart = MultipartBody.Part.createFormData("image", image.name, requestBody)
-            
+
             val response = uploadService.uploadProfilePicture(imagePart)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.imageUrl != null) {
@@ -89,14 +92,14 @@ class UploadRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Delete uploaded file
      */
     suspend fun deleteFile(type: String, filename: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val response = uploadService.deleteFile(type, filename)
-            
+
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {

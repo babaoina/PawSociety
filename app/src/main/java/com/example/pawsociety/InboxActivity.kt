@@ -5,13 +5,16 @@ import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.*
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.pawsociety.api.ApiConversation
 import com.example.pawsociety.api.ApiUser
+import com.example.pawsociety.data.repository.ChatRepository
 import com.example.pawsociety.data.repository.UserRepository
 import com.example.pawsociety.util.SessionManager
+import com.example.pawsociety.util.SocketManager
 import kotlinx.coroutines.launch
 
 class InboxActivity : BaseNavigationActivity() {
@@ -20,11 +23,13 @@ class InboxActivity : BaseNavigationActivity() {
     private lateinit var inboxAdapter: InboxAdapter
     private lateinit var emptyState: LinearLayout
     private lateinit var tvUsername: TextView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var sessionManager: SessionManager
 
-    private var currentTab = "primary"
-    private var allUsers = listOf<ApiUser>()
+    private var conversations = listOf<ApiConversation>()
+    private var usersMap = mutableMapOf<String, ApiUser>()
     private var currentUser: ApiUser? = null
+    private val chatRepository = ChatRepository()
     private val userRepository = UserRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,17 +50,35 @@ class InboxActivity : BaseNavigationActivity() {
 
         initializeViews()
         setupClickListeners()
-        loadOtherUsers()
+        setupOnlineStatusListener()
+        loadConversations()
+
+        // Join user room for online status
+        SocketManager.connect()
+        currentUser?.let { user ->
+            SocketManager.joinUserRoom(user.firebaseUid)
+        }
     }
 
     private fun initializeViews() {
         recyclerView = findViewById(R.id.inbox_recycler_view)
         emptyState = findViewById(R.id.empty_state)
         tvUsername = findViewById(R.id.tv_username)
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout)
 
         tvUsername.text = currentUser?.username ?: "username"
 
         recyclerView.layoutManager = LinearLayoutManager(this)
+
+        // Setup SwipeRefreshLayout
+        swipeRefreshLayout.setColorSchemeColors(
+            android.graphics.Color.parseColor("#7A4F2B"),
+            android.graphics.Color.parseColor("#FF6B35"),
+            android.graphics.Color.parseColor("#4CAF50")
+        )
+        swipeRefreshLayout.setOnRefreshListener {
+            loadConversations()
+        }
     }
 
     private fun setupClickListeners() {
@@ -68,6 +91,21 @@ class InboxActivity : BaseNavigationActivity() {
                 false
             }
         }
+
+        findViewById<ImageButton>(R.id.btn_new_message).setOnClickListener {
+            Toast.makeText(this, "Start a new chat from a user's profile", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupOnlineStatusListener() {
+        SocketManager.addOnlineStatusListener { userId, isOnline ->
+            runOnUiThread {
+                if (::inboxAdapter.isInitialized) {
+                    inboxAdapter.updateOnlineStatus(userId, isOnline)
+                }
+            }
+        }
+        println("👂 Online status listener setup")
     }
 
     private fun performSearch(query: String) {
@@ -76,60 +114,87 @@ class InboxActivity : BaseNavigationActivity() {
                 inboxAdapter.notifyDataSetChanged()
             }
         } else {
-            val filteredUsers = allUsers.filter {
-                it.username.contains(query, ignoreCase = true)
+            val filteredConversations = conversations.filter { conv ->
+                val otherUserId = conv.participants.find { it != currentUser?.firebaseUid }
+                val user = otherUserId?.let { usersMap[it] }
+                user?.username?.contains(query, ignoreCase = true) == true
             }
 
-            if (filteredUsers.isEmpty()) {
-                Toast.makeText(this, "No users found matching '$query'", Toast.LENGTH_SHORT).show()
+            if (filteredConversations.isEmpty()) {
+                Toast.makeText(this, "No conversations match '$query'", Toast.LENGTH_SHORT).show()
             } else {
-                inboxAdapter = InboxAdapter(filteredUsers) { user ->
-                    openConversation(user)
-                }
-                recyclerView.adapter = inboxAdapter
+                updateAdapter(filteredConversations)
             }
         }
     }
 
-    private fun loadOtherUsers() {
-        println("📬 Loading users from API...")
-        val currentUser = sessionManager.getCurrentUser()
+    private fun loadConversations() {
+        println("📬 Loading conversations...")
+        val currentUser = sessionManager.getCurrentUser() ?: return
 
-        // Fetch users from API
+        swipeRefreshLayout.isRefreshing = true
+
         lifecycleScope.launch {
             try {
-                val result = userRepository.getUsers(limit = 50)
+                val result = chatRepository.getConversations(currentUser.firebaseUid)
 
                 if (result.isSuccess) {
-                    allUsers = result.getOrNull()!!
-                    println("✅ Loaded ${allUsers.size} users from API")
+                    conversations = result.getOrNull()!!
+                    println("✅ Loaded ${conversations.size} conversations")
 
-                    // Filter out current user
-                    if (currentUser != null) {
-                        allUsers = allUsers.filter { it.firebaseUid != currentUser.firebaseUid }
-                        println("👤 After filtering self: ${allUsers.size} users")
-                    }
-
-                    if (allUsers.isEmpty()) {
-                        println("⚠️ No other users found")
+                    if (conversations.isEmpty()) {
                         showEmptyState()
                     } else {
-                        showUserList()
-                        setupAdapter(allUsers)
+                        loadUsersForConversations()
                     }
                 } else {
-                    val errorMsg = result.exceptionOrNull()?.message ?: "Failed to load users"
-                    println("❌ Failed to load users: $errorMsg")
-                    Toast.makeText(this@InboxActivity, "Failed to load users: $errorMsg", Toast.LENGTH_SHORT).show()
+                    val errorMsg = result.exceptionOrNull()?.message ?: "Failed to load conversations"
+                    println("❌ Failed to load conversations: $errorMsg")
+                    Toast.makeText(this@InboxActivity, "Failed to load conversations", Toast.LENGTH_SHORT).show()
                     showEmptyState()
                 }
             } catch (e: Exception) {
-                println("❌ Error loading users: ${e.message}")
+                println("❌ Error loading conversations: ${e.message}")
                 e.printStackTrace()
                 Toast.makeText(this@InboxActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 showEmptyState()
+            } finally {
+                swipeRefreshLayout.isRefreshing = false
             }
         }
+    }
+
+    private suspend fun loadUsersForConversations() {
+        usersMap.clear()
+
+        for (conv in conversations) {
+            val otherUserId = conv.participants.find { it != currentUser?.firebaseUid } ?: continue
+            if (!usersMap.containsKey(otherUserId)) {
+                val userResult = userRepository.getUserByUid(otherUserId)
+                if (userResult.isSuccess) {
+                    userResult.getOrNull()?.let { usersMap[otherUserId] = it }
+                }
+            }
+        }
+
+        if (usersMap.isEmpty()) {
+            showEmptyState()
+        } else {
+            showConversationList()
+            updateAdapter(conversations)
+        }
+    }
+
+    private fun updateAdapter(conversations: List<ApiConversation>) {
+        inboxAdapter = InboxAdapter(
+            conversations = conversations,
+            usersMap = usersMap,
+            currentUserId = currentUser?.firebaseUid ?: "",
+            onUserClick = { user ->
+                openConversation(user)
+            }
+        )
+        recyclerView.adapter = inboxAdapter
     }
 
     private fun showEmptyState() {
@@ -137,34 +202,55 @@ class InboxActivity : BaseNavigationActivity() {
         emptyState.visibility = View.VISIBLE
 
         val emptyText = findViewById<TextView>(R.id.empty_text)
-        emptyText.text = "No other users yet\n\nWhen other people register, they will appear here"
+        emptyText.text = "No conversations yet\n\nStart chatting from a user's profile!"
     }
 
-    private fun showUserList() {
+    private fun setupProfileUpdateListener() {
+        SocketManager.onUserProfileUpdated { userId ->
+            runOnUiThread {
+                // Reload user data for this userId
+                loadUserData(userId)
+            }
+        }
+    }
+
+    private fun loadUserData(userId: String) {
+        lifecycleScope.launch {
+            val result = userRepository.getUserByUid(userId)
+            if (result.isSuccess) {
+                val updatedUser = result.getOrNull()
+                updatedUser?.let {
+                    usersMap[userId] = it
+                    // Update adapter
+                    if (::inboxAdapter.isInitialized) {
+                        inboxAdapter.notifyDataSetChanged()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showConversationList() {
         recyclerView.visibility = View.VISIBLE
         emptyState.visibility = View.GONE
     }
 
-    private fun setupAdapter(users: List<ApiUser>) {
-        inboxAdapter = InboxAdapter(users) { user ->
-            openConversation(user)
-        }
-        recyclerView.adapter = inboxAdapter
-    }
-
     private fun openConversation(user: ApiUser) {
         println("📬 Opening chat with user: ${user.username}, UID: ${user.firebaseUid}")
-        // Start chat activity with selected user
         val intent = Intent(this, ChatActivity::class.java)
         intent.putExtra("receiverUid", user.firebaseUid)
         intent.putExtra("receiverUsername", user.username)
         intent.putExtra("receiverProfileImage", user.profileImageUrl ?: "")
-        println("📬 Intent extras - receiverUid: ${user.firebaseUid}, username: ${user.username}")
         startActivity(intent)
     }
 
     override fun onResume() {
         super.onResume()
-        loadOtherUsers()
+        loadConversations()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Don't disconnect completely, other activities might need socket
     }
 }

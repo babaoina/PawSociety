@@ -3,6 +3,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const os = require('os');
+const http = require('http');
+const { Server } = require('socket.io');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -14,14 +17,98 @@ const petRoutes = require('./routes/pets');
 const favoriteRoutes = require('./routes/favorites');
 const uploadRoutes = require('./routes/upload');
 const notificationsRoutes = require('./routes/notifications');
+const highlightRoutes = require('./routes/highlights');
+const followRoutes = require('./routes/follow');
+const blockRoutes = require('./routes/blocks');
+const reportRoutes = require('./routes/reports');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+  }
+});
+
 const PORT = process.env.PORT || 5000;
+
+// Make io accessible to routes
+app.set('io', io);
+
+// Track online users
+const onlineUsers = new Set();
+// Track socket to user mapping
+const socketUserMap = new Map();
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('🔌 New client connected:', socket.id);
+
+  // Join a room for the user (based on their UID)
+  socket.on('join', (userId) => {
+    if (userId) {
+      socket.join(userId);
+      console.log(`👤 User ${userId} joined their room`);
+    }
+  });
+
+  // Handle user online
+  socket.on('user-online', (userId) => {
+    if (userId) {
+      onlineUsers.add(userId);
+      socketUserMap.set(socket.id, userId);
+      // Broadcast to all connected clients that this user is online
+      io.emit('user-status', { userId, online: true });
+      console.log(`🟢 User ${userId} is now ONLINE (Total online: ${onlineUsers.size})`);
+    }
+  });
+
+  // Handle user offline
+  socket.on('user-offline', (userId) => {
+    if (userId) {
+      onlineUsers.delete(userId);
+      // Broadcast to all connected clients that this user is offline
+      io.emit('user-status', { userId, online: false });
+      console.log(`🔴 User ${userId} is now OFFLINE (Total online: ${onlineUsers.size})`);
+    }
+  });
+
+  // Handle joining a chat room
+  socket.on('join-chat', (chatId) => {
+    socket.join(chatId);
+    console.log(`💬 Joined chat room: ${chatId}`);
+  });
+
+  // Handle leaving a chat room
+  socket.on('leave-chat', (chatId) => {
+    socket.leave(chatId);
+    console.log(`🚪 Left chat room: ${chatId}`);
+  });
+
+  // Handle typing status
+  socket.on('typing', ({ chatId, userId, isTyping }) => {
+    socket.to(chatId).emit('user-typing', { userId, isTyping });
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    const userId = socketUserMap.get(socket.id);
+    if (userId) {
+      onlineUsers.delete(userId);
+      socketUserMap.delete(socket.id);
+      // Broadcast that user is offline
+      io.emit('user-status', { userId, online: false });
+      console.log(`🔴 User ${userId} disconnected (offline) - Total online: ${onlineUsers.size}`);
+    }
+    console.log('🔌 Client disconnected:', socket.id);
+  });
+});
 
 // Middleware
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow all origins for development (restrict in production)
     callback(null, true);
   },
   credentials: true
@@ -60,6 +147,10 @@ app.use('/api/pets', petRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/users', highlightRoutes);
+app.use('/api/follow', followRoutes);
+app.use('/api/blocks', blockRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -88,12 +179,28 @@ app.use((req, res) => {
   });
 });
 
+// Function to get local network IP
+function getLocalIp() {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'Your Network IP';
+}
+
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
+  const networkIp = getLocalIp();
   console.log('🚀 PawSociety Backend running on port', PORT);
   console.log('📍 Local:', `http://localhost:${PORT}`);
-  console.log('📱 Network:', `http://192.168.x.x:${PORT} (replace with your IP)`);
+  console.log('📱 Network:', `http://${networkIp}:${PORT}`);
   console.log('📲 Emulator:', `http://10.0.2.2:${PORT}`);
+  console.log('📱 For phone on same Wi-Fi use:', `http://${networkIp}:${PORT}`);
+  console.log('🔌 Socket.IO server is ready');
 });
 
 module.exports = app;

@@ -2,9 +2,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="#FFFFFF">
 
-    <!-- Top Bar - PURE WHITE -->
+    <!-- Top Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -37,20 +38,22 @@
             android:contentDescription="Settings" />
     </LinearLayout>
 
-    <!-- Scrollable Content with ID -->
+    <!-- Scrollable Content -->
     <ScrollView
         android:id="@+id/profile_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:background="#FFFFFF">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:background="#FFFFFF">
 
-            <!-- Profile Header - WHITE BACKGROUND -->
+            <!-- Profile Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -111,14 +114,14 @@
                         android:orientation="vertical"
                         android:gravity="center_vertical">
 
-                        <!-- Stats Row - Clickable -->
+                        <!-- Stats Row -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
                             android:weightSum="3">
 
-                            <!-- Posts - Clickable -->
+                            <!-- Posts -->
                             <LinearLayout
                                 android:id="@+id/layout_posts"
                                 android:layout_width="0dp"
@@ -147,7 +150,7 @@
                                     android:textSize="11sp" />
                             </LinearLayout>
 
-                            <!-- Followers - Clickable -->
+                            <!-- Followers -->
                             <LinearLayout
                                 android:id="@+id/layout_followers"
                                 android:layout_width="0dp"
@@ -176,7 +179,7 @@
                                     android:textSize="11sp" />
                             </LinearLayout>
 
-                            <!-- Following - Clickable -->
+                            <!-- Following -->
                             <LinearLayout
                                 android:id="@+id/layout_following"
                                 android:layout_width="0dp"
@@ -206,7 +209,7 @@
                             </LinearLayout>
                         </LinearLayout>
 
-                        <!-- Edit Profile Button - OVAL SHAPE -->
+                        <!-- Edit Profile Button -->
                         <TextView
                             android:id="@+id/btn_edit_profile"
                             android:layout_width="match_parent"
@@ -247,7 +250,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="4dp" />
 
-                <!-- Dynamic Highlights Container -->
+                <!-- Highlights Container -->
                 <HorizontalScrollView
                     android:id="@+id/highlights_scroll"
                     android:layout_width="match_parent"
@@ -255,18 +258,18 @@
                     android:scrollbars="none"
                     android:paddingLeft="12dp"
                     android:paddingRight="12dp"
-                    android:paddingBottom="8dp">
+                    android:paddingBottom="8dp"
+                    android:background="#FFFFFF">
 
                     <LinearLayout
                         android:id="@+id/highlights_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:paddingVertical="4dp">
-                    </LinearLayout>
+                        android:paddingVertical="4dp" />
                 </HorizontalScrollView>
 
-                <!-- POSTS AND FAVORITES TABS - BIGGER with icons -->
+                <!-- POSTS AND FAVORITES TABS -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
@@ -274,7 +277,7 @@
                     android:background="#7A4F2B"
                     android:elevation="2dp">
 
-                    <!-- Posts Tab - using feed.png -->
+                    <!-- Posts Tab -->
                     <LinearLayout
                         android:id="@+id/tab_posts"
                         android:layout_width="0dp"
@@ -295,7 +298,7 @@
                             android:contentDescription="Posts" />
                     </LinearLayout>
 
-                    <!-- Favorites Tab - using faved.png -->
+                    <!-- Favorites Tab -->
                     <LinearLayout
                         android:id="@+id/tab_favorites"
                         android:layout_width="0dp"
@@ -316,16 +319,15 @@
                             android:contentDescription="Favorites" />
                     </LinearLayout>
                 </LinearLayout>
-
             </LinearLayout>
 
-            <!-- POSTS GRID AREA - PAW BACKGROUND HERE ONLY -->
+            <!-- POSTS GRID AREA -->
             <FrameLayout
                 android:id="@+id/posts_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:minHeight="300dp"
-                android:background="@drawable/paws1">
+                android:background="#FFFFFF">
 
                 <!-- Big Plus Circle -->
                 <LinearLayout
@@ -372,18 +374,15 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="4dp"
-                    android:visibility="gone">
-                    <!-- Individual post items will have white backgrounds -->
-                </LinearLayout>
+                    android:visibility="gone"
+                    android:background="#FFFFFF" />
             </FrameLayout>
-
         </LinearLayout>
     </ScrollView>
 
-    <!-- Bottom Navigation (semi-transparent) -->
+    <!-- Bottom Navigation -->
     <include
         layout="@layout/bottom_nav_unified"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-
 </LinearLayout>

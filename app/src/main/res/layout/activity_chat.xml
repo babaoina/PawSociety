@@ -1,48 +1,141 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#F5F5F5">
 
-    <!-- Chat Header -->
-    <LinearLayout
+    <!-- Chat Header with Profile -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:background="#FFFFFF"
-        android:elevation="4dp"
-        android:gravity="center_vertical">
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:cardCornerRadius="0dp">
 
-        <ImageButton
-            android:id="@+id/btn_back"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/arrow_back"
-            android:contentDescription="Back" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:padding="8dp">
 
-        <TextView
-            android:id="@+id/tv_chat_username"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:text="Username"
-            android:textColor="#000000"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+            <!-- Back Button -->
+            <ImageView
+                android:id="@+id/btn_back"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/back"
+                android:tint="#7A4F2B"
+                android:padding="8dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless" />
 
-    <!-- Messages RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/chat_recycler_view"
+            <!-- Profile Image -->
+            <FrameLayout
+                android:id="@+id/header_profile_container"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_toEndOf="@id/btn_back"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="8dp">
+
+                <ImageView
+                    android:id="@+id/header_profile_image"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:scaleType="centerCrop"
+                    android:background="@drawable/circle_border"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/header_profile_icon"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:gravity="center"
+                    android:text="JD"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:background="@drawable/circle_solid_profile"
+                    android:visibility="visible" />
+            </FrameLayout>
+
+            <!-- Username and Status -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/header_profile_container"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_chat_username"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Username"
+                    android:textColor="#000000"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+                <TextView
+                    android:id="@+id/tv_user_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Active now"
+                    android:textColor="#4CAF50"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Settings Button -->
+            <ImageView
+                android:id="@+id/btn_chat_settings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_more_vert"
+                android:tint="#7A4F2B"
+                android:padding="8dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless" />
+
+        </RelativeLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Messages Area -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp"
-        android:clipToPadding="false" />
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/chat_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:clipToPadding="false" />
+
+        <!-- Typing Indicator -->
+        <TextView
+            android:id="@+id/typing_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginBottom="4dp"
+            android:layout_gravity="bottom|start"
+            android:text="typing..."
+            android:textColor="#999999"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:background="#FFFFFF"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:elevation="2dp"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <!-- Message Input -->
     <LinearLayout
@@ -51,12 +144,12 @@
         android:orientation="horizontal"
         android:padding="8dp"
         android:background="#FFFFFF"
-        android:gravity="center_vertical">
+        android:elevation="8dp">
 
         <EditText
             android:id="@+id/message_input"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:hint="Type a message..."
             android:padding="12dp"
@@ -70,7 +163,7 @@
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/circle_solid_profile"
-            android:src="@drawable/send"
+            android:src="@drawable/send1"
             android:contentDescription="Send" />
     </LinearLayout>
 

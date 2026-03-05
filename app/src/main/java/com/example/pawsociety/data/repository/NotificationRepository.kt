@@ -5,16 +5,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class NotificationRepository {
-    
+
     private val apiService = ApiClient.apiService
-    
+
     /**
      * Get notifications for a user
      */
     suspend fun getNotifications(userId: String, limit: Int = 50, skip: Int = 0): Result<List<ApiNotification>> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getNotifications(userId, limit, skip)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.notifications != null) {
@@ -30,7 +30,30 @@ class NotificationRepository {
             Result.failure(e)
         }
     }
-    
+
+    /**
+     * Get unread notification count for a user
+     */
+    suspend fun getUnreadCount(userId: String): Result<Int> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.getNotifications(userId, limit = 100, skip = 0)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.success && body.notifications != null) {
+                    val unreadCount = body.notifications.count { !it.isRead }
+                    Result.success(unreadCount)
+                } else {
+                    Result.success(0)
+                }
+            } else {
+                Result.success(0)
+            }
+        } catch (e: Exception) {
+            Result.success(0)
+        }
+    }
+
     /**
      * Create a notification
      */
@@ -53,9 +76,9 @@ class NotificationRepository {
                 postId = postId,
                 message = message
             )
-            
+
             val response = apiService.createNotification(request)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.data != null) {
@@ -71,14 +94,14 @@ class NotificationRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Mark notification as read
      */
     suspend fun markAsRead(notificationId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.markNotificationAsRead(notificationId)
-            
+
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
@@ -89,14 +112,14 @@ class NotificationRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Mark all notifications as read
      */
     suspend fun markAllAsRead(userId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.markAllNotificationsAsRead(userId)
-            
+
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {

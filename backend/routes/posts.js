@@ -39,6 +39,65 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/posts/search
+ * Search posts by keyword
+ * Query: q (search query), status, limit, skip
+ */
+router.get('/search', async (req, res) => {
+  try {
+    const { q, status, limit = 50, skip = 0 } = req.query;
+    
+    console.log(`🔍 Search request: query="${q}", status=${status}`);
+    
+    if (!q || q.length < 2) {
+      return res.json({
+        success: true,
+        count: 0,
+        posts: []
+      });
+    }
+    
+    // Build search query - search in multiple fields
+    const searchQuery = {
+      $or: [
+        { petName: { $regex: q, $options: 'i' } },
+        { petType: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } },
+        { location: { $regex: q, $options: 'i' } },
+        { userName: { $regex: q, $options: 'i' } }
+      ]
+    };
+    
+    // Add status filter if provided and not 'All'
+    if (status && status !== 'All' && status !== 'all') {
+      searchQuery.status = status;
+    }
+    
+    console.log('🔍 Search query:', JSON.stringify(searchQuery));
+    
+    const posts = await Post.find(searchQuery)
+      .limit(parseInt(limit))
+      .skip(parseInt(skip))
+      .sort({ createdAt: -1 });
+    
+    console.log(`✅ Found ${posts.length} posts matching "${q}"`);
+    
+    res.json({
+      success: true,
+      count: posts.length,
+      posts: posts
+    });
+    
+  } catch (error) {
+    console.error('❌ Search error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
  * GET /api/posts/:postId
  * Get single post by ID
  */
@@ -140,30 +199,38 @@ router.post('/', async (req, res) => {
  */
 router.put('/:postId', async (req, res) => {
   try {
-    const { firebaseUid } = req.body;
-    const updateData = { ...req.body };
-    delete updateData.firebaseUid; // Don't allow changing owner
+    const postId = req.params.postId;
+    const updateData = req.body;
+    
+    console.log('========== UPDATE POST REQUEST ==========');
+    console.log('Post ID:', postId);
+    console.log('Update data:', updateData);
+    console.log('=========================================');
 
-    const post = await Post.findOneAndUpdate(
-      { postId: req.params.postId, firebaseUid },
-      updateData,
+    // Update by postId only
+    const updatedPost = await Post.findOneAndUpdate(
+      { postId: postId },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 
-    if (!post) {
+    if (!updatedPost) {
+      console.log('❌ Post not found with ID:', postId);
       return res.status(404).json({
         success: false,
-        message: 'Post not found or unauthorized'
+        message: 'Post not found'
       });
     }
 
+    console.log('✅ Post updated successfully:', updatedPost.petName);
+    
     res.json({
       success: true,
-      message: 'Post updated',
-      post
+      message: 'Post updated successfully',
+      data: updatedPost
     });
   } catch (error) {
-    console.error('Update post error:', error);
+    console.error('❌ Update post error:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -177,7 +244,15 @@ router.put('/:postId', async (req, res) => {
  */
 router.delete('/:postId', async (req, res) => {
   try {
-    const { firebaseUid } = req.body;
+    const { firebaseUid } = req.query;
+    console.log(`🗑️ Delete post request - postId: ${req.params.postId}, firebaseUid: ${firebaseUid}`);
+
+    if (!firebaseUid) {
+      return res.status(400).json({
+        success: false,
+        message: 'firebaseUid is required'
+      });
+    }
 
     const post = await Post.findOneAndDelete({ 
       postId: req.params.postId,
@@ -192,6 +267,7 @@ router.delete('/:postId', async (req, res) => {
     }
 
     // TODO: Also delete related comments and favorites
+    console.log(`✅ Post deleted successfully: ${req.params.postId}`);
 
     res.json({
       success: true,

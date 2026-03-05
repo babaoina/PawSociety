@@ -8,13 +8,9 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    // Backend URL configuration
-    // For Android Emulator: use 10.0.2.2
-    // For physical device: use your PC's local IP (e.g., 192.168.1.38)
-    private const val BASE_URL = "http://192.168.1.38:5000/api/"
-    
-    // Full base URL for accessing uploaded images
-    const val FULL_BASE_URL = "http://192.168.1.38:5000"
+    // FOR EMULATOR - Use your computer's actual IP
+    private const val BASE_URL = "http://192.168.254.105:5000/api/"
+    const val FULL_BASE_URL = "http://192.168.254.105:5000"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -35,7 +31,8 @@ object ApiClient {
 
     val apiService: PawSocietyApi = retrofit.create(PawSocietyApi::class.java)
     val uploadService: UploadApi = retrofit.create(UploadApi::class.java)
-    
+
+
     /**
      * Update base URL for different environments
      * Call this before making API requests if needed
@@ -48,7 +45,7 @@ object ApiClient {
             .build()
         // Note: This won't update the existing apiService, you'd need to recreate it
     }
-    
+
     /**
      * Get the current base URL
      */

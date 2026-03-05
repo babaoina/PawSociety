@@ -19,6 +19,7 @@ import com.example.pawsociety.data.repository.AuthRepository
 import com.example.pawsociety.util.FirebaseAuthHelper
 import com.example.pawsociety.util.SessionManager
 import kotlinx.coroutines.launch
+import com.example.pawsociety.util.SocketManager
 
 class LoginActivity : AppCompatActivity() {
 
@@ -38,12 +39,26 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        // Check if we were logged out with a message
+        intent.getStringExtra("logout_message")?.let { message ->
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        }
+
         sessionManager = SessionManager(this)
 
         // Check if user is already logged in
         if (sessionManager.isLoggedIn() && FirebaseAuthHelper.isSignedIn) {
-            navigateToHome()
-            return
+            println("🔍 User already logged in, checking session validity...")
+            val currentUser = sessionManager.getCurrentUser()
+            if (currentUser != null && !currentUser.firebaseUid.isNullOrEmpty()) {
+                println("✅ Valid session found for: ${currentUser.username} with UID: ${currentUser.firebaseUid}")
+                navigateToHome()
+                return
+            } else {
+                println("⚠️ Invalid session found, clearing...")
+                sessionManager.clearSession()
+                FirebaseAuthHelper.signOut()
+            }
         }
 
         initializeViews()
@@ -73,6 +88,8 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
+
+
         signupButton.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
@@ -88,54 +105,38 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setupEmailValidation() {
-        // Only validate email in real-time, NOT password
         emailInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                // Clear email error when user types
                 emailInput.background = ContextCompat.getDrawable(this@LoginActivity, R.drawable.input_oval)
                 emailError.visibility = View.GONE
             }
-
-            override fun afterTextChanged(s: Editable?) {
-                // Required empty implementation
-            }
+            override fun afterTextChanged(s: Editable?) {}
         })
-
-        // NO validation for password while typing
     }
 
     private fun setupEyeIcon() {
         var isPasswordVisible = false
 
         eyeIcon.setOnClickListener {
-            // Save current text
             val currentText = passwordInput.text.toString()
             val cursorPosition = passwordInput.selectionStart
 
             if (isPasswordVisible) {
-                // Hide password
                 passwordInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 eyeIcon.setImageResource(R.drawable.ic_eye_closed)
             } else {
-                // Show password
                 passwordInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
                 eyeIcon.setImageResource(R.drawable.ic_eye_open)
             }
 
-            // Toggle state
             isPasswordVisible = !isPasswordVisible
-
-            // Restore text and cursor position
             passwordInput.setText(currentText)
             try {
                 passwordInput.setSelection(cursorPosition.coerceAtMost(currentText.length))
             } catch (e: Exception) {
                 passwordInput.setSelection(currentText.length)
             }
-
-            // Keep normal font
             passwordInput.typeface = android.graphics.Typeface.DEFAULT
         }
     }
@@ -143,15 +144,11 @@ class LoginActivity : AppCompatActivity() {
     private fun validateInput(email: String, password: String): Boolean {
         var isValid = true
 
-        // Reset email error
         emailInput.background = ContextCompat.getDrawable(this, R.drawable.input_oval)
         emailError.visibility = View.GONE
-
-        // Reset password error
         passwordInput.background = ContextCompat.getDrawable(this, R.drawable.input_oval)
         passwordError.visibility = View.GONE
 
-        // Validate Email
         if (email.isEmpty()) {
             emailInput.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
             emailError.text = "Email is required"
@@ -164,7 +161,6 @@ class LoginActivity : AppCompatActivity() {
             isValid = false
         }
 
-        // Validate Password (only when login button is clicked)
         if (password.isEmpty()) {
             passwordInput.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
             passwordError.text = "Password is required"
@@ -181,7 +177,6 @@ class LoginActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // Step 1: Authenticate with Firebase
                 println("🔐 Starting Firebase login for: $email")
                 val firebaseResult = FirebaseAuthHelper.loginWithEmail(email, password)
 
@@ -195,12 +190,12 @@ class LoginActivity : AppCompatActivity() {
                 }
 
                 val firebaseUser = firebaseResult.getOrNull()!!
-                println("✅ Firebase login successful! UID: ${firebaseUser.uid}")
+                val firebaseUid = firebaseUser.uid
+                println("✅ Firebase login successful! UID: $firebaseUid")
 
-                // Step 2: Get or create user in MongoDB via backend
                 println("🌐 Connecting to backend API...")
                 val backendResult = authRepository.firebaseLogin(
-                    firebaseUid = firebaseUser.uid,
+                    firebaseUid = firebaseUid,
                     email = firebaseUser.email ?: email,
                     username = firebaseUser.displayName,
                     fullName = firebaseUser.displayName,
@@ -210,30 +205,52 @@ class LoginActivity : AppCompatActivity() {
                 if (backendResult.isFailure) {
                     val error = backendResult.exceptionOrNull()?.message ?: "Failed to connect to server"
                     println("❌ Backend login failed: $error")
-                    // Firebase login succeeded but backend failed - still save Firebase user
+
                     val localUser = ApiUser(
-                        firebaseUid = firebaseUser.uid,
+                        firebaseUid = firebaseUid,
                         email = firebaseUser.email ?: email,
                         username = firebaseUser.displayName ?: email.split("@").first(),
-                        fullName = firebaseUser.displayName ?: email.split("@").first()
+                        fullName = firebaseUser.displayName ?: email.split("@").first(),
+                        phone = firebaseUser.phoneNumber ?: "",
+                        profileImageUrl = "",
+                        bio = "",
+                        location = ""
                     )
+
+                    println("✅ Created local user with UID: ${localUser.firebaseUid}")
                     sessionManager.saveUserSession(localUser)
-                    println("⚠️ Saved local session, proceeding to home...")
 
                     Toast.makeText(this@LoginActivity, "Logged in! (Offline mode)", Toast.LENGTH_SHORT).show()
+
+                    // ADD SOCKET CONNECTION HERE
+                    SocketManager.connect()
+                    SocketManager.joinUserRoom(localUser.firebaseUid)
+                    println("🟢 User ${localUser.username} is now ONLINE")
+
                     navigateToHome()
                     return@launch
                 }
 
                 val apiUser = backendResult.getOrNull()!!
-                println("✅ Backend login successful! Username: ${apiUser.username}")
 
-                // Step 3: Save session
-                sessionManager.saveUserSession(apiUser)
-                println("💾 Session saved")
+                val finalUser = if (apiUser.firebaseUid.isNullOrEmpty()) {
+                    println("⚠️ Backend returned null UID! Using Firebase UID: $firebaseUid")
+                    apiUser.copy(firebaseUid = firebaseUid)
+                } else {
+                    apiUser
+                }
 
-                Toast.makeText(this@LoginActivity, "Welcome back, ${apiUser.username}!", Toast.LENGTH_SHORT).show()
+                println("✅ Final user - Username: ${finalUser.username}, UID: ${finalUser.firebaseUid}")
 
+                sessionManager.saveUserSession(finalUser)
+                println("💾 Session saved successfully")
+
+                // ADD SOCKET CONNECTION HERE
+                SocketManager.connect()
+                SocketManager.joinUserRoom(finalUser.firebaseUid)
+                println("🟢 User ${finalUser.username} is now ONLINE")
+
+                Toast.makeText(this@LoginActivity, "Welcome back, ${finalUser.username}!", Toast.LENGTH_SHORT).show()
                 navigateToHome()
 
             } catch (e: Exception) {

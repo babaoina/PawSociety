@@ -2,7 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="#FAF0E6">
 
     <!-- Top Bar -->
     <LinearLayout
@@ -44,296 +45,299 @@
 
     <!-- Scrollable Content -->
     <ScrollView
+        android:id="@+id/profile_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fillViewport="true"
-        android:visibility="visible">
+        android:background="#FAF0E6">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#FFFFFF">
+            android:background="#FAF0E6">
 
-            <!-- Profile Header -->
+            <!-- Profile Header - White background -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp">
+                android:orientation="vertical"
+                android:background="#FFFFFF">
 
-                <!-- Profile Picture -->
+                <!-- Profile Header Row -->
                 <LinearLayout
-                    android:layout_width="90dp"
-                    android:layout_height="90dp"
-                    android:gravity="center"
-                    android:background="@drawable/circle_border"
-                    android:padding="3dp">
-
-                    <FrameLayout
-                        android:layout_width="84dp"
-                        android:layout_height="84dp">
-
-                        <View
-                            android:id="@+id/profile_circle_background"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/circle_solid_profile" />
-
-                        <ImageView
-                            android:id="@+id/profile_image"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:scaleType="centerCrop"
-                            android:visibility="gone" />
-
-                        <TextView
-                            android:id="@+id/profile_initial"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:text=""
-                            android:textSize="36sp"
-                            android:textColor="#FFFFFF"
-                            android:textStyle="bold"
-                            android:background="@null" />
-                    </FrameLayout>
-                </LinearLayout>
-
-                <!-- Stats and Buttons -->
-                <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:orientation="vertical"
-                    android:gravity="center_vertical">
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <!-- Profile Picture with Circle Border -->
+                    <LinearLayout
+                        android:layout_width="90dp"
+                        android:layout_height="90dp"
+                        android:gravity="center"
+                        android:background="@drawable/circle_border"
+                        android:padding="3dp">
+
+                        <FrameLayout
+                            android:layout_width="84dp"
+                            android:layout_height="84dp">
+
+                            <View
+                                android:id="@+id/profile_circle_background"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/circle_solid_profile" />
+
+                            <ImageView
+                                android:id="@+id/profile_image"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop"
+                                android:visibility="gone" />
+
+                            <TextView
+                                android:id="@+id/profile_initial"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text=""
+                                android:textSize="36sp"
+                                android:textColor="#FFFFFF"
+                                android:textStyle="bold"
+                                android:background="@null" />
+                        </FrameLayout>
+                    </LinearLayout>
 
                     <!-- Stats -->
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:weightSum="3">
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical"
+                        android:gravity="center_vertical">
 
+                        <!-- Stats Row -->
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
+                            android:orientation="horizontal"
+                            android:weightSum="3">
 
-                            <TextView
-                                android:id="@+id/tv_post_count"
-                                android:layout_width="wrap_content"
+                            <!-- Posts -->
+                            <LinearLayout
+                                android:id="@+id/layout_posts"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textColor="#000000"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:background="?android:attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true">
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                                <TextView
+                                    android:id="@+id/tv_post_count"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textColor="#000000"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Posts"
+                                    android:textColor="#666666"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+
+                            <!-- Followers -->
+                            <LinearLayout
+                                android:id="@+id/layout_followers"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:text="Posts"
-                                android:textColor="#666666"
-                                android:textSize="11sp" />
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:background="?android:attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true">
+
+                                <TextView
+                                    android:id="@+id/tv_follower_count"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textColor="#000000"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Followers"
+                                    android:textColor="#666666"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+
+                            <!-- Following -->
+                            <LinearLayout
+                                android:id="@+id/layout_following"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:background="?android:attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true">
+
+                                <TextView
+                                    android:id="@+id/tv_following_count"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textColor="#000000"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Following"
+                                    android:textColor="#666666"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
                         </LinearLayout>
 
+                        <!-- Action Buttons Row -->
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
+                            android:layout_marginTop="8dp"
+                            android:orientation="horizontal"
+                            android:weightSum="2">
 
+                            <!-- Follow/Unfollow Button -->
                             <TextView
-                                android:id="@+id/tv_follower_count"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textColor="#000000"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
+                                android:id="@+id/btn_follow"
+                                android:layout_width="0dp"
+                                android:layout_height="36dp"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="4dp"
+                                android:gravity="center"
+                                android:text="Follow"
+                                android:textColor="#FFFFFF"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:background="@drawable/button_oval_brown"
+                                android:clickable="true"
+                                android:focusable="true" />
 
+                            <!-- Message Button -->
                             <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Followers"
-                                android:textColor="#666666"
-                                android:textSize="11sp" />
+                                android:id="@+id/btn_message"
+                                android:layout_width="0dp"
+                                android:layout_height="36dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="4dp"
+                                android:gravity="center"
+                                android:text="Message"
+                                android:textColor="#FFFFFF"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:background="@drawable/button_oval_brown"
+                                android:clickable="true"
+                                android:focusable="true" />
                         </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <TextView
-                                android:id="@+id/tv_following_count"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textColor="#000000"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Following"
-                                android:textColor="#666666"
-                                android:textSize="11sp" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <!-- Buttons Row: Follow/Unfollow and Message -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal"
-                        android:weightSum="2">
-
-                        <!-- Follow/Unfollow Button -->
-                        <TextView
-                            android:id="@+id/btn_follow"
-                            android:layout_width="0dp"
-                            android:layout_height="36dp"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="4dp"
-                            android:gravity="center"
-                            android:text="Follow"
-                            android:textColor="#FFFFFF"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:background="@drawable/button_oval_brown"
-                            android:clickable="true"
-                            android:focusable="true" />
-
-                        <!-- Message Button -->
-                        <TextView
-                            android:id="@+id/btn_message"
-                            android:layout_width="0dp"
-                            android:layout_height="36dp"
-                            android:layout_weight="1"
-                            android:layout_marginStart="4dp"
-                            android:gravity="center"
-                            android:text="Message"
-                            android:textColor="#FFFFFF"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:background="@drawable/button_oval_brown"
-                            android:clickable="true"
-                            android:focusable="true" />
                     </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
 
-            <!-- Bio Section -->
-            <TextView
-                android:id="@+id/tv_bio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="16dp"
-                android:paddingBottom="12dp"
-                android:text=""
-                android:textColor="#666666"
-                android:textSize="14sp"
-                android:lineSpacingExtra="2dp" />
-
-            <!-- Story Highlights Title -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Story Highlights"
-                android:textColor="#7A4F2B"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="4dp" />
-
-            <!-- User's Highlights Container -->
-            <HorizontalScrollView
-                android:id="@+id/highlights_scroll"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:scrollbars="none"
-                android:paddingLeft="12dp"
-                android:paddingRight="12dp"
-                android:paddingBottom="12dp">
-
-                <LinearLayout
-                    android:id="@+id/highlights_container"
-                    android:layout_width="wrap_content"
+                <!-- Bio Section -->
+                <TextView
+                    android:id="@+id/tv_bio"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="12dp"
+                    android:text=""
+                    android:textColor="#666666"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="2dp" />
+
+                <!-- Story Highlights Title -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Story Highlights"
+                    android:textColor="#7A4F2B"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="4dp" />
+
+                <!-- User's Highlights Container -->
+                <HorizontalScrollView
+                    android:id="@+id/highlights_scroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:paddingBottom="12dp">
+
+                    <LinearLayout
+                        android:id="@+id/highlights_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingVertical="4dp">
+                        <!-- Highlights will be populated dynamically -->
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <!-- POSTS TAB ONLY (no favorites for other users) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
                     android:orientation="horizontal"
-                    android:paddingVertical="4dp">
-                    <!-- Highlights will be populated dynamically -->
-                </LinearLayout>
-            </HorizontalScrollView>
+                    android:background="#7A4F2B"
+                    android:elevation="2dp">
 
-            <!-- POSTS AND FAVORITES TABS -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:orientation="horizontal"
-                android:background="#7A4F2B"
-                android:elevation="2dp">
+                    <!-- Posts Tab -->
+                    <LinearLayout
+                        android:id="@+id/tab_posts"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?android:attr/selectableItemBackground">
 
-                <!-- Posts Tab -->
-                <LinearLayout
-                    android:id="@+id/tab_posts"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?android:attr/selectableItemBackground">
-
-                    <ImageView
-                        android:id="@+id/tab_posts_icon"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:src="@drawable/feed"
-                        android:tint="#FFFFFF"
-                        android:contentDescription="Posts" />
-                </LinearLayout>
-
-                <!-- Favorites Tab -->
-                <LinearLayout
-                    android:id="@+id/tab_favorites"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?android:attr/selectableItemBackground">
-
-                    <ImageView
-                        android:id="@+id/tab_favorites_icon"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:src="@drawable/faved"
-                        android:tint="#FFFFFF"
-                        android:contentDescription="Favorites" />
+                        <ImageView
+                            android:id="@+id/tab_posts_icon"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/feed"
+                            android:tint="#FFFFFF"
+                            android:contentDescription="Posts" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- POSTS GRID AREA - PAW BACKGROUND HERE -->
+            <!-- POSTS GRID AREA -->
             <FrameLayout
                 android:id="@+id/posts_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="300dp">
+                android:minHeight="300dp"
+                android:background="#FAF0E6">
 
                 <!-- Background Image -->
                 <ImageView
@@ -358,7 +362,6 @@
                     android:padding="4dp"
                     android:visibility="gone" />
             </FrameLayout>
-
         </LinearLayout>
     </ScrollView>
 
@@ -367,5 +370,4 @@
         layout="@layout/bottom_nav_unified"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-
 </LinearLayout>

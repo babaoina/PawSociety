@@ -18,20 +18,21 @@
         android:contentDescription="Post image"
         android:visibility="visible" />
 
-    <!-- Status Badge - FIXED with smaller text -->
+    <!-- Status Badge - OVAL shape with bigger text -->
     <TextView
         android:id="@+id/status_badge"
         android:layout_width="wrap_content"
-        android:layout_height="16dp"
-        android:layout_margin="2dp"
+        android:layout_height="20dp"
+        android:layout_margin="3dp"
         android:gravity="center"
-        android:text="Adoption"
+        android:text="ADOPTION"
         android:textColor="#FFFFFF"
-        android:textSize="7sp"
+        android:textSize="9sp"
         android:textStyle="bold"
         android:maxLines="1"
-        android:paddingHorizontal="3dp"
-        android:background="#2196F3" />
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/status_badge_oval" />
 
     <!-- Pet Name -->
     <TextView

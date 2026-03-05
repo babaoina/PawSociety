@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@drawable/paws1">
+    android:background="#FAF0E6">
 
-    <!-- Top Bar - PURE WHITE (not affected by bg) -->
+    <!-- Top Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -27,79 +27,157 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
-        <!-- Removed settings emoji -->
-
     </LinearLayout>
 
-    <!-- Search Bar and Filter Row -->
+    <!-- Search Bar and Filter Row - VERTICAL layout for dropdown -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:background="@android:color/transparent">
+        android:orientation="vertical"
+        android:background="#FAF0E6"
+        android:id="@+id/search_container">
 
-        <!-- Search Input Field (oval background) -->
+        <!-- Search Row (Horizontal) -->
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
-            android:gravity="center_vertical"
-            android:background="@drawable/input_oval"
-            android:layout_marginEnd="12dp">
+            android:padding="16dp"
+            android:paddingBottom="8dp">
 
-            <!-- Magnifying glass PNG -->
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/find"
-                android:tint="#7A4F2B" />
+            <!-- Search Input Field with Clear Button -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="12dp">
 
-            <EditText
-                android:id="@+id/search_input"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:hint="Search pets, breeds, locations..."
-                android:textColorHint="#666666"
-                android:textColor="#000000"
-                android:textSize="14sp"
-                android:background="@null"
-                android:layout_marginStart="8dp"
-                android:maxLines="1" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/input_oval">
+
+                    <!-- Magnifying glass -->
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/find"
+                        android:tint="#7A4F2B" />
+
+                    <EditText
+                        android:id="@+id/search_input"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:hint="Search pets, breeds, locations..."
+                        android:textColorHint="#666666"
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:background="@null"
+                        android:layout_marginStart="8dp"
+                        android:maxLines="1"
+                        android:imeOptions="actionSearch" />
+                </LinearLayout>
+
+                <!-- Clear Search Button -->
+                <ImageView
+                    android:id="@+id/btn_clear_search"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="12dp"
+                    android:src="@drawable/close"
+                    android:tint="#999999"
+                    android:visibility="gone"
+                    android:background="?android:attr/selectableItemBackgroundBorderless" />
+            </FrameLayout>
+
+            <!-- Filter Button -->
+            <LinearLayout
+                android:id="@+id/btn_filter"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:background="@drawable/input_oval"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/filter"
+                    android:tint="#7A4F2B" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Filter Button (oval background) -->
+        <!-- Recent Searches Section - DROPDOWN -->
         <LinearLayout
-            android:id="@+id/btn_filter"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:gravity="center"
+            android:id="@+id/recent_searches_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@drawable/input_oval"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="8dp">
+            android:background="#FFFFFF"
+            android:visibility="gone"
+            android:elevation="8dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="8dp"
+            android:alpha="0.95">
 
-            <!-- Filter PNG -->
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/filter"
-                android:tint="#7A4F2B" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recent Searches"
+                android:textColor="#7A4F2B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:padding="12dp"
+                android:background="#F8F8F8" />
+
+            <LinearLayout
+                android:id="@+id/recent_searches_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:divider="@drawable/divider"
+                android:showDividers="middle" />
+
         </LinearLayout>
+
     </LinearLayout>
 
-    <!-- Filter Chips - Using colored oval backgrounds -->
+    <!-- Search Results Text -->
+    <TextView
+        android:id="@+id/tv_search_results"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        android:textColor="#7A4F2B"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <!-- Filter Chips -->
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp"
+        android:paddingVertical="8dp"
         android:scrollbars="none"
-        android:background="@android:color/transparent">
+        android:background="#FAF0E6">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -108,120 +186,156 @@
             android:gravity="center_vertical">
 
             <!-- All Pets - Brown oval -->
-            <TextView
+            <Button
                 android:id="@+id/chip_all"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:gravity="center"
+                android:layout_height="32dp"
                 android:text="All Pets"
                 android:textColor="#FFFFFF"
-                android:paddingHorizontal="20dp"
                 android:background="@drawable/button_oval_brown"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="6dp"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:stateListAnimator="@null"
+                android:elevation="0dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="0dp"
+                android:paddingBottom="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp" />
 
             <!-- Lost - Red oval -->
-            <TextView
+            <Button
                 android:id="@+id/chip_lost"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:gravity="center"
+                android:layout_height="32dp"
                 android:text="Lost"
                 android:textColor="#FFFFFF"
-                android:paddingHorizontal="20dp"
                 android:background="@drawable/button_oval_red"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="6dp"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:stateListAnimator="@null"
+                android:elevation="0dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="0dp"
+                android:paddingBottom="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp" />
 
             <!-- Found - Green oval -->
-            <TextView
+            <Button
                 android:id="@+id/chip_found"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:gravity="center"
+                android:layout_height="32dp"
                 android:text="Found"
                 android:textColor="#FFFFFF"
-                android:paddingHorizontal="20dp"
                 android:background="@drawable/button_oval_green"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="6dp"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:stateListAnimator="@null"
+                android:elevation="0dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="0dp"
+                android:paddingBottom="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp" />
 
             <!-- For Adoption - Blue oval -->
-            <TextView
+            <Button
                 android:id="@+id/chip_adoption"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:gravity="center"
+                android:layout_height="32dp"
                 android:text="Adoption"
                 android:textColor="#FFFFFF"
-                android:paddingHorizontal="20dp"
                 android:background="@drawable/button_oval_blue"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:stateListAnimator="@null"
+                android:elevation="0dp"
                 android:clickable="true"
                 android:focusable="true"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="0dp"
+                android:paddingBottom="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp" />
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- Grid of Pet Pictures -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/find_recycler_view"
+    <!-- Grid of Pet Pictures with Pull-to-Refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="2dp"
-        android:clipToPadding="false" />
+        android:background="#FAF0E6">
 
-    <!-- Empty State (transparent so bg shows through) -->
-    <LinearLayout
-        android:id="@+id/empty_state"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone"
-        android:padding="32dp"
-        android:background="@android:color/transparent">
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-        <TextView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:gravity="center"
-            android:text="🐾"
-            android:textSize="60sp"
-            android:background="@drawable/input_oval"
-            android:backgroundTint="#80FFFFFF" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/find_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="2dp"
+                android:clipToPadding="false"
+                android:background="#FAF0E6" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No pets found"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp" />
+            <!-- Empty State -->
+            <LinearLayout
+                android:id="@+id/empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone"
+                android:padding="32dp"
+                android:background="#FAF0E6">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Check back later for new posts!"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:layout_marginTop="8dp" />
-    </LinearLayout>
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:gravity="center"
+                    android:text="🐾"
+                    android:textSize="60sp"
+                    android:background="@drawable/input_oval"
+                    android:backgroundTint="#F0F0F0" />
 
-    <!-- Bottom Navigation (semi-transparent) -->
+                <TextView
+                    android:id="@+id/empty_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No pets found"
+                    android:textColor="#7A4F2B"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Check back later for new posts!"
+                    android:textColor="#666666"
+                    android:textSize="14sp"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Bottom Navigation -->
     <include
         layout="@layout/bottom_nav_unified"
         android:layout_width="match_parent"

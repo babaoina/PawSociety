@@ -16,9 +16,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Add JitPack repository here
+        maven {
+            url = uri("https://www.jitpack.io")
+        }
     }
 }
 
 rootProject.name = "pawsociety"
 include(":app")
- 

@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@drawable/paws1">
+    android:background="#FAF0E6">
 
-    <!-- Top Bar - PURE WHITE (not affected by bg) -->
+    <!-- Top Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -38,18 +38,17 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="New Message"
             android:tint="#666666" />
-
     </LinearLayout>
 
-    <!-- Search Bar and Filter Row (like find.xml) -->
+    <!-- Search Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
-        android:background="@android:color/transparent">
+        android:background="#FAF0E6">
 
-        <!-- Search Input Field (oval background) -->
+        <!-- Search Input Field -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="48dp"
@@ -78,69 +77,74 @@
                 android:maxLines="1"
                 android:imeOptions="actionSearch" />
         </LinearLayout>
-
     </LinearLayout>
 
-    <!-- Messages List with RecyclerView -->
-    <FrameLayout
+    <!-- Messages List with Pull-to-Refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:background="#FAF0E6">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/inbox_recycler_view"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone" />
+            android:background="#FAF0E6">
 
-        <!-- Empty State -->
-        <LinearLayout
-            android:id="@+id/empty_state"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="32dp"
-            android:visibility="visible"
-            android:background="@android:color/transparent">
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/inbox_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#FAF0E6"
+                android:visibility="gone" />
 
-            <!-- Group icon - GLASS background -->
-            <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@drawable/group"
-                android:background="@drawable/input_oval"
-                android:backgroundTint="#80FFFFFF"
-                android:padding="20dp"
-                android:tint="#000000" />
+            <!-- Empty State -->
+            <LinearLayout
+                android:id="@+id/empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="32dp"
+                android:visibility="visible"
+                android:background="#FAF0E6">
 
-            <!-- Text below - BLACK -->
-            <TextView
-                android:id="@+id/empty_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No other users yet"
-                android:textColor="#000000"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginTop="16dp" />
+                <!-- Group icon -->
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/group"
+                    android:background="@drawable/input_oval"
+                    android:backgroundTint="#F0F0F0"
+                    android:padding="20dp"
+                    android:tint="#7A4F2B" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="When other people register, they will appear here"
-                android:textColor="#000000"
-                android:textSize="14sp"
-                android:layout_marginTop="8dp" />
+                <!-- Text below -->
+                <TextView
+                    android:id="@+id/empty_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No other users yet"
+                    android:textColor="#7A4F2B"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp" />
 
-        </LinearLayout>
-
-    </FrameLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="When other people register, they will appear here"
+                    android:textColor="#666666"
+                    android:textSize="14sp"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Bottom Navigation -->
     <include
         layout="@layout/bottom_nav_unified"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-
 </LinearLayout>

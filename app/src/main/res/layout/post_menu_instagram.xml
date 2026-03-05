@@ -87,7 +87,7 @@
             android:background="#FFFFFF"
             android:padding="0dp">
 
-            <!-- Add to favorites - using faved.png -->
+            <!-- Add to favorites -->
             <LinearLayout
                 android:id="@+id/option_add_favorites"
                 android:layout_width="match_parent"
@@ -117,7 +117,7 @@
                     android:layout_marginStart="16dp" />
             </LinearLayout>
 
-            <!-- Follow/Unfollow - dynamic using add.png/delete.png -->
+            <!-- Follow/Unfollow -->
             <LinearLayout
                 android:id="@+id/option_follow"
                 android:layout_width="match_parent"
@@ -147,7 +147,38 @@
                     android:layout_marginStart="16dp" />
             </LinearLayout>
 
-            <!-- Why you're seeing this post - using information.png -->
+            <!-- EDIT OPTION (for own posts) -->
+            <LinearLayout
+                android:id="@+id/option_edit"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/iv_edit_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/edit"
+                    android:tint="#000000" />
+
+                <TextView
+                    android:id="@+id/tv_edit_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Edit Post"
+                    android:textColor="#000000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+            <!-- Why you're seeing this post -->
             <LinearLayout
                 android:id="@+id/option_why_seeing"
                 android:layout_width="match_parent"
@@ -175,7 +206,7 @@
                     android:layout_marginStart="16dp" />
             </LinearLayout>
 
-            <!-- Hide - using ic_eye_closed.png -->
+            <!-- Hide -->
             <LinearLayout
                 android:id="@+id/option_hide"
                 android:layout_width="match_parent"
@@ -203,7 +234,7 @@
                     android:layout_marginStart="16dp" />
             </LinearLayout>
 
-            <!-- About this account - using profile.png -->
+            <!-- About this account -->
             <LinearLayout
                 android:id="@+id/option_about_account"
                 android:layout_width="match_parent"
@@ -237,7 +268,38 @@
                 android:layout_height="8dp"
                 android:background="#F0F0F0" />
 
-            <!-- Report - using report.png (RED) -->
+            <!-- BLOCK OPTION (NEW) -->
+            <LinearLayout
+                android:id="@+id/option_block"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="20dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/iv_block_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/block"
+                    android:tint="#F44336" />
+
+                <TextView
+                    android:id="@+id/tv_block_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Block User"
+                    android:textColor="#F44336"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp" />
+            </LinearLayout>
+
+            <!-- Report -->
             <LinearLayout
                 android:id="@+id/option_report"
                 android:layout_width="match_parent"
@@ -265,7 +327,7 @@
                     android:layout_marginStart="16dp" />
             </LinearLayout>
 
-            <!-- Delete (only for own posts) - using delete.png (RED) -->
+            <!-- Delete (only for own posts) -->
             <LinearLayout
                 android:id="@+id/option_delete"
                 android:layout_width="match_parent"

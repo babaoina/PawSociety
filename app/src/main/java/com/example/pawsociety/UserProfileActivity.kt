@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.pawsociety.api.ApiPost
 import com.example.pawsociety.api.ApiUser
+import com.example.pawsociety.data.repository.FollowRepository
 import com.example.pawsociety.data.repository.PostRepository
 import com.example.pawsociety.data.repository.UserRepository
 import com.example.pawsociety.util.SessionManager
@@ -41,10 +42,13 @@ class UserProfileActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
     private val userRepository = UserRepository()
     private val postRepository = PostRepository()
+    private lateinit var followRepository: FollowRepository
 
     private var targetUser: ApiUser? = null
     private var currentUser: ApiUser? = null
     private var isFollowing = false
+    private var targetUserId: String = ""
+    private var targetUserName: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,13 +56,22 @@ class UserProfileActivity : AppCompatActivity() {
 
         sessionManager = SessionManager(this)
         currentUser = sessionManager.getCurrentUser()
+        followRepository = FollowRepository()
 
         // Get target user data from intent
-        val userId = intent.getStringExtra("userId") ?: ""
-        val userName = intent.getStringExtra("userName") ?: "User"
+        targetUserId = intent.getStringExtra("userId") ?: ""
+        targetUserName = intent.getStringExtra("userName") ?: "User"
 
-        if (userId.isEmpty() || userId == currentUser?.firebaseUid) {
-            // If it's current user, go to ProfileActivity
+        println("👤 UserProfileActivity - Viewing profile: $targetUserName (UID: $targetUserId)")
+
+        if (targetUserId.isEmpty()) {
+            Toast.makeText(this, "User ID not found", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        // If it's current user, go to ProfileActivity
+        if (targetUserId == currentUser?.firebaseUid) {
             startActivity(Intent(this, ProfileActivity::class.java))
             finish()
             return
@@ -66,7 +79,7 @@ class UserProfileActivity : AppCompatActivity() {
 
         initializeViews()
         setupClickListeners()
-        loadUserData(userId)
+        loadUserData()
     }
 
     private fun initializeViews() {
@@ -87,6 +100,8 @@ class UserProfileActivity : AppCompatActivity() {
         highlightsContainer = findViewById(R.id.highlights_container)
         highlightsScroll = findViewById(R.id.highlights_scroll)
         scrollView = findViewById(R.id.profile_scroll_view)
+
+        tvUsername.text = targetUserName
     }
 
     private fun setupClickListeners() {
@@ -107,7 +122,6 @@ class UserProfileActivity : AppCompatActivity() {
             }
         }
 
-        // Message button click
         btnMessage.setOnClickListener {
             if (currentUser == null) {
                 Toast.makeText(this, "Please login to send messages", Toast.LENGTH_SHORT).show()
@@ -118,56 +132,40 @@ class UserProfileActivity : AppCompatActivity() {
                 val intent = Intent(this, ChatActivity::class.java)
                 intent.putExtra("receiverUid", user.firebaseUid)
                 intent.putExtra("receiverUsername", user.username)
-                intent.putExtra("receiverProfileImage", user.profileImageUrl ?: "")
                 startActivity(intent)
             }
         }
 
-        // Posts click - scroll to grid
         findViewById<LinearLayout>(R.id.layout_posts)?.setOnClickListener {
             scrollView.post {
                 scrollView.smoothScrollTo(0, postsContainer.top)
             }
         }
 
-        // Followers click
         findViewById<LinearLayout>(R.id.layout_followers)?.setOnClickListener {
             val intent = Intent(this, FollowersFollowingActivity::class.java)
-            intent.putExtra("userId", targetUser?.firebaseUid ?: return@setOnClickListener)
-            intent.putExtra("userName", targetUser?.username ?: "User")
+            intent.putExtra("userId", targetUserId)
+            intent.putExtra("userName", targetUserName)
             intent.putExtra("mode", "followers")
             startActivity(intent)
         }
 
-        // Following click
         findViewById<LinearLayout>(R.id.layout_following)?.setOnClickListener {
             val intent = Intent(this, FollowersFollowingActivity::class.java)
-            intent.putExtra("userId", targetUser?.firebaseUid ?: return@setOnClickListener)
-            intent.putExtra("userName", targetUser?.username ?: "User")
+            intent.putExtra("userId", targetUserId)
+            intent.putExtra("userName", targetUserName)
             intent.putExtra("mode", "following")
             startActivity(intent)
         }
-
-        // Tab clicks
-        findViewById<LinearLayout>(R.id.tab_posts).setOnClickListener {
-            // Scroll to posts grid
-            scrollView.post {
-                scrollView.smoothScrollTo(0, postsContainer.top)
-            }
-        }
-
-        findViewById<LinearLayout>(R.id.tab_favorites).setOnClickListener {
-            Toast.makeText(this, "No favorites to show", Toast.LENGTH_SHORT).show()
-        }
     }
 
-    private fun loadUserData(userId: String) {
+    private fun loadUserData() {
         progressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
             try {
                 // Load user data
-                val userResult = userRepository.getUserByUid(userId)
+                val userResult = userRepository.getUserByUid(targetUserId)
 
                 if (userResult.isSuccess) {
                     targetUser = userResult.getOrNull()
@@ -176,11 +174,14 @@ class UserProfileActivity : AppCompatActivity() {
                     // Check if current user follows this user
                     checkFollowStatus()
 
-                    // Load user's posts
-                    loadUserPosts(userId)
+                    // Load counts
+                    loadFollowersCount()
 
-                    // Load user's highlights
-                    loadUserHighlights(userId)
+                    // Load user's posts
+                    loadUserPosts(targetUserId)
+
+                    // Load user's highlights (using their posts as highlights)
+                    loadUserHighlights()
                 } else {
                     Toast.makeText(this@UserProfileActivity, "User not found", Toast.LENGTH_SHORT).show()
                     finish()
@@ -193,73 +194,6 @@ class UserProfileActivity : AppCompatActivity() {
                 progressBar.visibility = View.GONE
             }
         }
-    }
-
-    private fun loadUserHighlights(userId: String) {
-        highlightsContainer.removeAllViews()
-
-        lifecycleScope.launch {
-            try {
-                // Get user's posts to use as highlights
-                val result = postRepository.getPosts(firebaseUid = userId, limit = 10)
-
-                if (result.isSuccess) {
-                    val posts = result.getOrNull() ?: emptyList()
-
-                    if (posts.isEmpty()) {
-                        // Hide highlights section if no posts
-                        highlightsScroll.visibility = View.GONE
-                    } else {
-                        highlightsScroll.visibility = View.VISIBLE
-
-                        // Show first 5 posts as highlights
-                        val highlights = posts.take(5)
-                        for (post in highlights) {
-                            addHighlightView(highlightsContainer, post)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                highlightsScroll.visibility = View.GONE
-            }
-        }
-    }
-
-    private fun addHighlightView(container: LinearLayout, post: ApiPost) {
-        val highlightView = layoutInflater.inflate(R.layout.item_highlight, container, false)
-
-        val circleBackground = highlightView.findViewById<View>(R.id.highlight_circle_background)
-        val circleText = highlightView.findViewById<TextView>(R.id.highlight_circle_text)
-        val titleText = highlightView.findViewById<TextView>(R.id.highlight_title)
-
-        // Set highlight based on post data
-        val emoji = when {
-            post.petType.contains("dog", ignoreCase = true) -> "🐶"
-            post.petType.contains("cat", ignoreCase = true) -> "🐱"
-            post.petType.contains("bird", ignoreCase = true) -> "🐦"
-            post.petType.contains("rabbit", ignoreCase = true) -> "🐰"
-            post.petType.contains("fish", ignoreCase = true) -> "🐟"
-            else -> "🐾"
-        }
-
-        // Generate color based on post ID
-        val colors = listOf("#FF6B35", "#4CAF50", "#2196F3", "#9C27B0", "#F44336")
-        val colorIndex = Math.abs(post.postId.hashCode()) % colors.size
-
-        val backgroundDrawable = ContextCompat.getDrawable(this, R.drawable.circle_solid_highlight)
-        backgroundDrawable?.setColorFilter(Color.parseColor(colors[colorIndex]), PorterDuff.Mode.SRC_ATOP)
-        circleBackground.background = backgroundDrawable
-
-        circleText.text = emoji
-        titleText.text = post.petName
-
-        highlightView.setOnClickListener {
-            // Show highlight details or open the post
-            showPostPreview(post)
-        }
-
-        container.addView(highlightView)
     }
 
     private fun updateUserUI() {
@@ -313,13 +247,26 @@ class UserProfileActivity : AppCompatActivity() {
         }
     }
 
+    private fun generateColorFromUsername(username: String): Int {
+        val colors = listOf(
+            "#FF6B35", "#4CAF50", "#2196F3", "#9C27B0",
+            "#F44336", "#009688", "#FF9800", "#3F51B5"
+        )
+        val hash = Math.abs(username.hashCode())
+        val index = hash % colors.size
+        return Color.parseColor(colors[index])
+    }
+
     private fun checkFollowStatus() {
         lifecycleScope.launch {
             try {
-                // TODO: Implement API call to check follow status
-                // For now, just simulate
-                isFollowing = false
-                updateFollowButton()
+                val currentUser = currentUser ?: return@launch
+                val result = followRepository.checkFollowStatus(currentUser.firebaseUid, targetUserId)
+
+                if (result.isSuccess) {
+                    isFollowing = result.getOrNull() ?: false
+                    updateFollowButton()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -329,21 +276,25 @@ class UserProfileActivity : AppCompatActivity() {
     private fun followUser() {
         lifecycleScope.launch {
             try {
-                // TODO: Implement API call to follow user
-                // Show loading
                 btnFollow.isEnabled = false
                 btnFollow.text = "Following..."
 
-                // Simulate API call
-                kotlinx.coroutines.delay(500)
+                val currentUser = currentUser ?: return@launch
+                val result = followRepository.followUser(currentUser.firebaseUid, targetUserId)
 
-                isFollowing = true
-                updateFollowButton()
+                if (result.isSuccess) {
+                    isFollowing = true
+                    updateFollowButton()
+                    Toast.makeText(this@UserProfileActivity, "Following ${targetUser?.username}", Toast.LENGTH_SHORT).show()
 
-                Toast.makeText(this@UserProfileActivity, "Following ${targetUser?.username}", Toast.LENGTH_SHORT).show()
+                    // Update follower count
+                    loadFollowersCount()
+                } else {
+                    Toast.makeText(this@UserProfileActivity, "Failed to follow user", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(this@UserProfileActivity, "Failed to follow user", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@UserProfileActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 btnFollow.isEnabled = true
             }
@@ -353,21 +304,45 @@ class UserProfileActivity : AppCompatActivity() {
     private fun unfollowUser() {
         lifecycleScope.launch {
             try {
-                // TODO: Implement API call to unfollow user
                 btnFollow.isEnabled = false
                 btnFollow.text = "Unfollowing..."
 
-                kotlinx.coroutines.delay(500)
+                val currentUser = currentUser ?: return@launch
+                val result = followRepository.unfollowUser(currentUser.firebaseUid, targetUserId)
 
-                isFollowing = false
-                updateFollowButton()
+                if (result.isSuccess) {
+                    isFollowing = false
+                    updateFollowButton()
+                    Toast.makeText(this@UserProfileActivity, "Unfollowed ${targetUser?.username}", Toast.LENGTH_SHORT).show()
 
-                Toast.makeText(this@UserProfileActivity, "Unfollowed ${targetUser?.username}", Toast.LENGTH_SHORT).show()
+                    // Update follower count
+                    loadFollowersCount()
+                } else {
+                    Toast.makeText(this@UserProfileActivity, "Failed to unfollow user", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(this@UserProfileActivity, "Failed to unfollow user", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@UserProfileActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 btnFollow.isEnabled = true
+            }
+        }
+    }
+
+    private fun loadFollowersCount() {
+        lifecycleScope.launch {
+            try {
+                val result = followRepository.getFollowersCount(targetUserId)
+                if (result.isSuccess) {
+                    tvFollowerCount.text = result.getOrNull().toString()
+                }
+
+                val followingResult = followRepository.getFollowingCount(targetUserId)
+                if (followingResult.isSuccess) {
+                    tvFollowingCount.text = followingResult.getOrNull().toString()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -375,11 +350,11 @@ class UserProfileActivity : AppCompatActivity() {
     private fun updateFollowButton() {
         if (isFollowing) {
             btnFollow.text = "Following"
-            btnFollow.setBackgroundColor(Color.parseColor("#4CAF50")) // Green
+            btnFollow.setBackgroundColor(Color.parseColor("#4CAF50"))
             btnFollow.setTextColor(Color.WHITE)
         } else {
             btnFollow.text = "Follow"
-            btnFollow.setBackgroundColor(Color.parseColor("#7A4F2B")) // Brown
+            btnFollow.setBackgroundColor(Color.parseColor("#7A4F2B"))
             btnFollow.setTextColor(Color.WHITE)
         }
     }
@@ -396,8 +371,6 @@ class UserProfileActivity : AppCompatActivity() {
                         postsGrid.removeAllViews()
                         postsGrid.visibility = View.VISIBLE
                         createPostsGrid(posts)
-
-                        // Update post count
                         tvPostCount.text = posts.size.toString()
                     } else {
                         tvPostCount.text = "0"
@@ -409,6 +382,68 @@ class UserProfileActivity : AppCompatActivity() {
                 showEmptyState()
             }
         }
+    }
+
+    private fun loadUserHighlights() {
+        highlightsContainer.removeAllViews()
+
+        lifecycleScope.launch {
+            try {
+                val result = postRepository.getPosts(firebaseUid = targetUserId, limit = 10)
+
+                if (result.isSuccess) {
+                    val posts = result.getOrNull() ?: emptyList()
+
+                    if (posts.isEmpty()) {
+                        highlightsScroll.visibility = View.GONE
+                    } else {
+                        highlightsScroll.visibility = View.VISIBLE
+
+                        // Show first 5 posts as highlights
+                        val highlights = posts.take(5)
+                        for (post in highlights) {
+                            addHighlightView(post)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                highlightsScroll.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun addHighlightView(post: ApiPost) {
+        val highlightView = layoutInflater.inflate(R.layout.item_highlight, highlightsContainer, false)
+
+        val circleBackground = highlightView.findViewById<View>(R.id.highlight_circle_background)
+        val circleText = highlightView.findViewById<TextView>(R.id.highlight_circle_text)
+        val titleText = highlightView.findViewById<TextView>(R.id.highlight_title)
+
+        val emoji = when {
+            post.petType.contains("dog", ignoreCase = true) -> "🐶"
+            post.petType.contains("cat", ignoreCase = true) -> "🐱"
+            post.petType.contains("bird", ignoreCase = true) -> "🐦"
+            post.petType.contains("rabbit", ignoreCase = true) -> "🐰"
+            post.petType.contains("fish", ignoreCase = true) -> "🐟"
+            else -> "🐾"
+        }
+
+        val colors = listOf("#FF6B35", "#4CAF50", "#2196F3", "#9C27B0", "#F44336")
+        val colorIndex = Math.abs(post.postId.hashCode()) % colors.size
+
+        val backgroundDrawable = ContextCompat.getDrawable(this, R.drawable.circle_solid_highlight)
+        backgroundDrawable?.setColorFilter(Color.parseColor(colors[colorIndex]), PorterDuff.Mode.SRC_ATOP)
+        circleBackground.background = backgroundDrawable
+
+        circleText.text = emoji
+        titleText.text = post.petName
+
+        highlightView.setOnClickListener {
+            showPostPreview(post)
+        }
+
+        highlightsContainer.addView(highlightView)
     }
 
     private fun createPostsGrid(posts: List<ApiPost>) {
@@ -514,11 +549,11 @@ class UserProfileActivity : AppCompatActivity() {
     }
 
     private fun showPostPreview(post: ApiPost) {
-        // Show post details (similar to HomeActivity)
         val message = """
             ${post.petName}
             Status: ${post.status}
             Location: ${post.location}
+            Posted by: ${post.userName}
         """.trimIndent()
 
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -541,13 +576,12 @@ class UserProfileActivity : AppCompatActivity() {
         postsGrid.addView(emptyView)
     }
 
-    private fun generateColorFromUsername(username: String): Int {
-        val colors = listOf(
-            "#FF6B35", "#4CAF50", "#2196F3", "#9C27B0",
-            "#F44336", "#009688", "#FF9800", "#3F51B5"
-        )
-        val hash = Math.abs(username.hashCode())
-        val index = hash % colors.size
-        return Color.parseColor(colors[index])
+    override fun onResume() {
+        super.onResume()
+        // Refresh data when returning to this activity
+        if (::followRepository.isInitialized) {
+            checkFollowStatus()
+            loadFollowersCount()
+        }
     }
 }

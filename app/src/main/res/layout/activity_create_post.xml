@@ -72,42 +72,51 @@
                     android:textColor="#FFFFFF"
                     android:textSize="16sp"
                     android:textStyle="bold" />
-
             </LinearLayout>
 
-            <!-- Photo Upload Area - White card with rounded corners -->
+            <!-- Photo Upload Area -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:gravity="center"
                 android:background="@drawable/card_rounded"
                 android:layout_margin="16dp"
-                android:elevation="4dp">
-
-                <TextView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:gravity="center"
-                    android:text="🐾"
-                    android:textSize="32sp" />
+                android:elevation="4dp"
+                android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Add Pet Photos"
-                    android:textColor="#666666"
+                    android:text="Add Photos"
+                    android:textColor="#7A4F2B"
                     android:textSize="16sp"
-                    android:layout_marginTop="12dp" />
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Image Preview Container -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/image_preview_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="4dp" />
+                </HorizontalScrollView>
 
                 <TextView
                     android:id="@+id/btn_add_photo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Tap to add from gallery or camera"
+                    android:text="Add Photos (Optional)"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:layout_marginTop="8dp" />
+                    android:layout_marginTop="12dp"
+                    android:padding="8dp"
+                    android:background="?android:attr/selectableItemBackground" />
 
                 <TextView
                     android:id="@+id/tv_photo_count"
@@ -119,7 +128,6 @@
                     android:textStyle="bold"
                     android:layout_marginTop="4dp"
                     android:visibility="gone" />
-
             </LinearLayout>
 
             <!-- Form - White card with rounded corners -->
@@ -243,7 +251,6 @@
                         android:focusable="true"
                         android:textSize="14sp"
                         android:textStyle="bold" />
-
                 </LinearLayout>
 
                 <!-- Reward/Price -->
@@ -274,7 +281,6 @@
                         android:maxLength="20"
                         android:imeOptions="actionNext"
                         android:textSize="14sp" />
-
                 </LinearLayout>
 
                 <!-- Location -->
@@ -378,14 +384,12 @@
                     android:textSize="11sp"
                     android:layout_marginBottom="8dp"
                     android:layout_gravity="end" />
-
             </LinearLayout>
 
             <!-- Bottom spacing -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="20dp" />
-
         </LinearLayout>
     </FrameLayout>
 </ScrollView>

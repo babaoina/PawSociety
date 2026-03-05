@@ -6,15 +6,20 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.widget.Toast
-class   ProfileTabFragment : Fragment() {
+import com.example.pawsociety.api.ApiPost
+import com.example.pawsociety.util.SessionManager
+
+class ProfileTabFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyView: TextView
     private var tabType: String? = null
     private var userId: String? = null
+    private lateinit var sessionManager: SessionManager
+    private lateinit var viewModel: ProfileViewModel
 
     companion object {
         fun newInstance(tabType: String, userId: String): ProfileTabFragment {
@@ -40,6 +45,9 @@ class   ProfileTabFragment : Fragment() {
         tabType = arguments?.getString("tab_type")
         userId = arguments?.getString("user_id")
 
+        sessionManager = SessionManager(requireContext())
+        viewModel = ViewModelProvider(requireActivity())[ProfileViewModel::class.java]
+
         setupRecyclerView()
         loadContent()
 
@@ -52,58 +60,34 @@ class   ProfileTabFragment : Fragment() {
 
     private fun loadContent() {
         when (tabType) {
-            "New" -> loadNewContent()
-            "My Pets" -> loadMyPetsContent()
-            "Favorites" -> loadFavoritesContent()
-            "Rescues" -> loadRescuesContent()
+            "New", "My Pets" -> {
+                viewModel.userPosts.observe(viewLifecycleOwner) { posts ->
+                    if (posts.isNullOrEmpty()) {
+                        showEmptyState("No posts yet")
+                    } else {
+                        showPosts(posts)
+                    }
+                }
+            }
+            "Favorites" -> {
+                viewModel.favoritePosts.observe(viewLifecycleOwner) { posts ->
+                    if (posts.isNullOrEmpty()) {
+                        showEmptyState("No favorites yet")
+                    } else {
+                        showPosts(posts)
+                    }
+                }
+            }
             else -> showEmptyState("Coming soon")
         }
     }
 
-    private fun loadNewContent() {
-        // Show all user's posts in chronological order
-        val userPosts = UserDatabase.getAllPosts(requireContext())
-            .filter { it.userId == userId }
-            .sortedByDescending { it.createdAt }
-
-        if (userPosts.isEmpty()) {
-            showEmptyState("No posts yet")
-        } else {
-            showPosts(userPosts)
-        }
-    }
-
-    private fun loadMyPetsContent() {
-        // Show posts about user's own pets
-        val myPets = UserDatabase.getAllPosts(requireContext())
-            .filter { it.userId == userId }
-            .take(6) // Limit to 6 for now
-
-        if (myPets.isEmpty()) {
-            showEmptyState("Add your pets")
-        } else {
-            showPosts(myPets)
-        }
-    }
-
-    private fun loadFavoritesContent() {
-        // Show saved/favorited posts
-        showEmptyState("Save your favorite posts")
-    }
-
-    private fun loadRescuesContent() {
-        // Show rescue stories
-        showEmptyState("Share your rescue stories")
-    }
-
-    private fun showPosts(posts: List<Post>) {
+    private fun showPosts(posts: List<ApiPost>) {
         emptyView.visibility = View.GONE
         recyclerView.visibility = View.VISIBLE
-
         // You'll need to create a PostGridAdapter for this
-        // For now, just show a message
-        Toast.makeText(requireContext(), "Showing ${posts.size} posts", Toast.LENGTH_SHORT).show()
-        showEmptyState("Posts will appear here")
+        // For now, just show empty state with count
+        showEmptyState("${posts.size} posts")
     }
 
     private fun showEmptyState(message: String) {

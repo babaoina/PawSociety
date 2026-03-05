@@ -2,8 +2,12 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F0F0">
+    android:background="#F0F0F0"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground">
 
+    <!-- Image View - shows actual post image with proper scaling -->
     <ImageView
         android:id="@+id/post_image"
         android:layout_width="match_parent"
@@ -12,6 +16,7 @@
         android:contentDescription="Post image"
         android:visibility="gone" />
 
+    <!-- Text View - shows placeholder when no image -->
     <TextView
         android:id="@+id/post_content"
         android:layout_width="match_parent"
@@ -19,9 +24,11 @@
         android:gravity="center"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
-        android:padding="8dp"
+        android:textStyle="bold"
+        android:padding="4dp"
         android:lines="2"
         android:maxLines="2"
-        android:ellipsize="end" />
+        android:ellipsize="end"
+        android:visibility="gone" />
 
 </FrameLayout>

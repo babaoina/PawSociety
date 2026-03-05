@@ -1,6 +1,7 @@
 package com.example.pawsociety
 
 import android.app.Application
+import com.example.pawsociety.util.SocketManager
 
 class MyApplication : Application() {
 
@@ -12,5 +13,10 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        SocketManager.disconnect()
     }
 }

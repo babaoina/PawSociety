@@ -7,42 +7,65 @@ const { v4: uuidv4 } = require('uuid');
 
 /**
  * GET /api/chat/conversations/:firebaseUid
- * Get all conversations for a user
+ * Get all conversations for a user with unread counts
  */
 router.get('/conversations/:firebaseUid', async (req, res) => {
   try {
     const chats = await Chat.find({
       participants: req.params.firebaseUid
     })
-    .sort({ lastMessageAt: -1 })
-    .populate('participants', 'username profileImageUrl');
+    .sort({ lastMessageAt: -1 });
 
-    // Get last message for each chat
+    // Get last message and unread count for each chat
     const conversations = await Promise.all(
       chats.map(async (chat) => {
         const lastMessage = await Message.findOne({ chatId: chat.chatId })
-          .sort({ createdAt: -1 })
-          .populate('senderUid', 'username profileImageUrl');
-        
+          .sort({ createdAt: -1 });
+
+        // Count unread messages for this user
+        const unreadCount = await Message.countDocuments({
+          chatId: chat.chatId,
+          receiverUid: req.params.firebaseUid,
+          isRead: false
+        });
+
+        // Get other participant info
+        const otherParticipantUid = chat.participants.find(
+          uid => uid !== req.params.firebaseUid
+        );
+        const otherUser = await User.findOne({ firebaseUid: otherParticipantUid })
+          .select('username fullName profileImageUrl firebaseUid');
+
         return {
           chatId: chat.chatId,
           participants: chat.participants,
+          otherUser: otherUser ? {
+            firebaseUid: otherUser.firebaseUid,
+            username: otherUser.username,
+            fullName: otherUser.fullName,
+            profileImageUrl: otherUser.profileImageUrl || ''
+          } : null,
           lastMessage: lastMessage ? {
             text: lastMessage.text,
             imageUrl: lastMessage.imageUrl,
             senderUid: lastMessage.senderUid,
-            createdAt: lastMessage.createdAt
+            createdAt: lastMessage.createdAt,
+            isRead: lastMessage.isRead
           } : null,
           lastMessageAt: chat.lastMessageAt,
-          createdAt: chat.createdAt
+          createdAt: chat.createdAt,
+          unreadCount: unreadCount  // Add this
         };
       })
     );
 
+    // Filter out conversations where other user doesn't exist
+    const validConversations = conversations.filter(c => c.otherUser !== null);
+
     res.json({
       success: true,
-      count: conversations.length,
-      conversations
+      count: validConversations.length,
+      conversations: validConversations
     });
   } catch (error) {
     console.error('Get conversations error:', error);
@@ -52,6 +75,7 @@ router.get('/conversations/:firebaseUid', async (req, res) => {
     });
   }
 });
+
 
 /**
  * GET /api/chat/:chatId/messages
@@ -64,8 +88,7 @@ router.get('/:chatId/messages', async (req, res) => {
     const messages = await Message.find({ chatId: req.params.chatId })
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
-      .skip(parseInt(skip))
-      .populate('senderUid', 'username profileImageUrl');
+      .skip(parseInt(skip));
 
     res.json({
       success: true,
@@ -124,26 +147,45 @@ router.post('/send', async (req, res) => {
     await message.save();
 
     // Update chat last message
-    chat.lastMessage = text || imageUrl ? 'Sent media' : '';
+    chat.lastMessage = text || (imageUrl ? '📷 Image' : '');
     chat.lastMessageAt = new Date();
     await chat.save();
 
-    // Populate sender info for response
-    await message.populate('senderUid', 'username profileImageUrl');
+    // Get sender info for the response
+    const sender = await User.findOne({ firebaseUid: senderUid })
+      .select('username profileImageUrl');
+
+    const messageData = {
+      messageId: message.messageId,
+      chatId: message.chatId,
+      senderUid: message.senderUid,
+      receiverUid: message.receiverUid,
+      text: message.text,
+      imageUrl: message.imageUrl,
+      isRead: message.isRead,
+      createdAt: message.createdAt,
+      senderName: sender ? sender.username : 'Unknown',
+      senderImage: sender ? sender.profileImageUrl : ''
+    };
+
+    // Emit socket events for real-time updates
+    const io = req.app.get('io');
+    
+    // Emit to receiver's room
+    io.to(receiverUid).emit('new-message', messageData);
+    
+    // Emit to sender's room (for multiple device sync)
+    io.to(senderUid).emit('message-sent', messageData);
+    
+    // Emit to chat room
+    io.to(chat.chatId).emit('chat-message', messageData);
+
+    console.log(`📨 Message sent from ${senderUid} to ${receiverUid}`);
 
     res.status(201).json({
       success: true,
       message: 'Message sent',
-      data: {
-        messageId: message.messageId,
-        chatId: message.chatId,
-        senderUid: message.senderUid,
-        receiverUid: message.receiverUid,
-        text: message.text,
-        imageUrl: message.imageUrl,
-        isRead: message.isRead,
-        createdAt: message.createdAt
-      },
+      data: messageData,
       chatId: chat.chatId
     });
   } catch (error) {
@@ -174,6 +216,14 @@ router.put('/messages/:messageId/read', async (req, res) => {
       });
     }
 
+    // Emit read receipt
+    const io = req.app.get('io');
+    io.to(message.senderUid).emit('message-read', {
+      messageId: message.messageId,
+      chatId: message.chatId,
+      readAt: new Date()
+    });
+
     res.json({
       success: true,
       message: 'Message marked as read'
@@ -195,14 +245,24 @@ router.put('/:chatId/read-all', async (req, res) => {
   try {
     const { firebaseUid } = req.body;
 
-    await Message.updateMany(
-      { chatId: req.params.chatId, receiverUid: firebaseUid },
+    const result = await Message.updateMany(
+      { chatId: req.params.chatId, receiverUid: firebaseUid, isRead: false },
       { isRead: true }
     );
 
+    // Emit event that all messages are read
+    if (result.modifiedCount > 0) {
+      const io = req.app.get('io');
+      io.to(req.params.chatId).emit('all-messages-read', {
+        chatId: req.params.chatId,
+        readerUid: firebaseUid
+      });
+    }
+
     res.json({
       success: true,
-      message: 'All messages marked as read'
+      message: 'All messages marked as read',
+      count: result.modifiedCount
     });
   } catch (error) {
     console.error('Mark all read error:', error);
@@ -219,11 +279,11 @@ router.put('/:chatId/read-all', async (req, res) => {
  */
 router.delete('/messages/:messageId', async (req, res) => {
   try {
-    const { firebaseUid } = req.body;
+    const { senderUid } = req.query;
 
     const message = await Message.findOneAndDelete({
       messageId: req.params.messageId,
-      senderUid: firebaseUid
+      senderUid
     });
 
     if (!message) {
@@ -232,6 +292,13 @@ router.delete('/messages/:messageId', async (req, res) => {
         message: 'Message not found or unauthorized'
       });
     }
+
+    // Emit message deletion event
+    const io = req.app.get('io');
+    io.to(message.chatId).emit('message-deleted', {
+      messageId: message.messageId,
+      chatId: message.chatId
+    });
 
     res.json({
       success: true,

@@ -93,7 +93,15 @@ router.post('/', async (req, res) => {
  */
 router.delete('/:postId', async (req, res) => {
   try {
-    const { userUid } = req.body;
+    const { userUid } = req.query;  // CHANGED: from req.body to req.query
+    console.log(`🗑️ Remove favorite request - postId: ${req.params.postId}, userUid: ${userUid}`);
+
+    if (!userUid) {
+      return res.status(400).json({
+        success: false,
+        message: 'userUid is required'
+      });
+    }
 
     const favorite = await Favorite.findOneAndDelete({
       userUid,
@@ -101,12 +109,14 @@ router.delete('/:postId', async (req, res) => {
     });
 
     if (!favorite) {
+      console.log(`⚠️ Favorite not found - postId: ${req.params.postId}, userUid: ${userUid}`);
       return res.status(404).json({
         success: false,
         message: 'Favorite not found'
       });
     }
 
+    console.log(`✅ Favorite removed successfully - postId: ${req.params.postId}`);
     res.json({
       success: true,
       message: 'Removed from favorites'

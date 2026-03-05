@@ -9,7 +9,7 @@
     android:focusable="true"
     android:gravity="center_vertical">
 
-    <!-- Profile Icon -->
+    <!-- Profile Icon (for users without image) -->
     <TextView
         android:id="@+id/profile_icon"
         android:layout_width="50dp"
@@ -17,18 +17,43 @@
         android:gravity="center"
         android:textSize="20sp"
         android:textColor="#FFFFFF"
-        android:background="@drawable/circle_solid_profile" />
+        android:background="@drawable/circle_solid_profile"
+        android:visibility="visible" />
 
-    <TextView
-        android:id="@+id/username"
+    <!-- Profile Image (for users with image) -->
+    <ImageView
+        android:id="@+id/profile_image"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        android:background="@drawable/circle_border" />
+
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="username"
-        android:textColor="#000000"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginStart="12dp" />
+        android:orientation="vertical"
+        android:layout_marginStart="12dp">
+
+        <TextView
+            android:id="@+id/username"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="username"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/full_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Full Name"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
 
     <!-- Action Button -->
     <Button

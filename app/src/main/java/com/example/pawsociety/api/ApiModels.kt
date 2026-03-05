@@ -9,6 +9,13 @@ data class ApiResponse<T>(
     @SerializedName("data") val data: T? = null
 )
 
+// Specific response for single user (backend returns "user" not "data")
+data class UserResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("user") val user: ApiUser? = null
+)
+
 data class ApiListResponse<T>(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String? = null,
@@ -19,7 +26,9 @@ data class ApiListResponse<T>(
     @SerializedName("messages") val messages: List<T>? = null,
     @SerializedName("conversations") val conversations: List<T>? = null,
     @SerializedName("pets") val pets: List<T>? = null,
-    @SerializedName("notifications") val notifications: List<T>? = null
+    @SerializedName("notifications") val notifications: List<T>? = null,
+    @SerializedName("highlights") val highlights: List<T>? = null,
+    @SerializedName("blocks") val blocks: List<Block>? = null
 )
 
 // User API Models
@@ -70,7 +79,7 @@ data class ApiPost(
     @SerializedName("commentsCount") val commentsCount: Int = 0,
     @SerializedName("shares") val shares: Int = 0,
     @SerializedName("createdAt") val createdAt: String
-)
+) : java.io.Serializable
 
 data class CreatePostRequest(
     @SerializedName("firebaseUid") val firebaseUid: String,
@@ -127,7 +136,8 @@ data class ApiConversation(
     @SerializedName("participants") val participants: List<String>,
     @SerializedName("lastMessage") val lastMessage: LastMessage? = null,
     @SerializedName("lastMessageAt") val lastMessageAt: String,
-    @SerializedName("createdAt") val createdAt: String
+    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("unreadCount") val unreadCount: Int = 0  // Add this
 )
 
 data class LastMessage(
@@ -195,3 +205,97 @@ data class CreateNotificationRequest(
     @SerializedName("postId") val postId: String? = null,
     @SerializedName("message") val message: String
 )
+
+// Highlight API Models
+data class ApiHighlight(
+    @SerializedName("highlightId") val highlightId: String = "",
+    @SerializedName("userId") val userId: String = "",
+    @SerializedName("name") val name: String = "",
+    @SerializedName("emoji") val emoji: String = "📸",
+    @SerializedName("color") val color: String = "#FF6B35",
+    @SerializedName("imageUrl") val imageUrl: String? = null,
+    @SerializedName("postIds") val postIds: List<String> = emptyList(),
+    @SerializedName("createdAt") val createdAt: String = ""
+)
+
+data class CreateHighlightRequest(
+    @SerializedName("name") val name: String,
+    @SerializedName("emoji") val emoji: String,
+    @SerializedName("color") val color: String,
+    @SerializedName("imageUrl") val imageUrl: String? = null,
+    @SerializedName("postIds") val postIds: List<String> = emptyList()
+)
+
+data class UpdateHighlightRequest(
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("emoji") val emoji: String? = null,
+    @SerializedName("color") val color: String? = null,
+    @SerializedName("imageUrl") val imageUrl: String? = null,
+    @SerializedName("postIds") val postIds: List<String>? = null
+)
+
+// Follow response models
+data class FollowCheckResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("isFollowing") val isFollowing: Boolean? = false,
+    @SerializedName("message") val message: String? = null
+)
+
+data class FollowCountResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("followersCount") val followersCount: Int? = 0,
+    @SerializedName("followingCount") val followingCount: Int? = 0,
+    @SerializedName("message") val message: String? = null
+)
+
+data class CheckUserResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("exists") val exists: Boolean? = false,
+    @SerializedName("user") val user: ApiUser? = null,
+    @SerializedName("message") val message: String? = null
+)
+
+// ==================== BLOCK MODELS ====================
+
+data class BlockCheckResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("isBlocked") val isBlocked: Boolean? = false,
+    @SerializedName("message") val message: String? = null
+)
+
+data class Block(
+    @SerializedName("blockId") val blockId: String,
+    @SerializedName("blockerUid") val blockerUid: String,
+    @SerializedName("blockedUid") val blockedUid: String,
+    @SerializedName("createdAt") val createdAt: String
+)
+
+// ==================== REPORT MODELS ====================
+
+data class ReportRequest(
+    @SerializedName("reporterUid") val reporterUid: String,
+    @SerializedName("reportedUid") val reportedUid: String? = null,
+    @SerializedName("postId") val postId: String? = null,
+    @SerializedName("commentId") val commentId: String? = null,
+    @SerializedName("reason") val reason: String,
+    @SerializedName("description") val description: String? = null
+)
+
+data class Report(
+    @SerializedName("reportId") val reportId: String,
+    @SerializedName("reporterUid") val reporterUid: String,
+    @SerializedName("reportedUid") val reportedUid: String?,
+    @SerializedName("postId") val postId: String?,
+    @SerializedName("commentId") val commentId: String?,
+    @SerializedName("reason") val reason: String,
+    @SerializedName("description") val description: String?,
+    @SerializedName("status") val status: String,
+    @SerializedName("createdAt") val createdAt: String
+)
+
+data class UserStatusResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("message") val message: String? = null
+)
+
