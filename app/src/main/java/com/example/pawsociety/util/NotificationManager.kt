@@ -20,7 +20,7 @@ object NotificationManager {
 
     private val notificationRepository = NotificationRepository()
     private var pollJob: Job? = null
-    private var listeners = mutableListOf<NotificationCountListener>()
+    private val listeners = mutableListOf<NotificationCountListener>()
     private val listenerMap = mutableMapOf<TextView, NotificationCountListener>()
 
     interface NotificationCountListener {
@@ -48,7 +48,7 @@ object NotificationManager {
                         val count = result.getOrNull() ?: 0
                         listeners.forEach { it.onCountUpdated(count) }
                     }
-                    delay(30000)
+                    delay(30000) // Poll every 30 seconds
                 } catch (e: Exception) {
                     e.printStackTrace()
                     delay(60000)
@@ -79,7 +79,7 @@ object NotificationManager {
 
         val listener = object : NotificationCountListener {
             override fun onCountUpdated(count: Int) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                Handler(Looper.getMainLooper()).post {
                     if (count > 0) {
                         badgeView.text = count.toString()
                         badgeView.visibility = android.view.View.VISIBLE
@@ -101,8 +101,6 @@ object NotificationManager {
         stopPolling()
     }
 
-
-
     fun setupSocketNotifications(userId: String, lifecycleOwner: LifecycleOwner) {
         SocketManager.on("new-notification") { args ->
             if (args.isNotEmpty()) {
@@ -117,7 +115,7 @@ object NotificationManager {
                             }
                         }
 
-                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        Handler(Looper.getMainLooper()).post {
                             val message = notification.optString("message", "New notification")
                             Toast.makeText(MyApplication.instance, message, Toast.LENGTH_SHORT).show()
                         }

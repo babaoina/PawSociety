@@ -3,16 +3,26 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:background="#FFFFFF"
-    android:elevation="8dp"
-    android:radius="16dp">
+    android:background="@drawable/bg_rounded_dialog"
+    android:padding="20dp">
 
+    <!-- Title - only ONE title now -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Select Location"
+        android:textColor="#7A4F2B"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Region -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Region"
-        android:textColor="#7A4F2B"
+        android:textColor="#666666"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="4dp" />
@@ -22,14 +32,15 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="@drawable/input_oval"
-        android:layout_marginBottom="16dp"
-        android:paddingHorizontal="12dp" />
+        android:paddingHorizontal="12dp"
+        android:layout_marginBottom="16dp" />
 
+    <!-- Province -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Province"
-        android:textColor="#7A4F2B"
+        android:textColor="#666666"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="4dp" />
@@ -39,14 +50,15 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="@drawable/input_oval"
-        android:layout_marginBottom="16dp"
-        android:paddingHorizontal="12dp" />
+        android:paddingHorizontal="12dp"
+        android:layout_marginBottom="16dp" />
 
+    <!-- City -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="City/Municipality"
-        android:textColor="#7A4F2B"
+        android:textColor="#666666"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="4dp" />
@@ -56,14 +68,15 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="@drawable/input_oval"
-        android:layout_marginBottom="16dp"
-        android:paddingHorizontal="12dp" />
+        android:paddingHorizontal="12dp"
+        android:layout_marginBottom="16dp" />
 
+    <!-- Barangay -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Barangay"
-        android:textColor="#7A4F2B"
+        android:textColor="#666666"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="4dp" />
@@ -73,35 +86,42 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="@drawable/input_oval"
-        android:layout_marginBottom="24dp"
-        android:paddingHorizontal="12dp" />
+        android:paddingHorizontal="12dp"
+        android:layout_marginBottom="24dp" />
 
+    <!-- Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:weightSum="2">
 
+        <!-- Cancel button - WHITE TEXT -->
         <Button
             android:id="@+id/btn_cancel"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="Cancel"
-            android:textColor="#666666"
-            android:background="@drawable/button_oval_white"
             android:layout_marginEnd="8dp"
-            android:stateListAnimator="@null" />
+            android:text="Cancel"
+            android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:background="@drawable/button_oval_gray"
+        android:stateListAnimator="@null" />
 
+        <!-- Confirm button -->
         <Button
             android:id="@+id/btn_confirm"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
+            android:layout_marginStart="8dp"
             android:text="Confirm"
             android:textColor="#FFFFFF"
+            android:textSize="16sp"
             android:background="@drawable/button_oval_brown"
             android:stateListAnimator="@null" />
-
     </LinearLayout>
 
 </LinearLayout>

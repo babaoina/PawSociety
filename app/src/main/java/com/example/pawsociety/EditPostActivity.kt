@@ -167,6 +167,9 @@ class EditPostActivity : AppCompatActivity() {
 
                 if (result.isSuccess) {
                     println("✅ Update successful!")
+
+                    setResult(RESULT_OK)
+
                     Toast.makeText(this@EditPostActivity, "Post updated successfully!", Toast.LENGTH_SHORT).show()
                     setResult(RESULT_OK)
                     finish()

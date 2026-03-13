@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <item name="notification_listener_tag" type="id" />
+    <item name="image_view_pager" type="id" />
+    <item name="callback" type="id" />
 </resources>

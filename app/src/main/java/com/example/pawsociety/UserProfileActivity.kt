@@ -18,6 +18,7 @@ import com.example.pawsociety.data.repository.PostRepository
 import com.example.pawsociety.data.repository.UserRepository
 import com.example.pawsociety.util.SessionManager
 import kotlinx.coroutines.launch
+import java.util.*
 
 class UserProfileActivity : AppCompatActivity() {
 
@@ -32,8 +33,12 @@ class UserProfileActivity : AppCompatActivity() {
     private lateinit var btnFollow: TextView
     private lateinit var btnMessage: TextView
     private lateinit var tvBio: TextView
+    private lateinit var tvFullName: TextView
+    private lateinit var tvUsernameBio: TextView
+    private lateinit var tvLocationBio: TextView
     private lateinit var postsContainer: FrameLayout
     private lateinit var postsGrid: LinearLayout
+    private lateinit var emptyState: LinearLayout
     private lateinit var progressBar: ProgressBar
     private lateinit var highlightsContainer: LinearLayout
     private lateinit var highlightsScroll: HorizontalScrollView
@@ -58,7 +63,6 @@ class UserProfileActivity : AppCompatActivity() {
         currentUser = sessionManager.getCurrentUser()
         followRepository = FollowRepository()
 
-        // Get target user data from intent
         targetUserId = intent.getStringExtra("userId") ?: ""
         targetUserName = intent.getStringExtra("userName") ?: "User"
 
@@ -70,7 +74,6 @@ class UserProfileActivity : AppCompatActivity() {
             return
         }
 
-        // If it's current user, go to ProfileActivity
         if (targetUserId == currentUser?.firebaseUid) {
             startActivity(Intent(this, ProfileActivity::class.java))
             finish()
@@ -94,14 +97,19 @@ class UserProfileActivity : AppCompatActivity() {
         btnFollow = findViewById(R.id.btn_follow)
         btnMessage = findViewById(R.id.btn_message)
         tvBio = findViewById(R.id.tv_bio)
+        tvFullName = findViewById(R.id.tv_full_name)
+        tvUsernameBio = findViewById(R.id.tv_username_bio)
+        tvLocationBio = findViewById(R.id.tv_location_bio)
         postsContainer = findViewById(R.id.posts_container)
         postsGrid = findViewById(R.id.posts_grid)
+        emptyState = findViewById(R.id.empty_state)
         progressBar = findViewById(R.id.progress_bar)
         highlightsContainer = findViewById(R.id.highlights_container)
         highlightsScroll = findViewById(R.id.highlights_scroll)
         scrollView = findViewById(R.id.profile_scroll_view)
 
         tvUsername.text = targetUserName
+        emptyState.visibility = View.GONE
     }
 
     private fun setupClickListeners() {
@@ -164,23 +172,15 @@ class UserProfileActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // Load user data
                 val userResult = userRepository.getUserByUid(targetUserId)
 
                 if (userResult.isSuccess) {
                     targetUser = userResult.getOrNull()
                     updateUserUI()
 
-                    // Check if current user follows this user
                     checkFollowStatus()
-
-                    // Load counts
                     loadFollowersCount()
-
-                    // Load user's posts
                     loadUserPosts(targetUserId)
-
-                    // Load user's highlights (using their posts as highlights)
                     loadUserHighlights()
                 } else {
                     Toast.makeText(this@UserProfileActivity, "User not found", Toast.LENGTH_SHORT).show()
@@ -227,22 +227,27 @@ class UserProfileActivity : AppCompatActivity() {
                 profileBackground.background = backgroundDrawable
 
                 val firstLetter = if (user.username.isNotEmpty()) {
-                    user.username.first().toString().uppercase()
+                    user.username.first().toString().uppercase(Locale.getDefault())
                 } else {
                     "?"
                 }
                 profileInitial.text = firstLetter
             }
 
-            // Set bio
-            val location = user.location ?: ""
-            val bio = user.bio ?: ""
+            // Set Instagram-style bio
+            tvFullName.visibility = View.VISIBLE
+            tvFullName.text = user.fullName
 
-            tvBio.text = when {
-                location.isNotEmpty() && bio.isNotEmpty() -> "$location\n$bio"
-                bio.isNotEmpty() -> bio
-                location.isNotEmpty() -> location
-                else -> "No bio yet"
+            tvUsernameBio.visibility = View.VISIBLE
+            tvUsernameBio.text = "@${user.username}"
+
+            tvBio.text = user.bio ?: ""
+
+            if (!user.location.isNullOrEmpty()) {
+                tvLocationBio.visibility = View.VISIBLE
+                tvLocationBio.text = user.location
+            } else {
+                tvLocationBio.visibility = View.GONE
             }
         }
     }
@@ -286,8 +291,6 @@ class UserProfileActivity : AppCompatActivity() {
                     isFollowing = true
                     updateFollowButton()
                     Toast.makeText(this@UserProfileActivity, "Following ${targetUser?.username}", Toast.LENGTH_SHORT).show()
-
-                    // Update follower count
                     loadFollowersCount()
                 } else {
                     Toast.makeText(this@UserProfileActivity, "Failed to follow user", Toast.LENGTH_SHORT).show()
@@ -314,8 +317,6 @@ class UserProfileActivity : AppCompatActivity() {
                     isFollowing = false
                     updateFollowButton()
                     Toast.makeText(this@UserProfileActivity, "Unfollowed ${targetUser?.username}", Toast.LENGTH_SHORT).show()
-
-                    // Update follower count
                     loadFollowersCount()
                 } else {
                     Toast.makeText(this@UserProfileActivity, "Failed to unfollow user", Toast.LENGTH_SHORT).show()
@@ -350,12 +351,18 @@ class UserProfileActivity : AppCompatActivity() {
     private fun updateFollowButton() {
         if (isFollowing) {
             btnFollow.text = "Following"
-            btnFollow.setBackgroundColor(Color.parseColor("#4CAF50"))
-            btnFollow.setTextColor(Color.WHITE)
+            btnFollow.setBackgroundResource(R.drawable.button_oval_white_border)
+            btnFollow.setTextColor(Color.parseColor("#000000"))
         } else {
             btnFollow.text = "Follow"
-            btnFollow.setBackgroundColor(Color.parseColor("#7A4F2B"))
+            btnFollow.setBackgroundResource(R.drawable.button_oval_brown)
             btnFollow.setTextColor(Color.WHITE)
+        }
+
+        // Force layout refresh to keep both buttons same height
+        btnFollow.post {
+            btnFollow.requestLayout()
+            btnMessage.requestLayout()
         }
     }
 
@@ -370,6 +377,7 @@ class UserProfileActivity : AppCompatActivity() {
                     if (posts.isNotEmpty()) {
                         postsGrid.removeAllViews()
                         postsGrid.visibility = View.VISIBLE
+                        emptyState.visibility = View.GONE
                         createPostsGrid(posts)
                         tvPostCount.text = posts.size.toString()
                     } else {
@@ -381,6 +389,131 @@ class UserProfileActivity : AppCompatActivity() {
                 e.printStackTrace()
                 showEmptyState()
             }
+        }
+    }
+
+    private fun createPostsGrid(posts: List<ApiPost>) {
+        try {
+            postsGrid.removeAllViews()
+
+            val colors = listOf(
+                "#4CAF50", "#2196F3", "#FF9800",
+                "#9C27B0", "#FF5722", "#00BCD4",
+                "#E91E63", "#3F51B5", "#009688"
+            )
+
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val spacing = 2
+            val columns = 3
+
+            val itemSize = (screenWidth - (spacing * (columns - 1))) / columns
+
+            val rows = (posts.size + columns - 1) / columns
+            var postIndex = 0
+
+            for (row in 0 until rows) {
+                val rowLayout = LinearLayout(this)
+                rowLayout.layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                rowLayout.orientation = LinearLayout.HORIZONTAL
+
+                for (col in 0 until columns) {
+                    if (postIndex >= posts.size) {
+                        val emptyContainer = FrameLayout(this)
+                        val emptyParams = LinearLayout.LayoutParams(
+                            itemSize,
+                            itemSize
+                        )
+                        if (col > 0) {
+                            emptyParams.leftMargin = spacing
+                        }
+                        emptyContainer.layoutParams = emptyParams
+                        rowLayout.addView(emptyContainer)
+                        continue
+                    }
+
+                    val squareContainer = FrameLayout(this)
+                    val squareParams = LinearLayout.LayoutParams(
+                        itemSize,
+                        itemSize
+                    )
+
+                    if (col > 0) {
+                        squareParams.leftMargin = spacing
+                    }
+
+                    squareContainer.layoutParams = squareParams
+
+                    val post = posts[postIndex]
+                    val postView = layoutInflater.inflate(R.layout.item_profile_post, squareContainer, false)
+                    val postContent = postView.findViewById<TextView>(R.id.post_content)
+                    val postImage = postView.findViewById<ImageView>(R.id.post_image)
+
+                    if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
+                        val imageUrl = post.imageUrls[0]
+                        val fullImageUrl = if (imageUrl.startsWith("http")) {
+                            imageUrl
+                        } else {
+                            "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$imageUrl"
+                        }
+
+                        postImage.visibility = View.VISIBLE
+                        postContent.visibility = View.GONE
+
+                        Glide.with(this)
+                            .load(fullImageUrl)
+                            .centerCrop()
+                            .override(itemSize, itemSize)
+                            .placeholder(android.R.drawable.ic_menu_gallery)
+                            .error(android.R.drawable.ic_menu_report_image)
+                            .into(postImage)
+                    } else {
+                        postImage.visibility = View.GONE
+                        postContent.visibility = View.VISIBLE
+
+                        val emoji = when {
+                            post.petType.contains("dog", ignoreCase = true) -> "🐶"
+                            post.petType.contains("cat", ignoreCase = true) -> "🐱"
+                            post.petType.contains("bird", ignoreCase = true) -> "🐦"
+                            post.petType.contains("rabbit", ignoreCase = true) -> "🐰"
+                            post.petType.contains("fish", ignoreCase = true) -> "🐟"
+                            else -> "🐾"
+                        }
+
+                        postContent.text = "$emoji\n${post.petName}"
+                        postContent.setBackgroundColor(Color.parseColor(colors[postIndex % colors.size]))
+                        postContent.setTextColor(Color.WHITE)
+                        postContent.textSize = 14f
+                    }
+
+                    val currentPosition = postIndex
+                    postView.setOnClickListener {
+                        val intent = Intent(this@UserProfileActivity, PostViewActivity::class.java)
+                        intent.putExtra("all_posts", ArrayList(posts))
+                        intent.putExtra("position", currentPosition)
+                        startActivity(intent)
+                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                    }
+
+                    squareContainer.addView(postView)
+                    rowLayout.addView(squareContainer)
+                    postIndex++
+                }
+
+                if (row < rows - 1) {
+                    val rowParams = rowLayout.layoutParams as LinearLayout.LayoutParams
+                    rowParams.bottomMargin = spacing
+                    rowLayout.layoutParams = rowParams
+                }
+
+                postsGrid.addView(rowLayout)
+            }
+        } catch (e: Exception) {
+            println("❌ Error in createPostsGrid: ${e.message}")
+            e.printStackTrace()
         }
     }
 
@@ -396,19 +529,23 @@ class UserProfileActivity : AppCompatActivity() {
 
                     if (posts.isEmpty()) {
                         highlightsScroll.visibility = View.GONE
+                        findViewById<TextView>(R.id.tv_highlights_title).visibility = View.GONE
                     } else {
+                        findViewById<TextView>(R.id.tv_highlights_title).visibility = View.VISIBLE
                         highlightsScroll.visibility = View.VISIBLE
-
-                        // Show first 5 posts as highlights
                         val highlights = posts.take(5)
                         for (post in highlights) {
                             addHighlightView(post)
                         }
                     }
+                } else {
+                    highlightsScroll.visibility = View.GONE
+                    findViewById<TextView>(R.id.tv_highlights_title).visibility = View.GONE
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 highlightsScroll.visibility = View.GONE
+                findViewById<TextView>(R.id.tv_highlights_title).visibility = View.GONE
             }
         }
     }
@@ -446,108 +583,6 @@ class UserProfileActivity : AppCompatActivity() {
         highlightsContainer.addView(highlightView)
     }
 
-    private fun createPostsGrid(posts: List<ApiPost>) {
-        val colors = listOf(
-            "#4CAF50", "#2196F3", "#FF9800",
-            "#9C27B0", "#FF5722", "#00BCD4",
-            "#E91E63", "#3F51B5", "#009688"
-        )
-
-        val rows = (posts.size + 2) / 3
-        val spacing = 4
-
-        for (row in 0 until rows) {
-            val rowLayout = LinearLayout(this)
-            rowLayout.layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            rowLayout.orientation = LinearLayout.HORIZONTAL
-
-            for (col in 0 until 3) {
-                val postIndex = row * 3 + col
-
-                val squareContainer = FrameLayout(this)
-                val squareParams = LinearLayout.LayoutParams(
-                    0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f
-                )
-
-                squareParams.setMargins(
-                    if (col == 0) 0 else spacing,
-                    0,
-                    0,
-                    if (row < rows - 1) spacing else 0
-                )
-
-                squareContainer.layoutParams = squareParams
-
-                squareContainer.post {
-                    val width = squareContainer.width
-                    squareContainer.layoutParams.height = width
-                    squareContainer.requestLayout()
-                }
-
-                if (postIndex < posts.size) {
-                    val post = posts[postIndex]
-                    val postView = layoutInflater.inflate(R.layout.item_profile_post, squareContainer, false)
-                    val postContent = postView.findViewById<TextView>(R.id.post_content)
-                    val postImage = postView.findViewById<ImageView>(R.id.post_image)
-
-                    if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
-                        val imageUrl = post.imageUrls[0]
-                        val fullImageUrl = if (imageUrl.startsWith("http")) {
-                            imageUrl
-                        } else {
-                            "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$imageUrl"
-                        }
-
-                        postImage?.visibility = View.VISIBLE
-                        Glide.with(this)
-                            .load(fullImageUrl)
-                            .centerCrop()
-                            .placeholder(android.R.drawable.ic_menu_gallery)
-                            .into(postImage)
-                    } else {
-                        postImage?.visibility = View.GONE
-                        postContent.text = "${getPetEmoji(post.petType)}\n${post.petName}"
-                        postContent.setBackgroundColor(Color.parseColor(colors[postIndex % colors.size]))
-                    }
-
-                    postView.setOnClickListener {
-                        showPostPreview(post)
-                    }
-
-                    squareContainer.addView(postView)
-                } else {
-                    val emptyView = View(this)
-                    emptyView.layoutParams = FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                    )
-                    emptyView.setBackgroundColor(Color.parseColor("#F0F0F0"))
-                    squareContainer.addView(emptyView)
-                }
-
-                rowLayout.addView(squareContainer)
-            }
-
-            postsGrid.addView(rowLayout)
-        }
-    }
-
-    private fun getPetEmoji(petType: String): String {
-        return when {
-            petType.contains("dog", ignoreCase = true) -> "🐶"
-            petType.contains("cat", ignoreCase = true) -> "🐱"
-            petType.contains("bird", ignoreCase = true) -> "🐦"
-            petType.contains("rabbit", ignoreCase = true) -> "🐰"
-            petType.contains("fish", ignoreCase = true) -> "🐟"
-            else -> "🐾"
-        }
-    }
-
     private fun showPostPreview(post: ApiPost) {
         val message = """
             ${post.petName}
@@ -560,25 +595,14 @@ class UserProfileActivity : AppCompatActivity() {
     }
 
     private fun showEmptyState() {
-        postsGrid.removeAllViews()
-        postsGrid.visibility = View.VISIBLE
-
-        val emptyView = TextView(this)
-        emptyView.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-        emptyView.gravity = android.view.Gravity.CENTER
-        emptyView.text = "No posts yet"
-        emptyView.setTextColor(Color.parseColor("#999999"))
-        emptyView.textSize = 16f
-        emptyView.setPadding(0, 100, 0, 100)
-        postsGrid.addView(emptyView)
+        postsGrid.visibility = View.GONE
+        emptyState.visibility = View.VISIBLE
+        val emptyText = emptyState.findViewById<TextView>(R.id.empty_text)
+        emptyText.text = "No posts yet"
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when returning to this activity
         if (::followRepository.isInitialized) {
             checkFollowStatus()
             loadFollowersCount()

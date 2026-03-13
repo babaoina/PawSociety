@@ -47,6 +47,27 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  status: {
+    type: String,
+    enum: ['Active', 'Suspended', 'Deleted'],
+    default: 'Active'
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'moderator'],
+    default: 'user'
+  },
+  // 👇 ADD THIS - Muted users array
+  mutedUsers: [{
+    userId: {
+      type: String,  // Firebase UID of user to mute
+      required: true
+    },
+    mutedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now
@@ -59,5 +80,7 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ firebaseUid: 1 });
 userSchema.index({ username: 1 });
 userSchema.index({ email: 1 });
+// 👇 ADD THIS
+userSchema.index({ 'mutedUsers.userId': 1 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -4,11 +4,14 @@ import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
@@ -20,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import com.example.pawsociety.api.ApiHighlight
 import com.example.pawsociety.api.ApiPost
@@ -28,6 +32,8 @@ import com.example.pawsociety.data.repository.UploadRepository
 import com.example.pawsociety.util.FileHelper
 import com.example.pawsociety.util.PermissionHelper
 import com.example.pawsociety.util.SessionManager
+import com.yalantis.ucrop.UCrop
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
@@ -47,23 +53,84 @@ class ProfileActivity : BaseNavigationActivity() {
     private var isUploading = false
     private var pendingPermissionAction = ""
 
-    // Single gallery launcher with edit dialog
+    companion object {
+        private const val EDIT_PROFILE_REQUEST = 1001
+        private const val CREATE_POST_REQUEST = 1002
+    }
+
+    // Gallery launcher for picking images
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedProfileImageUri = it
-            showImageEditDialogForProfile(it)
+            startCrop(it)
         }
     }
 
+    // Edit Profile launcher with auto-refresh
+    private val editProfileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // Auto-refresh profile data
+            viewModel.loadUserData()
+
+            // Also refresh from session to be safe
+            sessionManager.getCurrentUser()?.let { user ->
+                currentUser = user
+                updateProfileWithUserData(user)
+            }
+
+            Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Create Post launcher with auto-refresh
+    private val createPostLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // Auto-refresh posts immediately
+            currentUser?.let { user ->
+                lifecycleScope.launch {
+                    // Small delay to ensure backend has processed the post
+                    delay(500)
+                    viewModel.loadUserPosts(user.firebaseUid)
+                }
+            }
+
+            // Switch to posts tab
+            if (currentTab != "posts") {
+                currentTab = "posts"
+                updateTabIcons()
+            }
+
+            Toast.makeText(this, "Post created successfully!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Camera launcher
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
             currentPhotoPath?.let { path ->
                 val file = File(path)
                 if (file.exists()) {
-                    selectedProfileImageUri = Uri.fromFile(file)
-                    showImageEditDialogForProfile(selectedProfileImageUri!!)
+                    val uri = Uri.fromFile(file)
+                    selectedProfileImageUri = uri
+                    startCrop(uri)
                 }
             }
+        }
+    }
+
+    // UCrop result launcher
+    private val cropLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val resultUri = UCrop.getOutput(result.data!!)
+            resultUri?.let { croppedUri ->
+                // Upload the cropped image
+                lifecycleScope.launch {
+                    uploadCroppedImage(croppedUri)
+                }
+            }
+        } else if (result.resultCode == UCrop.RESULT_ERROR) {
+            val error = UCrop.getError(result.data!!)
+            Toast.makeText(this, "Crop error: ${error?.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -142,11 +209,34 @@ class ProfileActivity : BaseNavigationActivity() {
                 updateHighlightsDisplay(highlights)
             }
 
+            viewModel.userPosts.observe(this) { posts ->
+                println("📱 ProfileActivity - Posts received: ${posts.size}")
+                if (currentTab == "posts") {
+                    updatePostsGrid(posts)
+                }
+                // Stop refresh indicator when posts load
+                val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+                swipeRefreshLayout?.isRefreshing = false
+            }
+
+            viewModel.favoritePosts.observe(this) { favorites ->
+                println("📱 ProfileActivity - Favorites received: ${favorites.size}")
+                if (currentTab == "favorites") {
+                    updateFavoritesGrid(favorites)
+                }
+                // Stop refresh indicator when favorites load
+                val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+                swipeRefreshLayout?.isRefreshing = false
+            }
+
             viewModel.error.observe(this) { error ->
                 error?.let {
                     println("📱 ProfileActivity - Error: $it")
                     Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
                     viewModel.clearError()
+                    // Stop refresh indicator on error too
+                    val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+                    swipeRefreshLayout?.isRefreshing = false
                 }
             }
 
@@ -154,6 +244,24 @@ class ProfileActivity : BaseNavigationActivity() {
             println("📱 ProfileActivity - Loading user data...")
 
             setupAllClickListeners()
+
+            // Set initial tab indicator based on currentTab
+            viewModel.user.observe(this) { user ->
+                if (user != null) {
+                    // Delay to ensure views are laid out
+                    findViewById<View>(R.id.tab_posts).post {
+                        updateTabIcons()
+                    }
+                }
+            }
+
+            // Initialize SwipeRefreshLayout colors
+            val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+            swipeRefreshLayout?.setColorSchemeColors(
+                Color.parseColor("#7A4F2B"),
+                Color.parseColor("#B88B4A"),
+                Color.parseColor("#FF6B35")
+            )
 
         } catch (e: Exception) {
             println("❌ ProfileActivity CRASH in onCreate: ${e.message}")
@@ -173,6 +281,87 @@ class ProfileActivity : BaseNavigationActivity() {
             storageDir
         ).apply {
             currentPhotoPath = absolutePath
+        }
+    }
+
+    private fun startCrop(sourceUri: Uri) {
+        val destinationUri = Uri.fromFile(File(cacheDir, "cropped_${System.currentTimeMillis()}.jpg"))
+
+        val options = UCrop.Options().apply {
+            setCompressionFormat(Bitmap.CompressFormat.JPEG)
+            setCompressionQuality(90)
+            setCircleDimmedLayer(true)
+            setShowCropFrame(true)
+            setCropFrameColor(Color.parseColor("#7A4F2B"))
+            setCropFrameStrokeWidth(4)
+            setShowCropGrid(true)
+            setCropGridColor(Color.parseColor("#FFFFFF"))
+            setCropGridStrokeWidth(2)
+            setToolbarColor(Color.parseColor("#7A4F2B"))
+            setStatusBarColor(Color.parseColor("#7A4F2B"))
+            setActiveControlsWidgetColor(Color.parseColor("#7A4F2B"))
+            setToolbarTitle("Crop Profile Picture")
+        }
+
+        val uCrop = UCrop.of(sourceUri, destinationUri)
+            .withAspectRatio(1f, 1f)
+            .withMaxResultSize(512, 512)
+            .withOptions(options)
+
+        cropLauncher.launch(uCrop.getIntent(this))
+    }
+
+    private suspend fun uploadCroppedImage(uri: Uri) {
+        if (isUploading) {
+            Toast.makeText(this, "Upload already in progress", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        isUploading = true
+        Toast.makeText(this, "Uploading image...", Toast.LENGTH_SHORT).show()
+
+        try {
+            val file = FileHelper.uriToFile(this, uri)
+            if (file == null) {
+                Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show()
+                isUploading = false
+                return
+            }
+
+            val compressedFile = FileHelper.compressImage(file, maxWidth = 512, quality = 85)
+            val result = uploadRepository.uploadProfilePicture(compressedFile)
+
+            // Clean up temp files
+            if (file.name.startsWith("upload_") || file.name.startsWith("cropped_") || file.name.startsWith("compressed_")) {
+                FileHelper.deleteFile(file)
+            }
+            if (compressedFile != file && (compressedFile.name.startsWith("upload_") || compressedFile.name.startsWith("cropped_") || compressedFile.name.startsWith("compressed_"))) {
+                FileHelper.deleteFile(compressedFile)
+            }
+
+            if (result.isSuccess) {
+                val imageUrl = result.getOrNull()
+                Toast.makeText(this, "Image uploaded successfully!", Toast.LENGTH_SHORT).show()
+
+                // Update profile with new image and auto-refresh
+                currentUser?.let { user ->
+                    viewModel.updateProfile(
+                        profileImageUrl = imageUrl
+                    )
+
+                    // Small delay then refresh
+                    delay(500)
+                    viewModel.loadUserData()
+                }
+            } else {
+                val error = result.exceptionOrNull()?.message ?: "Upload failed"
+                Toast.makeText(this, "Upload failed: $error", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Error uploading: ${e.message}", Toast.LENGTH_SHORT).show()
+        } finally {
+            isUploading = false
         }
     }
 
@@ -232,103 +421,39 @@ class ProfileActivity : BaseNavigationActivity() {
         galleryLauncher.launch("image/*")
     }
 
-    private fun showImageEditDialogForProfile(imageUri: Uri) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_image_edit_simple, null)
-        val imageView = dialogView.findViewById<ImageView>(R.id.iv_edit_image)
-        val btnCrop = dialogView.findViewById<TextView>(R.id.btn_crop)
-        val btnApply = dialogView.findViewById<TextView>(R.id.btn_apply)
-        val btnCancel = dialogView.findViewById<TextView>(R.id.btn_cancel)
-
-        Glide.with(this)
-            .load(imageUri)
-            .centerCrop()
-            .into(imageView)
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .create()
-
-        btnCrop.setOnClickListener {
-            Toast.makeText(this, "Crop feature coming soon", Toast.LENGTH_SHORT).show()
-        }
-
-        btnApply.setOnClickListener {
-            findViewById<ImageView>(R.id.edit_profile_image)?.setImageURI(imageUri)
-            lifecycleScope.launch {
-                uploadProfilePicture()
-            }
-            dialog.dismiss()
-        }
-
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialog.show()
-    }
-
-    private suspend fun uploadProfilePicture(): String? {
-        val uri = selectedProfileImageUri ?: return null
-
-        if (isUploading) {
-            Toast.makeText(this, "Upload already in progress", Toast.LENGTH_SHORT).show()
-            return null
-        }
-
-        isUploading = true
-
-        return try {
-            Toast.makeText(this, "Uploading image...", Toast.LENGTH_SHORT).show()
-
-            val file = FileHelper.uriToFile(this, uri)
-            if (file == null) {
-                Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show()
-                isUploading = false
-                return null
-            }
-
-            val compressedFile = FileHelper.compressImage(file, maxWidth = 800, quality = 80)
-            val result = uploadRepository.uploadProfilePicture(compressedFile)
-
-            // Clean up temp files - with proper null checks
-            if (file.name.startsWith("upload_") || file.name.startsWith("compressed_")) {
-                FileHelper.deleteFile(file)
-            }
-
-            if (compressedFile != file) {
-                if (compressedFile.name.startsWith("upload_") || compressedFile.name.startsWith("compressed_")) {
-                    FileHelper.deleteFile(compressedFile)
-                }
-            }
-
-            if (result.isSuccess) {
-                val imageUrl = result.getOrNull()
-                Toast.makeText(this, "Image uploaded successfully!", Toast.LENGTH_SHORT).show()
-                isUploading = false
-                imageUrl
-            } else {
-                val error = result.exceptionOrNull()?.message ?: "Upload failed"
-                Toast.makeText(this, "Upload failed: $error", Toast.LENGTH_SHORT).show()
-                isUploading = false
-                null
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Error uploading: ${e.message}", Toast.LENGTH_SHORT).show()
-            isUploading = false
-            null
-        }
-    }
-
     private fun setupAllClickListeners() {
         try {
-            val settingsBtn = findViewById<ImageView>(R.id.btn_settings)
-            settingsBtn?.setOnClickListener {
-                println("🔘 Settings button clicked")
+            // Setup SwipeRefreshLayout
+            val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+            swipeRefreshLayout?.setOnRefreshListener {
+                println("🔄 Refreshing profile...")
+                viewModel.refreshData()
+
+                // Fallback: Stop refresh after 3 seconds if not stopped by observers
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (swipeRefreshLayout.isRefreshing) {
+                        swipeRefreshLayout.isRefreshing = false
+                        println("⚠️ Refresh stopped by timeout")
+                    }
+                }, 3000)
+            }
+
+            val menuBtn = findViewById<ImageView>(R.id.btn_menu)
+            menuBtn?.setOnClickListener {
+                println("🔘 Menu button clicked")
                 it.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction {
                     it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
                 }.start()
                 startActivity(Intent(this, SettingsActivity::class.java))
+            }
+
+            val shareProfileBtn = findViewById<TextView>(R.id.btn_share_profile)
+            shareProfileBtn?.setOnClickListener {
+                println("🔘 Share Profile button clicked")
+                it.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100).withEndAction {
+                    it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+                }.start()
+                shareProfile()
             }
 
             val editProfileBtn = findViewById<TextView>(R.id.btn_edit_profile)
@@ -337,9 +462,9 @@ class ProfileActivity : BaseNavigationActivity() {
                 it.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100).withEndAction {
                     it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
                 }.start()
-                currentUser?.let { user ->
-                    showEditProfileDialog(user)
-                }
+
+                val intent = Intent(this, EditProfileActivity::class.java)
+                editProfileLauncher.launch(intent)
             }
 
             val bigPlusButton = findViewById<View>(R.id.big_plus_button)
@@ -348,17 +473,14 @@ class ProfileActivity : BaseNavigationActivity() {
                 it.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction {
                     it.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
                 }.start()
-                startActivity(Intent(this, CreatePostActivity::class.java))
+
+                val intent = Intent(this, CreatePostActivity::class.java)
+                createPostLauncher.launch(intent)
             }
 
             val layoutPosts = findViewById<LinearLayout>(R.id.layout_posts)
             layoutPosts?.setOnClickListener {
                 println("🔘 Posts count clicked")
-                val scrollView = findViewById<ScrollView>(R.id.profile_scroll_view)
-                val postsContainer = findViewById<View>(R.id.posts_container)
-                scrollView?.post {
-                    scrollView.smoothScrollTo(0, postsContainer?.top ?: 0)
-                }
             }
 
             val layoutFollowers = findViewById<LinearLayout>(R.id.layout_followers)
@@ -390,18 +512,12 @@ class ProfileActivity : BaseNavigationActivity() {
                 println("🔘 Posts tab clicked")
                 if (currentTab != "posts") {
                     currentTab = "posts"
-                    val tabPostsIcon = findViewById<ImageView>(R.id.tab_posts_icon)
-                    tabPostsIcon?.colorFilter = PorterDuffColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
-                    val tabFavoritesIcon = findViewById<ImageView>(R.id.tab_favorites_icon)
-                    tabFavoritesIcon?.colorFilter = PorterDuffColorFilter(Color.parseColor("#FFFFFF"), PorterDuff.Mode.SRC_ATOP)
+                    updateTabIcons()
                     currentUser?.let { user ->
-                        loadPostsTab(user)
+                        viewModel.userPosts.value?.let { posts ->
+                            updatePostsGrid(posts)
+                        } ?: viewModel.loadUserPosts(user.firebaseUid)
                     }
-                }
-                val scrollView = findViewById<ScrollView>(R.id.profile_scroll_view)
-                val postsContainer = findViewById<View>(R.id.posts_container)
-                scrollView?.post {
-                    scrollView.smoothScrollTo(0, postsContainer?.top ?: 0)
                 }
             }
 
@@ -410,12 +526,11 @@ class ProfileActivity : BaseNavigationActivity() {
                 println("🔘 Favorites tab clicked")
                 if (currentTab != "favorites") {
                     currentTab = "favorites"
-                    val tabFavoritesIcon = findViewById<ImageView>(R.id.tab_favorites_icon)
-                    tabFavoritesIcon?.colorFilter = PorterDuffColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
-                    val tabPostsIcon = findViewById<ImageView>(R.id.tab_posts_icon)
-                    tabPostsIcon?.colorFilter = PorterDuffColorFilter(Color.parseColor("#FFFFFF"), PorterDuff.Mode.SRC_ATOP)
+                    updateTabIcons()
                     currentUser?.let { user ->
-                        loadFavoritesTab(user)
+                        viewModel.favoritePosts.value?.let { favorites ->
+                            updateFavoritesGrid(favorites)
+                        } ?: viewModel.loadFavoritePosts(user.firebaseUid)
                     }
                 }
             }
@@ -428,6 +543,68 @@ class ProfileActivity : BaseNavigationActivity() {
         }
     }
 
+    private fun updateTabIcons() {
+        val tabPostsIcon = findViewById<ImageView>(R.id.tab_posts_icon)
+        val tabFavoritesIcon = findViewById<ImageView>(R.id.tab_favorites_icon)
+        val tabIndicator = findViewById<View>(R.id.tab_indicator)
+        val tabPosts = findViewById<View>(R.id.tab_posts)
+        val tabFavorites = findViewById<View>(R.id.tab_favorites)
+
+        // Make sure views exist before proceeding
+        if (tabPosts == null || tabFavorites == null || tabIndicator == null) {
+            return
+        }
+
+        tabPosts.post {
+            if (currentTab == "posts") {
+                // Set colors
+                tabPostsIcon?.colorFilter = PorterDuffColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                tabFavoritesIcon?.colorFilter = PorterDuffColorFilter(Color.parseColor("#999999"), PorterDuff.Mode.SRC_ATOP)
+
+                // Move indicator to posts tab
+                val targetX = tabPosts.x
+                val targetWidth = tabPosts.width
+
+                val layoutParams = tabIndicator.layoutParams
+                layoutParams.width = targetWidth
+                tabIndicator.layoutParams = layoutParams
+
+                tabIndicator.animate()
+                    ?.x(targetX)
+                    ?.setDuration(200)
+                    ?.start()
+            } else {
+                // Set colors
+                tabFavoritesIcon?.colorFilter = PorterDuffColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                tabPostsIcon?.colorFilter = PorterDuffColorFilter(Color.parseColor("#999999"), PorterDuff.Mode.SRC_ATOP)
+
+                // Move indicator to favorites tab
+                val targetX = tabFavorites.x
+                val targetWidth = tabFavorites.width
+
+                val layoutParams = tabIndicator.layoutParams
+                layoutParams.width = targetWidth
+                tabIndicator.layoutParams = layoutParams
+
+                tabIndicator.animate()
+                    ?.x(targetX)
+                    ?.setDuration(200)
+                    ?.start()
+            }
+        }
+    }
+
+    private fun shareProfile() {
+        currentUser?.let { user ->
+            val shareText = "Check out my profile on PawSociety!\n\nUsername: ${user.username}\n\nDownload the app now!"
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareText)
+            }
+            startActivity(Intent.createChooser(shareIntent, "Share profile via"))
+        }
+    }
+
     private fun updateProfileWithUserData(user: ApiUser) {
         try {
             val tvUsername = findViewById<TextView>(R.id.tv_username)
@@ -436,31 +613,64 @@ class ProfileActivity : BaseNavigationActivity() {
 
             setProfilePicture(user)
 
-            val bioTextView = findViewById<TextView>(R.id.tv_bio)
-            val location = user.location ?: ""
-            val bio = user.bio ?: ""
+            // Instagram Style Bio
+            val tvFullName = findViewById<TextView>(R.id.tv_full_name)
+            tvFullName?.text = user.fullName
+            tvFullName?.visibility = View.VISIBLE
 
-            val newBio = when {
-                location.isNotEmpty() && bio.isNotEmpty() -> "$location\n$bio"
-                bio.isNotEmpty() -> bio
-                location.isNotEmpty() -> location
-                else -> user.fullName
+            val tvUsernameBio = findViewById<TextView>(R.id.tv_username_bio)
+            tvUsernameBio?.text = "@${user.username}"
+            tvUsernameBio?.visibility = View.VISIBLE
+
+            val tvBioText = findViewById<TextView>(R.id.tv_bio_text)
+            tvBioText?.text = user.bio ?: ""
+
+            val tvLocationBio = findViewById<TextView>(R.id.tv_location_bio)
+            if (!user.location.isNullOrEmpty()) {
+                tvLocationBio?.text = user.location
+                tvLocationBio?.visibility = View.VISIBLE
+            } else {
+                tvLocationBio?.visibility = View.GONE
             }
 
-            bioTextView?.text = newBio
-            println("✅ Bio set to: $newBio")
+            println("✅ Bio updated - Full Name: ${user.fullName}, Username: @${user.username}")
 
             val tvPostCount = findViewById<TextView>(R.id.tv_post_count)
-            tvPostCount?.text = "0"
-            val tvFollowerCount = findViewById<TextView>(R.id.tv_follower_count)
-            tvFollowerCount?.text = "0"
-            val tvFollowingCount = findViewById<TextView>(R.id.tv_following_count)
-            tvFollowingCount?.text = "0"
+            tvPostCount?.text = viewModel.userPosts.value?.size.toString() ?: "0"
+
+            // Fetch real follower counts
+            lifecycleScope.launch {
+                try {
+                    val followRepository = com.example.pawsociety.data.repository.FollowRepository()
+
+                    val followersResult = followRepository.getFollowersCount(user.firebaseUid)
+                    val tvFollowerCount = findViewById<TextView>(R.id.tv_follower_count)
+                    if (followersResult.isSuccess) {
+                        tvFollowerCount?.text = followersResult.getOrNull().toString()
+                    } else {
+                        tvFollowerCount?.text = "0"
+                    }
+
+                    val followingResult = followRepository.getFollowingCount(user.firebaseUid)
+                    val tvFollowingCount = findViewById<TextView>(R.id.tv_following_count)
+                    if (followingResult.isSuccess) {
+                        tvFollowingCount?.text = followingResult.getOrNull().toString()
+                    } else {
+                        tvFollowingCount?.text = "0"
+                    }
+                } catch (e: Exception) {
+                    println("❌ Error loading follower counts: ${e.message}")
+                }
+            }
 
             if (currentTab == "posts") {
-                loadPostsTab(user)
+                viewModel.userPosts.value?.let { posts ->
+                    updatePostsGrid(posts)
+                }
             } else {
-                loadFavoritesTab(user)
+                viewModel.favoritePosts.value?.let { favorites ->
+                    updateFavoritesGrid(favorites)
+                }
             }
         } catch (e: Exception) {
             println("❌ Error in updateProfileWithUserData: ${e.message}")
@@ -576,7 +786,6 @@ class ProfileActivity : BaseNavigationActivity() {
             val titleText = highlightView.findViewById<TextView>(R.id.highlight_title)
 
             if (!highlight.imageUrl.isNullOrEmpty()) {
-                // Show image in circle
                 circleImage.visibility = View.VISIBLE
                 circleText.visibility = View.GONE
                 circleBackground.visibility = View.GONE
@@ -593,7 +802,6 @@ class ProfileActivity : BaseNavigationActivity() {
                     .placeholder(android.R.drawable.ic_menu_gallery)
                     .into(circleImage)
             } else {
-                // Show emoji with colored background
                 circleImage.visibility = View.GONE
                 circleText.visibility = View.VISIBLE
                 circleBackground.visibility = View.VISIBLE
@@ -737,6 +945,47 @@ class ProfileActivity : BaseNavigationActivity() {
         }
     }
 
+    private fun updatePostsGrid(posts: List<ApiPost>) {
+        val postsGrid = findViewById<LinearLayout>(R.id.posts_grid)
+        val bigPlusButton = findViewById<View>(R.id.big_plus_button)
+
+        findViewById<TextView>(R.id.tv_post_count)?.text = posts.size.toString()
+
+        if (posts.isNotEmpty()) {
+            bigPlusButton?.visibility = View.GONE
+            postsGrid?.visibility = View.VISIBLE
+            createPostsGrid(postsGrid!!, posts)
+        } else {
+            bigPlusButton?.visibility = View.VISIBLE
+            postsGrid?.visibility = View.GONE
+        }
+    }
+
+    private fun updateFavoritesGrid(favorites: List<ApiPost>) {
+        val postsGrid = findViewById<LinearLayout>(R.id.posts_grid)
+        val bigPlusButton = findViewById<View>(R.id.big_plus_button)
+
+        bigPlusButton?.visibility = View.GONE
+        postsGrid?.visibility = View.VISIBLE
+        postsGrid?.removeAllViews()
+
+        if (favorites.isNotEmpty()) {
+            createPostsGrid(postsGrid!!, favorites)
+        } else {
+            val emptyView = TextView(this)
+            emptyView.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            emptyView.gravity = android.view.Gravity.CENTER
+            emptyView.text = "No favorites yet\nSave posts you like from the home feed!"
+            emptyView.setTextColor(Color.parseColor("#999999"))
+            emptyView.textSize = 16f
+            emptyView.setPadding(0, 100, 0, 100)
+            postsGrid?.addView(emptyView)
+        }
+    }
+
     private fun createPostsGrid(container: LinearLayout, posts: List<ApiPost>) {
         try {
             container.removeAllViews()
@@ -762,8 +1011,15 @@ class ProfileActivity : BaseNavigationActivity() {
                 "#E91E63", "#3F51B5", "#009688"
             )
 
-            val rows = (posts.size + 2) / 3
-            val spacing = 4
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val spacing = 2
+            val columns = 3
+
+            val itemSize = (screenWidth - (spacing * (columns - 1))) / columns
+
+            val rows = (posts.size + columns - 1) / columns
+            var postIndex = 0
 
             for (row in 0 until rows) {
                 val rowLayout = LinearLayout(this)
@@ -773,97 +1029,95 @@ class ProfileActivity : BaseNavigationActivity() {
                 )
                 rowLayout.orientation = LinearLayout.HORIZONTAL
 
-                for (col in 0 until 3) {
-                    val postIndex = row * 3 + col
+                for (col in 0 until columns) {
+                    if (postIndex >= posts.size) {
+                        val emptyContainer = FrameLayout(this)
+                        val emptyParams = LinearLayout.LayoutParams(
+                            itemSize,
+                            itemSize
+                        )
+                        if (col > 0) {
+                            emptyParams.leftMargin = spacing
+                        }
+                        emptyContainer.layoutParams = emptyParams
+                        rowLayout.addView(emptyContainer)
+                        continue
+                    }
+
                     val squareContainer = FrameLayout(this)
                     val squareParams = LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
+                        itemSize,
+                        itemSize
                     )
 
-                    squareParams.setMargins(
-                        if (col == 0) 0 else spacing,
-                        0,
-                        0,
-                        if (row < rows - 1) spacing else 0
-                    )
+                    if (col > 0) {
+                        squareParams.leftMargin = spacing
+                    }
+
                     squareContainer.layoutParams = squareParams
 
-                    // Force square aspect ratio
-                    squareContainer.post {
-                        val width = squareContainer.width
-                        if (width > 0) {
-                            squareContainer.layoutParams.height = width
-                            squareContainer.requestLayout()
-                        }
-                    }
+                    val post = posts[postIndex]
+                    val postView = layoutInflater.inflate(R.layout.item_profile_post, squareContainer, false)
+                    val postContent = postView.findViewById<TextView>(R.id.post_content)
+                    val postImage = postView.findViewById<ImageView>(R.id.post_image)
 
-                    if (postIndex < posts.size) {
-                        val post = posts[postIndex]
-                        val postView = layoutInflater.inflate(R.layout.item_profile_post, squareContainer, false)
-                        val postContent = postView.findViewById<TextView>(R.id.post_content)
-                        val postImage = postView.findViewById<ImageView>(R.id.post_image)
-
-                        if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
-                            val imageUrl = post.imageUrls[0]
-                            val fullImageUrl = if (imageUrl.startsWith("http")) {
-                                imageUrl
-                            } else {
-                                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$imageUrl"
-                            }
-
-                            // Show image, hide text
-                            postImage.visibility = View.VISIBLE
-                            postContent.visibility = View.GONE
-
-                            // Load image with proper scaling
-                            Glide.with(this)
-                                .load(fullImageUrl)
-                                .centerCrop()  // This fills the square properly
-                                .override(300, 300)  // Force a reasonable size
-                                .placeholder(android.R.drawable.ic_menu_gallery)
-                                .error(android.R.drawable.ic_menu_report_image)
-                                .into(postImage)
+                    if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
+                        val imageUrl = post.imageUrls[0]
+                        val fullImageUrl = if (imageUrl.startsWith("http")) {
+                            imageUrl
                         } else {
-                            // No image - show colored placeholder with emoji
-                            postImage.visibility = View.GONE
-                            postContent.visibility = View.VISIBLE
-
-                            val emoji = when {
-                                post.petType.contains("dog", ignoreCase = true) -> "🐶"
-                                post.petType.contains("cat", ignoreCase = true) -> "🐱"
-                                post.petType.contains("bird", ignoreCase = true) -> "🐦"
-                                post.petType.contains("rabbit", ignoreCase = true) -> "🐰"
-                                post.petType.contains("fish", ignoreCase = true) -> "🐟"
-                                else -> "🐾"
-                            }
-
-                            postContent.text = "$emoji\n${post.petName}"
-                            postContent.setBackgroundColor(Color.parseColor(colors[postIndex % colors.size]))
-                            postContent.setTextColor(Color.WHITE)
-                            postContent.textSize = 14f
+                            "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$imageUrl"
                         }
 
-                        postView.setOnClickListener {
-                            val intent = Intent(this@ProfileActivity, PostViewActivity::class.java)
-                            intent.putExtra("post", post)
-                            startActivity(intent)
-                            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                        }
-                        squareContainer.addView(postView)
+                        postImage.visibility = View.VISIBLE
+                        postContent.visibility = View.GONE
+
+                        Glide.with(this)
+                            .load(fullImageUrl)
+                            .centerCrop()
+                            .override(itemSize, itemSize)
+                            .placeholder(android.R.drawable.ic_menu_gallery)
+                            .error(android.R.drawable.ic_menu_report_image)
+                            .into(postImage)
                     } else {
-                        // Empty cell - invisible
-                        val emptyView = View(this)
-                        emptyView.layoutParams = FrameLayout.LayoutParams(
-                            FrameLayout.LayoutParams.MATCH_PARENT,
-                            FrameLayout.LayoutParams.MATCH_PARENT
-                        )
-                        emptyView.visibility = View.INVISIBLE
-                        squareContainer.addView(emptyView)
+                        postImage.visibility = View.GONE
+                        postContent.visibility = View.VISIBLE
+
+                        val emoji = when {
+                            post.petType.contains("dog", ignoreCase = true) -> "🐶"
+                            post.petType.contains("cat", ignoreCase = true) -> "🐱"
+                            post.petType.contains("bird", ignoreCase = true) -> "🐦"
+                            post.petType.contains("rabbit", ignoreCase = true) -> "🐰"
+                            post.petType.contains("fish", ignoreCase = true) -> "🐟"
+                            else -> "🐾"
+                        }
+
+                        postContent.text = "$emoji\n${post.petName}"
+                        postContent.setBackgroundColor(Color.parseColor(colors[postIndex % colors.size]))
+                        postContent.setTextColor(Color.WHITE)
+                        postContent.textSize = 14f
                     }
+
+                    val currentPosition = postIndex
+                    postView.setOnClickListener {
+                        val intent = Intent(this@ProfileActivity, PostViewActivity::class.java)
+                        intent.putExtra("all_posts", ArrayList(posts))
+                        intent.putExtra("position", currentPosition)
+                        startActivity(intent)
+                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                    }
+
+                    squareContainer.addView(postView)
                     rowLayout.addView(squareContainer)
+                    postIndex++
                 }
+
+                if (row < rows - 1) {
+                    val rowParams = rowLayout.layoutParams as LinearLayout.LayoutParams
+                    rowParams.bottomMargin = spacing
+                    rowLayout.layoutParams = rowParams
+                }
+
                 container.addView(rowLayout)
             }
         } catch (e: Exception) {
@@ -1017,19 +1271,10 @@ class ProfileActivity : BaseNavigationActivity() {
                             val newUsername = etUsername.text.toString().trim()
                             val newBio = etBio?.text.toString().trim()
 
-                            var profileImageUrl = user.profileImageUrl
-                            if (selectedProfileImageUri != null) {
-                                val uploadedUrl = uploadProfilePicture()
-                                if (uploadedUrl != null) {
-                                    profileImageUrl = uploadedUrl
-                                }
-                            }
-
                             viewModel.updateProfile(
                                 fullName = newFullName,
                                 username = newUsername,
-                                bio = newBio,
-                                profileImageUrl = profileImageUrl
+                                bio = newBio
                             )
 
                             Toast.makeText(this@ProfileActivity, "Profile updated!", Toast.LENGTH_SHORT).show()
@@ -1126,7 +1371,13 @@ class ProfileActivity : BaseNavigationActivity() {
             currentUser?.let {
                 this.currentUser = it
                 updateProfileWithUserData(it)
+                viewModel.refreshData()
             }
+
+            // Force stop any stuck refresh indicator
+            val swipeRefreshLayout = findViewById<SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+            swipeRefreshLayout?.isRefreshing = false
+
         } catch (e: Exception) {
             println("❌ Error in onResume: ${e.message}")
         }

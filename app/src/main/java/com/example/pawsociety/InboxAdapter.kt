@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -15,11 +16,20 @@ import com.example.pawsociety.api.ApiUser
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Interface for long click listener
+interface OnItemLongClickListener {
+    fun onItemLongClick(conversation: ApiConversation, user: ApiUser)
+}
+
 class InboxAdapter(
     private val conversations: List<ApiConversation>,
     private val usersMap: Map<String, ApiUser>,
     private val currentUserId: String,
-    private val onUserClick: (ApiUser) -> Unit
+    private val isRequestTab: Boolean = false,
+    private val onUserClick: (ApiUser) -> Unit,
+    private val onAcceptRequest: (ApiConversation) -> Unit,
+    private val onRejectRequest: (ApiConversation) -> Unit,
+    private val onLongClick: OnItemLongClickListener
 ) : RecyclerView.Adapter<InboxAdapter.InboxViewHolder>() {
 
     private val colors = listOf(
@@ -38,6 +48,9 @@ class InboxAdapter(
         val tvUnread: TextView = itemView.findViewById(R.id.tv_unread)
         val redPing: View = itemView.findViewById(R.id.red_ping)
         val onlineIndicator: View = itemView.findViewById(R.id.online_indicator)
+        val btnAccept: Button = itemView.findViewById(R.id.btn_accept)
+        val btnReject: Button = itemView.findViewById(R.id.btn_reject)
+        val requestBadge: TextView = itemView.findViewById(R.id.request_badge)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InboxViewHolder {
@@ -67,56 +80,110 @@ class InboxAdapter(
         // Set username
         holder.tvUsername.text = user.username
 
-        // Set last message
-        if (conversation.lastMessage != null) {
-            val lastMsg = conversation.lastMessage!!
-            val messageText = when {
-                !lastMsg.text.isNullOrEmpty() -> {
-                    if (lastMsg.text.length > 30) {
-                        lastMsg.text.substring(0, 27) + "..."
-                    } else {
-                        lastMsg.text
-                    }
-                }
-                !lastMsg.imageUrl.isNullOrEmpty() -> "📷 Photo"
-                else -> "No messages yet"
-            }
-
-            val displayText = if (lastMsg.senderUid == currentUserId) {
-                "You: $messageText"
-            } else {
-                messageText
-            }
-            holder.tvLastMessage.text = displayText
-        } else {
-            holder.tvLastMessage.text = "No messages yet"
-        }
-
-        // Set time
-        holder.tvTime.text = formatTime(conversation.lastMessageAt)
-
-        // Show unread count
-        if (conversation.unreadCount > 0) {
-            holder.redPing.visibility = View.VISIBLE
-            holder.tvUnread.visibility = View.VISIBLE
-            holder.tvUnread.text = conversation.unreadCount.toString()
-            holder.tvLastMessage.setTypeface(null, android.graphics.Typeface.BOLD)
-            holder.tvLastMessage.setTextColor(Color.BLACK)
-        } else {
+        // Handle different states based on tab type
+        if (isRequestTab) {
+            // REQUEST TAB - Show accept/reject buttons
+            holder.btnAccept.visibility = View.VISIBLE
+            holder.btnReject.visibility = View.VISIBLE
             holder.redPing.visibility = View.GONE
             holder.tvUnread.visibility = View.GONE
-            holder.tvLastMessage.setTypeface(null, android.graphics.Typeface.NORMAL)
-            holder.tvLastMessage.setTextColor(Color.parseColor("#666666"))
-        }
+            holder.requestBadge.visibility = View.VISIBLE
+            holder.requestBadge.text = "REQUEST"
 
-        // Show online status if user is online
-        if (onlineStatus[otherUserId] == true) {
-            holder.onlineIndicator.visibility = View.VISIBLE
+            // Set last message text
+            if (conversation.lastMessage != null) {
+                val lastMsg = conversation.lastMessage!!
+                val messageText = when {
+                    !lastMsg.text.isNullOrEmpty() -> {
+                        if (lastMsg.text.length > 30) {
+                            lastMsg.text.substring(0, 27) + "..."
+                        } else {
+                            lastMsg.text
+                        }
+                    }
+                    !lastMsg.imageUrl.isNullOrEmpty() -> "📷 Photo"
+                    else -> "Wants to message you"
+                }
+                holder.tvLastMessage.text = "📨 $messageText"
+            } else {
+                holder.tvLastMessage.text = "📨 Wants to message you"
+            }
+
+            // Show pending count if available
+            if (conversation.pendingCount != null && conversation.pendingCount > 0) {
+                holder.requestBadge.text = "${conversation.pendingCount} REQUEST${if (conversation.pendingCount > 1) "S" else ""}"
+                holder.requestBadge.visibility = View.VISIBLE
+            } else {
+                holder.requestBadge.visibility = View.GONE
+            }
+
+            // Accept button click
+            holder.btnAccept.setOnClickListener {
+                onAcceptRequest(conversation)
+            }
+
+            // Reject button click
+            holder.btnReject.setOnClickListener {
+                onRejectRequest(conversation)
+            }
+
         } else {
-            holder.onlineIndicator.visibility = View.GONE
+            // MESSAGES TAB - Hide accept/reject buttons, show message details
+            holder.btnAccept.visibility = View.GONE
+            holder.btnReject.visibility = View.GONE
+            holder.requestBadge.visibility = View.GONE
+
+            // Set last message
+            if (conversation.lastMessage != null) {
+                val lastMsg = conversation.lastMessage!!
+                val messageText = when {
+                    !lastMsg.text.isNullOrEmpty() -> {
+                        if (lastMsg.text.length > 30) {
+                            lastMsg.text.substring(0, 27) + "..."
+                        } else {
+                            lastMsg.text
+                        }
+                    }
+                    !lastMsg.imageUrl.isNullOrEmpty() -> "📷 Photo"
+                    else -> "No messages yet"
+                }
+
+                val displayText = if (lastMsg.senderUid == currentUserId) {
+                    "You: $messageText"
+                } else {
+                    messageText
+                }
+                holder.tvLastMessage.text = displayText
+            } else {
+                holder.tvLastMessage.text = "No messages yet"
+            }
+
+            // Set time
+            holder.tvTime.text = formatTime(conversation.lastMessageAt)
+
+            // Show unread count
+            if (conversation.unreadCount > 0) {
+                holder.redPing.visibility = View.VISIBLE
+                holder.tvUnread.visibility = View.VISIBLE
+                holder.tvUnread.text = conversation.unreadCount.toString()
+                holder.tvLastMessage.setTypeface(null, android.graphics.Typeface.BOLD)
+                holder.tvLastMessage.setTextColor(Color.BLACK)
+            } else {
+                holder.redPing.visibility = View.GONE
+                holder.tvUnread.visibility = View.GONE
+                holder.tvLastMessage.setTypeface(null, android.graphics.Typeface.NORMAL)
+                holder.tvLastMessage.setTextColor(Color.parseColor("#666666"))
+            }
+
+            // Show online status if user is online
+            if (onlineStatus[otherUserId] == true) {
+                holder.onlineIndicator.visibility = View.VISIBLE
+            } else {
+                holder.onlineIndicator.visibility = View.GONE
+            }
         }
 
-        // ========== FIXED: PROFILE IMAGE WITH CIRCLE CROP ==========
+        // ===== PROFILE IMAGE =====
         if (!user.profileImageUrl.isNullOrEmpty()) {
             val fullImageUrl = if (user.profileImageUrl.startsWith("http")) {
                 user.profileImageUrl
@@ -128,12 +195,11 @@ class InboxAdapter(
             holder.ivProfile.visibility = View.VISIBLE
             holder.tvProfileIcon.visibility = View.GONE
 
-            // IMPORTANT: Clear any previous image to avoid flickering
+            // Clear any previous image
             holder.ivProfile.setImageDrawable(null)
 
-            // Load image with CircleCrop - MULTIPLE METHODS TO ENSURE IT WORKS
+            // Load image with CircleCrop
             try {
-                // Method 1: Using RequestOptions
                 val requestOptions = RequestOptions()
                     .placeholder(android.R.drawable.ic_menu_gallery)
                     .error(android.R.drawable.ic_menu_report_image)
@@ -144,19 +210,9 @@ class InboxAdapter(
                     .apply(requestOptions)
                     .into(holder.ivProfile)
 
-                // Alternative Method 2: If above doesn't work, uncomment this:
-                /*
-                Glide.with(holder.itemView.context)
-                    .load(fullImageUrl)
-                    .circleCrop()
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .error(android.R.drawable.ic_menu_report_image)
-                    .into(holder.ivProfile)
-                */
-
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Fallback to text icon if image loading fails
+                // Fallback to text icon
                 holder.ivProfile.visibility = View.GONE
                 holder.tvProfileIcon.visibility = View.VISIBLE
                 showTextIcon(holder, user)
@@ -168,8 +224,21 @@ class InboxAdapter(
             showTextIcon(holder, user)
         }
 
+        // Regular click listener - different behavior for requests vs messages
         holder.itemView.setOnClickListener {
-            onUserClick(user)
+            if (isRequestTab) {
+                // For requests, clicking opens the user profile
+                onUserClick(user)
+            } else {
+                // For messages, clicking opens the chat
+                onUserClick(user)
+            }
+        }
+
+        // Long click listener for both tabs
+        holder.itemView.setOnLongClickListener {
+            onLongClick.onItemLongClick(conversation, user)
+            true
         }
     }
 
@@ -196,7 +265,6 @@ class InboxAdapter(
 
     // Function to update user data (for real-time profile changes)
     fun updateUser(userId: String, updatedUser: ApiUser) {
-        // This would require usersMap to be mutable - you'd need to change that in InboxActivity
         notifyDataSetChanged()
     }
 

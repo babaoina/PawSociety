@@ -1,7 +1,9 @@
 package com.example.pawsociety
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -18,16 +20,27 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.pawsociety.api.ApiMessage
 import com.example.pawsociety.api.ApiUser
+import com.example.pawsociety.api.ConversationsResponse
 import com.example.pawsociety.data.repository.BlockRepository
 import com.example.pawsociety.data.repository.ChatRepository
 import com.example.pawsociety.data.repository.ReportRepository
 import com.example.pawsociety.data.repository.UserRepository
 import com.example.pawsociety.util.SessionManager
 import com.example.pawsociety.util.SocketManager
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
+
+// DataStore imports
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+
+private val Context.dataStore by preferencesDataStore(name = "chat_preferences")
 
 class ChatActivity : AppCompatActivity() {
 
@@ -60,7 +73,10 @@ class ChatActivity : AppCompatActivity() {
     private val typingHandler = Handler(Looper.getMainLooper())
     private var typingTimeout: Runnable? = null
     private var isTyping = false
+
+    // Mute feature
     private var isMuted = false
+    private var muteCheckJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,10 +112,39 @@ class ChatActivity : AppCompatActivity() {
         loadReceiverUser()
         setupRecyclerView()
         setupClickListeners()
+        checkIfBlocked()
 
         // Connect to socket and load messages
         setupSocket()
         loadMessages()
+
+        // Load saved mute status
+        loadMuteStatus()
+    }
+
+    private fun checkIfBlocked() {
+        lifecycleScope.launch {
+            val currentUser = sessionManager.getCurrentUser() ?: return@launch
+
+            // Check if current user blocked the receiver
+            val blockedByMeResult = blockRepository.checkBlockStatus(currentUser.firebaseUid, receiverUid)
+            val blockedByMe = blockedByMeResult.isSuccess && blockedByMeResult.getOrNull() == true
+
+            // Check if receiver blocked current user
+            val blockedMeResult = blockRepository.checkBlockStatus(receiverUid, currentUser.firebaseUid)
+            val blockedMe = blockedMeResult.isSuccess && blockedMeResult.getOrNull() == true
+
+            if (blockedByMe || blockedMe) {
+                runOnUiThread {
+                    Toast.makeText(
+                        this@ChatActivity,
+                        "This conversation is no longer available",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                }
+            }
+        }
     }
 
     private fun initializeViews() {
@@ -237,73 +282,83 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun showChatSettingsDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_chat_settings, null)
+        try {
+            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_chat_settings, null)
 
-        val profileIcon = dialogView.findViewById<TextView>(R.id.dialog_profile_icon)
-        val username = dialogView.findViewById<TextView>(R.id.dialog_username)
-        val btnClose = dialogView.findViewById<TextView>(R.id.btn_close_dialog)
-        val optionViewProfile = dialogView.findViewById<LinearLayout>(R.id.option_view_profile)
-        val optionMute = dialogView.findViewById<LinearLayout>(R.id.option_mute)
-        val switchMute = dialogView.findViewById<Switch>(R.id.switch_mute)
-        val optionBlock = dialogView.findViewById<LinearLayout>(R.id.option_block)
-        val optionReport = dialogView.findViewById<LinearLayout>(R.id.option_report)
-        val optionClearChat = dialogView.findViewById<LinearLayout>(R.id.option_clear_chat)
+            // Initialize views - FIX: Use findViewById correctly
+            val switchMute = dialogView.findViewById<Switch>(R.id.switch_mute)
+            val profileIcon = dialogView.findViewById<TextView>(R.id.dialog_profile_icon)
+            val username = dialogView.findViewById<TextView>(R.id.dialog_username)
+            val btnClose = dialogView.findViewById<TextView>(R.id.btn_close_dialog)
+            val optionViewProfile = dialogView.findViewById<LinearLayout>(R.id.option_view_profile)
+            val optionMute = dialogView.findViewById<LinearLayout>(R.id.option_mute)
+            val optionBlock = dialogView.findViewById<LinearLayout>(R.id.option_block)
+            val optionReport = dialogView.findViewById<LinearLayout>(R.id.option_report)
+            val optionClearChat = dialogView.findViewById<LinearLayout>(R.id.option_clear_chat)
 
-        // Set user info
-        username.text = receiverUsername
-        val firstLetter = if (receiverUsername.isNotEmpty()) {
-            receiverUsername.first().toString().uppercase()
-        } else {
-            "?"
-        }
-        profileIcon.text = firstLetter
+            // Set user info
+            username.text = receiverUsername
+            profileIcon.text = receiverUsername.firstOrNull()?.uppercase() ?: "?"
 
-        // Set mute state
-        switchMute.isChecked = isMuted
+            // Load the mute state
+            lifecycleScope.launch {
+                val muteKey = booleanPreferencesKey("mute_$receiverUid")
+                val prefs = dataStore.data.first()
+                isMuted = prefs[muteKey] ?: false
 
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        btnClose.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        optionViewProfile.setOnClickListener {
-            dialog.dismiss()
-            openUserProfile()
-        }
-
-        switchMute.setOnCheckedChangeListener { _, isChecked ->
-            isMuted = isChecked
-            if (isChecked) {
-                Toast.makeText(this, "Notifications muted for $receiverUsername", Toast.LENGTH_SHORT).show()
-                // TODO: Save mute preference to backend
-            } else {
-                Toast.makeText(this, "Notifications unmuted", Toast.LENGTH_SHORT).show()
-                // TODO: Save mute preference to backend
+                runOnUiThread {
+                    switchMute.isChecked = isMuted
+                }
             }
-        }
 
-        optionBlock.setOnClickListener {
-            dialog.dismiss()
-            showBlockConfirmation()
-        }
+            val dialog = AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(true)
+                .create()
 
-        optionReport.setOnClickListener {
-            dialog.dismiss()
-            showReportDialog()
-        }
+            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        optionClearChat.setOnClickListener {
-            dialog.dismiss()
-            showClearChatConfirmation()
-        }
+            btnClose.setOnClickListener { dialog.dismiss() }
 
-        dialog.show()
+            optionViewProfile.setOnClickListener {
+                dialog.dismiss()
+                openUserProfile()
+            }
+
+            // Entire row click toggles the switch
+            optionMute.setOnClickListener {
+                switchMute.isChecked = !switchMute.isChecked
+            }
+
+            // Mute switch listener
+            switchMute.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked != isMuted) {
+                    toggleMuteWithSwitch(isChecked)
+                }
+            }
+
+            optionBlock.setOnClickListener {
+                dialog.dismiss()
+                showBlockConfirmation()
+            }
+
+            optionReport.setOnClickListener {
+                dialog.dismiss()
+                showReportDialog()
+            }
+
+            optionClearChat.setOnClickListener {
+                dialog.dismiss()
+                showClearChatConfirmation()
+            }
+
+            dialog.show()
+
+        } catch (e: Exception) {
+            println("❌ Error in showChatSettingsDialog: ${e.message}")
+            e.printStackTrace()
+            Toast.makeText(this, "Settings not available", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showBlockConfirmation() {
@@ -361,7 +416,7 @@ class ChatActivity : AppCompatActivity() {
     private fun showClearChatConfirmation() {
         AlertDialog.Builder(this)
             .setTitle("Clear Chat")
-            .setMessage("Are you sure you want to clear this conversation? This cannot be undone.")
+            .setMessage("Are you sure you want to clear this conversation? This will only clear messages for you.")
             .setPositiveButton("Clear") { _, _ ->
                 clearChat()
             }
@@ -370,32 +425,54 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun clearChat() {
-        // TODO: Implement clear chat functionality
-        Toast.makeText(this, "Chat cleared", Toast.LENGTH_SHORT).show()
-        messageList.clear()
-        messageAdapter.notifyDataSetChanged()
+        if (currentChatId.isEmpty()) {
+            Toast.makeText(this, "No chat to clear", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                Toast.makeText(this@ChatActivity, "Clearing chat...", Toast.LENGTH_SHORT).show()
+
+                val result = chatRepository.clearChat(currentChatId, currentUserUid)
+
+                if (result.isSuccess) {
+                    messageList.clear()
+                    messageAdapter.notifyDataSetChanged()
+                    Toast.makeText(this@ChatActivity, "Chat cleared (for you only)", Toast.LENGTH_SHORT).show()
+                } else {
+                    val errorMsg = result.exceptionOrNull()?.message ?: "Failed to clear chat"
+                    Toast.makeText(this@ChatActivity, errorMsg, Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@ChatActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // ==================== SOCKET SETUP ====================
     private fun setupSocket() {
-        // Connect to socket
         SocketManager.connect()
 
-        // Join user's room
         if (currentUserUid.isNotEmpty()) {
             SocketManager.joinUserRoom(currentUserUid)
         }
 
-        // Listen for new messages
         SocketManager.on("new-message") { args ->
             if (args.isNotEmpty()) {
                 try {
                     val data = args[0] as? JSONObject
                     if (data != null) {
                         val message = parseMessageFromJson(data)
+
+                        // Check mute status before showing notification
+                        if (isMuted && message.receiverUid == currentUserUid) {
+                            Log.d(tag, "📵 Message received but user is muted - no notification")
+                            // Still add to chat list but don't show notification
+                        }
+
                         runOnUiThread {
                             addNewMessage(message)
-                            // If this message is for current user, mark as read
                             if (message.receiverUid == currentUserUid) {
                                 markMessagesAsRead()
                             }
@@ -407,7 +484,6 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        // Listen for message sent confirmation
         SocketManager.on("message-sent") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -424,7 +500,6 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        // Listen for typing indicators
         SocketManager.on("user-typing") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -445,7 +520,6 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        // Listen for message read receipts
         SocketManager.on("message-read") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -458,6 +532,26 @@ class ChatActivity : AppCompatActivity() {
                     }
                 } catch (e: Exception) {
                     Log.e(tag, "Error parsing message read: ${e.message}")
+                }
+            }
+        }
+
+        SocketManager.on("chat-cleared") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as? JSONObject
+                    if (data != null) {
+                        val chatId = data.optString("chatId", "")
+                        if (chatId == currentChatId) {
+                            runOnUiThread {
+                                messageList.clear()
+                                messageAdapter.notifyDataSetChanged()
+                                Toast.makeText(this@ChatActivity, "Chat was cleared", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(tag, "Error parsing chat cleared: ${e.message}")
                 }
             }
         }
@@ -477,12 +571,11 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun addNewMessage(message: ApiMessage) {
-        // Only add if it belongs to this chat
         if (message.chatId == currentChatId ||
             (message.senderUid == receiverUid && message.receiverUid == currentUserUid) ||
-            (message.senderUid == currentUserUid && message.receiverUid == receiverUid)) {
+            (message.senderUid == currentUserUid && message.receiverUid == receiverUid)
+        ) {
 
-            // Check if message already exists
             val exists = messageList.any { it.messageId == message.messageId }
             if (!exists) {
                 messageList.add(message)
@@ -490,7 +583,6 @@ class ChatActivity : AppCompatActivity() {
                 messageAdapter.notifyDataSetChanged()
                 recyclerView.scrollToPosition(messageList.size - 1)
 
-                // Mark as read if it's received
                 if (message.receiverUid == currentUserUid && !message.isRead) {
                     markMessageAsRead(message.messageId)
                 }
@@ -518,11 +610,9 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    // ==================== MARK MESSAGES AS READ ====================
     private fun markMessagesAsRead() {
         lifecycleScope.launch {
             try {
-                // Get unread messages where current user is the receiver
                 val unreadMessages = messageList.filter {
                     it.receiverUid == currentUserUid && !it.isRead
                 }
@@ -532,10 +622,8 @@ class ChatActivity : AppCompatActivity() {
                 Log.d(tag, "Marking ${unreadMessages.size} messages as read")
 
                 for (message in unreadMessages) {
-                    // Mark as read on server
                     chatRepository.markMessageAsRead(message.messageId)
 
-                    // Update local message
                     val index = messageList.indexOfFirst { it.messageId == message.messageId }
                     if (index >= 0) {
                         val updatedMessage = message.copy(isRead = true)
@@ -543,7 +631,6 @@ class ChatActivity : AppCompatActivity() {
                     }
                 }
 
-                // Notify adapter
                 messageAdapter.notifyDataSetChanged()
 
             } catch (e: Exception) {
@@ -562,7 +649,6 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    // ==================== SEND MESSAGE ====================
     private fun sendMessage() {
         val text = messageInput.text.toString().trim()
         if (text.isEmpty()) {
@@ -575,7 +661,6 @@ class ChatActivity : AppCompatActivity() {
             return
         }
 
-        // Stop typing indicator
         if (isTyping) {
             isTyping = false
             SocketManager.sendTypingStatus(currentChatId, currentUserUid, false)
@@ -583,6 +668,19 @@ class ChatActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
+                val blockCheckResult = blockRepository.checkBlockStatus(receiverUid, currentUser.firebaseUid)
+                val isBlocked = blockCheckResult.isSuccess && blockCheckResult.getOrNull() == true
+
+                if (isBlocked) {
+                    Toast.makeText(
+                        this@ChatActivity,
+                        "You cannot message this user",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                    return@launch
+                }
+
                 val result = chatRepository.sendMessage(
                     senderUid = currentUser.firebaseUid,
                     receiverUid = receiverUid,
@@ -592,14 +690,12 @@ class ChatActivity : AppCompatActivity() {
                 if (result.isSuccess) {
                     val message = result.getOrNull()
                     if (message != null) {
-                        // Message will be added via socket
                         messageInput.text.clear()
 
-                        // Update chat ID if needed
                         if (currentChatId.isEmpty()) {
                             currentChatId = message.chatId
-                            // Join the chat room
                             SocketManager.joinChatRoom(currentChatId)
+                            setResult(RESULT_OK) // Notify InboxActivity
                         }
                     }
                 } else {
@@ -611,7 +707,6 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    // ==================== LOAD MESSAGES ====================
     private fun loadMessages() {
         val currentUser = sessionManager.getCurrentUser()
         if (currentUser == null) {
@@ -620,28 +715,29 @@ class ChatActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // First, get or create chat
                 val conversationsResult = chatRepository.getConversations(currentUser.firebaseUid)
 
                 if (conversationsResult.isSuccess) {
-                    val conversations = conversationsResult.getOrNull()
-                    val existingChat = conversations?.find { conv ->
+                    val response = conversationsResult.getOrNull()
+
+                    // Search in both messages and requests for the conversation
+                    val existingChat = response?.messages?.find { conv ->
+                        conv.participants.contains(receiverUid)
+                    } ?: response?.requests?.find { conv ->
                         conv.participants.contains(receiverUid)
                     }
 
                     if (existingChat != null) {
                         currentChatId = existingChat.chatId
-                        // Join the chat room
                         SocketManager.joinChatRoom(currentChatId)
                         loadMessagesForChat(currentChatId)
                     } else {
-                        // No existing chat, will be created when first message is sent
                         messageList.clear()
                         messageAdapter.notifyDataSetChanged()
                     }
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@ChatActivity, "Error loading messages: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
             }
         }
     }
@@ -649,7 +745,7 @@ class ChatActivity : AppCompatActivity() {
     private fun loadMessagesForChat(chatId: String) {
         lifecycleScope.launch {
             try {
-                val result = chatRepository.getMessages(chatId, limit = 100)
+                val result = chatRepository.getMessages(chatId, currentUserUid, 100, 0)
 
                 if (result.isSuccess) {
                     val messages = result.getOrNull() ?: emptyList()
@@ -658,12 +754,10 @@ class ChatActivity : AppCompatActivity() {
                     messageList.sortBy { it.createdAt }
                     messageAdapter.notifyDataSetChanged()
 
-                    // Scroll to bottom
                     if (messageList.isNotEmpty()) {
                         recyclerView.scrollToPosition(messageList.size - 1)
                     }
 
-                    // MARK ALL UNREAD MESSAGES AS READ
                     markMessagesAsRead()
                 }
             } catch (e: Exception) {
@@ -672,7 +766,6 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    // ==================== ACTIVITY LIFECYCLE ====================
     override fun onResume() {
         super.onResume()
         SocketManager.connect()
@@ -682,18 +775,15 @@ class ChatActivity : AppCompatActivity() {
         if (currentChatId.isNotEmpty()) {
             SocketManager.joinChatRoom(currentChatId)
             loadMessagesForChat(currentChatId)
-            // Mark messages as read when returning to chat
             markMessagesAsRead()
         }
     }
 
     override fun onPause() {
         super.onPause()
-        // Leave chat room when activity is paused
         if (currentChatId.isNotEmpty()) {
             SocketManager.leaveChatRoom(currentChatId)
         }
-        // Stop typing indicator
         if (isTyping) {
             isTyping = false
             SocketManager.sendTypingStatus(currentChatId, currentUserUid, false)
@@ -702,11 +792,87 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Clean up socket listeners
         SocketManager.off("new-message")
         SocketManager.off("message-sent")
         SocketManager.off("user-typing")
         SocketManager.off("message-read")
+        SocketManager.off("chat-cleared")
         typingHandler.removeCallbacksAndMessages(null)
+
+        muteCheckJob?.cancel()
+    }
+
+    // ===== MUTE FEATURE IMPLEMENTATION WITH DATASTORE =====
+
+    private fun loadMuteStatus() {
+        if (receiverUid.isNotEmpty()) {
+            lifecycleScope.launch {
+                try {
+                    val muteKey = booleanPreferencesKey("mute_${receiverUid}")
+                    val prefs = dataStore.data.first()
+                    isMuted = prefs[muteKey] ?: false
+                    Log.d(tag, "📖 Loaded local mute status for $receiverUsername: $isMuted")
+
+                    // Sync with API to ensure local matches server
+                    syncMuteStatusWithApi()
+                } catch (e: Exception) {
+                    Log.e(tag, "❌ Failed to load mute status: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private fun syncMuteStatusWithApi() {
+        lifecycleScope.launch {
+            try {
+                val result = chatRepository.getMutedUsers(currentUserUid)
+                if (result.isSuccess) {
+                    val mutedUsers = result.getOrNull() ?: emptyList()
+                    val apiMuted = mutedUsers.any { it.userId == receiverUid }
+
+                    Log.d(tag, "🌐 API mute status for $receiverUsername: $apiMuted")
+
+                    isMuted = apiMuted
+                    val muteKey = booleanPreferencesKey("mute_${receiverUid}")
+                    dataStore.edit { settings ->
+                        settings[muteKey] = apiMuted
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "❌ Failed to sync mute status: ${e.message}")
+            }
+        }
+    }
+
+    private fun toggleMuteWithSwitch(isChecked: Boolean) {
+        isMuted = isChecked
+        lifecycleScope.launch {
+            try {
+                val muteKey = booleanPreferencesKey("mute_$receiverUid")
+                dataStore.edit { settings ->
+                    settings[muteKey] = isChecked
+                }
+
+                val result = if (isChecked) {
+                    chatRepository.muteUser(currentUserUid, receiverUid)
+                } else {
+                    chatRepository.unmuteUser(currentUserUid, receiverUid)
+                }
+
+                if (result.isSuccess) {
+                    Log.d(tag, "✅ Mute status synced with server")
+                }
+
+                runOnUiThread {
+                    Toast.makeText(
+                        this@ChatActivity,
+                        if (isChecked) "Notifications muted" else "Notifications unmuted",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error saving mute status", e)
+            }
+        }
     }
 }

@@ -1,7 +1,11 @@
 package com.example.pawsociety
 
 import android.app.Application
-import com.example.pawsociety.util.SocketManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.media.RingtoneManager
+import android.os.Build
 
 class MyApplication : Application() {
 
@@ -13,10 +17,25 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        createNotificationChannel()
     }
 
-    override fun onTerminate() {
-        super.onTerminate()
-        SocketManager.disconnect()
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "PawSociety Notifications"
+            val descriptionText = "Notifications for likes, comments, and messages"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel("pawsociety_channel", name, importance).apply {
+                this.description = descriptionText
+                enableLights(true)
+                enableVibration(true)
+                setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), null)
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+
+            println("✅ Notification channel created with HIGH importance")
+        }
     }
 }

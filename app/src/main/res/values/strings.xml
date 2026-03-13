@@ -1,4 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App Name -->
     <string name="app_name">PawSociety</string>
+
+    <!-- Settings Activity -->
+    <string name="settings_title">Settings</string>
+    <string name="follow_friends">Follow and invite friends</string>
+    <string name="notifications">Notifications</string>
+    <string name="privacy">Privacy</string>
+    <string name="security">Security</string>
+    <string name="blocked_users">Blocked Users</string>
+    <string name="hidden_posts">Hidden Posts</string>
+    <string name="help_center">Help Center</string>
+    <string name="about">About</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="log_out">Log Out</string>
+    <string name="app_version">PawSociety v1.0.0</string>
+
+    <!-- Notifications Settings -->
+    <string name="notifications_settings_title">Notifications</string>
+    <string name="push_notifications">Push Notifications</string>
+    <string name="likes">Likes</string>
+    <string name="likes_desc">When someone likes your post</string>
+    <string name="comments">Comments</string>
+    <string name="comments_desc">When someone comments on your post</string>
+    <string name="follows">Follows</string>
+    <string name="follows_desc">When someone follows you</string>
+    <string name="messages">Messages</string>
+    <string name="messages_desc">When someone sends you a message</string>
+    <string name="post_reminders">Post Reminders</string>
+    <string name="post_reminders_desc">Get reminded to post about your pets</string>
+    <string name="save_changes">Save Changes</string>
+
+    <!-- Privacy Settings -->
+    <string name="privacy_title">Privacy</string>
+    <string name="account_privacy">Account Privacy</string>
+    <string name="private_account">Private Account</string>
+    <string name="private_account_desc">Only followers can see your posts</string>
+    <string name="show_activity">Show Activity Status</string>
+    <string name="show_activity_desc">Let others see when you\'re active</string>
+    <string name="tag_approval">Tag Approval</string>
+    <string name="tag_approval_desc">Review tags before they appear</string>
+    <string name="data_sharing">Data Sharing</string>
+    <string name="legal">Legal</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="download_my_data">Download My Data</string><!-- Add this string array for the spinner -->
+    <string-array name="data_sharing_options">
+        <item>Only me</item>
+        <item>My followers</item>
+        <item>Everyone</item>
+    </string-array>
+
+    <!-- Security Settings -->
+    <string name="security_title">Security</string>
+    <string name="two_factor">Two-Factor Authentication</string>
+    <string name="two_factor_desc">Add extra security to your account</string>
+    <string name="login_alerts">Login Alerts</string>
+    <string name="login_alerts_desc">Get notified of new logins to your account</string>
+    <string name="login_information">Login Information</string>
+    <string name="change_password">Change Password</string>
+    <string name="email_address">Email Address</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="sessions">Sessions</string>
+    <string name="active_sessions">Active Sessions</string>
+
+    <!-- Help Center -->
+    <string name="help_center_title">Help Center</string>
+    <string name="search_hint">Search help articles...</string>
+    <string name="quick_help">Quick Help</string>
+    <string name="frequently_asked_questions">Frequently Asked Questions</string>
+    <string name="contact_support">Contact Support</string>
+    <string name="report_problem">Report a Problem</string>
+    <string name="video_tutorials">Video Tutorials</string>
+    <string name="community_forum">Community Forum</string>
+
+    <!-- About -->
+    <string name="about_title">About</string>
+    <string name="app_slogan">Because Every Pet Deserves a Home</string>
+    <string name="website">Website</string>
+    <string name="open_source_licenses">Open Source Licenses</string>
+    <string name="rate_app">Rate this app</string>
+    <string name="share_app">Share PawSociety</string>
+    <string name="copyright">© 2024 PawSociety. All rights reserved.</string>
+
+
+
+    <!-- Hidden Posts -->
+    <string name="hidden_posts_title">Hidden Posts</string>
+    <string name="no_hidden_posts">No hidden posts</string>
+    <string name="no_hidden_posts_desc">Posts you hide will appear here</string>
+    <string name="unhide">Unhide</string>
+    <string name="unhide_confirmation">Do you want to unhide this post? It will appear in your feed again.</string>
+
+    <!-- Blocked Users -->
+    <string name="blocked_users_title">Blocked Users</string>
+    <string name="no_blocked_users">No blocked users</string>
+    <string name="no_blocked_users_desc">Users you block will appear here</string>
+    <string name="unblock">Unblock</string>
+    <string name="unblock_confirmation">Do you want to unblock %1$s? They will be able to interact with you again.</string>
+
+    <!-- Delete Account -->
+    <string name="delete_account_title">Delete Account</string>
+    <string name="delete_account_confirmation">Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.</string>
+    <string name="delete">Delete</string>
+
+    <!-- Logout -->
+    <string name="logout_title">Log Out</string>
+    <string name="logout_confirmation">Are you sure you want to log out?</string>
+
 </resources>

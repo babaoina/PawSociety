@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.example.pawsociety.api.BatchUser
 import com.example.pawsociety.api.Block
 import com.example.pawsociety.data.repository.BlockRepository
 import com.example.pawsociety.data.repository.UserRepository
@@ -31,7 +32,7 @@ class BlockedUsersActivity : AppCompatActivity() {
     private val userRepository = UserRepository()
 
     private var blockedList = listOf<Block>()
-    private var userMap = mutableMapOf<String, String>() // uid -> username
+    private var userMap = mutableMapOf<String, BatchUser>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,15 +76,23 @@ class BlockedUsersActivity : AppCompatActivity() {
                     if (blockedList.isEmpty()) {
                         showEmptyState()
                     } else {
-                        for (block in blockedList) {
-                            val userResult = userRepository.getUserByUid(block.blockedUid)
-                            if (userResult.isSuccess) {
-                                val user = userResult.getOrNull()
-                                userMap[block.blockedUid] = user?.username ?: "Unknown User"
-                            } else {
-                                userMap[block.blockedUid] = "Unknown User"
+                        val blockedUids = blockedList.map { it.blockedUid }
+
+                        // Fetch user info
+                        val userResult = userRepository.getUsersBatch(blockedUids)
+
+                        if (userResult.isSuccess) {
+                            val users = userResult.getOrNull() ?: emptyMap()
+                            userMap.clear()
+                            userMap.putAll(users)
+
+                            // Debug log
+                            println("📦 Blocked users map:")
+                            userMap.forEach { (uid, user) ->
+                                println("   - $uid: ${user.username}")
                             }
                         }
+
                         showUserList()
                     }
                 } else {
@@ -118,11 +127,12 @@ class BlockedUsersActivity : AppCompatActivity() {
     }
 
     private fun showUnblockDialog(block: Block) {
-        val username = userMap[block.blockedUid] ?: "this user"
+        val userInfo = userMap[block.blockedUid]
+        val username = userInfo?.username ?: "this user"
 
         AlertDialog.Builder(this)
             .setTitle("Unblock User")
-            .setMessage("Are you sure you want to unblock $username? They will be able to see your posts and interact with you again.")
+            .setMessage("Are you sure you want to unblock $username?")
             .setPositiveButton("Unblock") { _, _ ->
                 unblockUser(block)
             }
@@ -148,12 +158,13 @@ class BlockedUsersActivity : AppCompatActivity() {
 
 class BlockedUsersAdapter(
     private val blocks: List<Block>,
-    private val userMap: Map<String, String>,
+    private val userMap: Map<String, BatchUser>,
     private val onUnblockClick: (Block) -> Unit
 ) : RecyclerView.Adapter<BlockedUsersAdapter.BlockedViewHolder>() {
 
     class BlockedViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val profileIcon: TextView = itemView.findViewById(R.id.profile_icon)
+        val profileImage: ImageView = itemView.findViewById(R.id.profile_image)
         val username: TextView = itemView.findViewById(R.id.username)
         val btnUnblock: Button = itemView.findViewById(R.id.btn_unblock)
     }
@@ -166,20 +177,55 @@ class BlockedUsersAdapter(
 
     override fun onBindViewHolder(holder: BlockedViewHolder, position: Int) {
         val block = blocks[position]
-        val username = userMap[block.blockedUid] ?: "Unknown User"
+        val userInfo = userMap[block.blockedUid]
+
+        // Get username - this should now work
+        val username = if (userInfo != null && userInfo.username.isNotEmpty() && userInfo.username != "Unknown User") {
+            userInfo.username
+        } else {
+            // Try to get from database as fallback
+            "User ${block.blockedUid.take(4)}"
+        }
 
         holder.username.text = username
 
-        val firstLetter = if (username.isNotEmpty() && username != "Unknown User") {
-            username.first().toString().uppercase()
-        } else {
-            "?"
-        }
-        holder.profileIcon.text = firstLetter
+        // Get profile image URL
+        val profileImageUrl = userInfo?.profileImageUrl
 
-        val colors = listOf("#7A4F2B", "#B88B4A", "#4CAF50", "#2196F3", "#FF9800")
-        val colorIndex = position % colors.size
-        holder.profileIcon.setBackgroundColor(Color.parseColor(colors[colorIndex]))
+        // Show profile image if available
+        if (!profileImageUrl.isNullOrEmpty()) {
+            val fullImageUrl = if (profileImageUrl.startsWith("http")) {
+                profileImageUrl
+            } else {
+                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$profileImageUrl"
+            }
+
+            holder.profileImage.visibility = View.VISIBLE
+            holder.profileIcon.visibility = View.GONE
+
+            Glide.with(holder.itemView.context)
+                .load(fullImageUrl)
+                .circleCrop()
+                .placeholder(android.R.drawable.ic_menu_gallery)
+                .error(android.R.drawable.ic_menu_report_image)
+                .into(holder.profileImage)
+        } else {
+            // Show text icon with first letter
+            holder.profileImage.visibility = View.GONE
+            holder.profileIcon.visibility = View.VISIBLE
+
+            val firstLetter = if (username.isNotEmpty() && username != "Unknown User") {
+                username.first().toString().uppercase()
+            } else {
+                "?"
+            }
+            holder.profileIcon.text = firstLetter
+
+            // Generate consistent color based on user ID
+            val colors = listOf("#7A4F2B", "#B88B4A", "#4CAF50", "#2196F3", "#FF9800")
+            val colorIndex = Math.abs(block.blockedUid.hashCode()) % colors.size
+            holder.profileIcon.setBackgroundColor(Color.parseColor(colors[colorIndex]))
+        }
 
         holder.btnUnblock.setOnClickListener {
             onUnblockClick(block)

@@ -2,7 +2,6 @@ package com.example.pawsociety
 
 import android.Manifest
 import android.app.AlertDialog
-import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -10,12 +9,25 @@ import android.graphics.PorterDuff
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.ScrollView
+import android.widget.TextView
+import android.widget.Toast
+import android.widget.FrameLayout
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -24,14 +36,27 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
-import com.example.pawsociety.api.ApiComment
 import com.example.pawsociety.api.ApiPost
-import com.example.pawsociety.data.repository.*
-import com.example.pawsociety.util.*
+import com.example.pawsociety.data.repository.BlockRepository
+import com.example.pawsociety.data.repository.HidePostRepository
+import com.example.pawsociety.data.repository.PostRepository
+import com.example.pawsociety.data.repository.ReportRepository
+import com.example.pawsociety.util.FCMTokenManager
+import com.example.pawsociety.util.NotificationManager
+import com.example.pawsociety.util.SessionManager
+import com.example.pawsociety.util.SocketManager
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import android.app.Dialog
+import kotlin.math.max
+import android.os.Handler
+import android.os.Looper
+
 
 class HomeActivity : BaseNavigationActivity() {
 
@@ -42,15 +67,129 @@ class HomeActivity : BaseNavigationActivity() {
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var sessionManager: SessionManager
     private lateinit var notificationBadge: TextView
+    private lateinit var bottomNav: View
+
+    // Category Filter Variables - ADDED
+    private lateinit var layoutAll: LinearLayout
+    private lateinit var layoutDogs: LinearLayout
+    private lateinit var layoutCats: LinearLayout
+    private lateinit var layoutFish: LinearLayout
+    private lateinit var layoutBirds: LinearLayout
+
+    private lateinit var allCircle: FrameLayout
+    private lateinit var dogCircle: FrameLayout
+    private lateinit var catCircle: FrameLayout
+    private lateinit var fishCircle: FrameLayout
+    private lateinit var birdCircle: FrameLayout
+
+    private lateinit var textAll: TextView
+    private lateinit var textDogs: TextView
+    private lateinit var textCats: TextView
+    private lateinit var textFish: TextView
+    private lateinit var textBirds: TextView
+
+    private lateinit var chipDogs: ImageView
+    private lateinit var chipCats: ImageView
+    private lateinit var chipFish: ImageView
+    private lateinit var chipBirds: ImageView
+
+    private var currentCategory = "All"
+    // End Category Filter Variables
+
     private val postRepository = PostRepository()
-    private val commentRepository = CommentRepository()
     private val blockRepository = BlockRepository()
     private val reportRepository = ReportRepository()
+    private val hidePostRepository = HidePostRepository()
     private var currentUser: com.example.pawsociety.api.ApiUser? = null
+    private var hiddenPostIds = mutableSetOf<String>()
+
+    // Activity result launchers
+    private val createPostLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val postCreated = result.data?.getBooleanExtra("post_created", false) ?: false
+            val postCategory = result.data?.getStringExtra("post_category") ?: ""
+
+            if (postCreated) {
+                // Force refresh posts from server
+                viewModel.forceRefreshPosts()
+
+                Toast.makeText(this, "Post created! Refreshing feed...", Toast.LENGTH_SHORT).show()
+
+                // If we know the category, highlight it after refresh
+                if (postCategory.isNotEmpty()) {
+                    // Small delay to let the refresh happen
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        // Switch to the category of the new post
+                        when (postCategory) {
+                            "Dogs" -> {
+                                currentCategory = "Dogs"
+                                highlightCategory("Dogs")
+                                viewModel.forceRefreshAndFilter("Dogs")
+                            }
+                            "Cats" -> {
+                                currentCategory = "Cats"
+                                highlightCategory("Cats")
+                                viewModel.forceRefreshAndFilter("Cats")
+                            }
+                            "Fish" -> {
+                                currentCategory = "Fish"
+                                highlightCategory("Fish")
+                                viewModel.forceRefreshAndFilter("Fish")
+                            }
+                            "Birds" -> {
+                                currentCategory = "Birds"
+                                highlightCategory("Birds")
+                                viewModel.forceRefreshAndFilter("Birds")
+                            }
+                        }
+                    }, 500) // 500ms delay to let refresh complete
+                }
+
+                // Scroll to top to see new post
+                val scrollView = findViewById<ScrollView>(R.id.feed_scrollview)
+                scrollView?.post {
+                    scrollView?.smoothScrollTo(0, 0)
+                }
+            }
+        }
+    }
+
+    private val editPostLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            viewModel.forceRefreshAndFilter(currentCategory)
+            Toast.makeText(this, "Post updated! Refreshing feed...", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+
+        // Make app full screen with content behind system bars
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // Control status bar icon colors (dark icons for light background)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.let { controller ->
+                controller.show(android.view.WindowInsets.Type.statusBars())
+            }
+        } else {
+            window.decorView.systemUiVisibility = (
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    )
+        }
+
+        // Add this test in onCreate to verify animation file exists
+        try {
+            assets.open("like.json").use {
+                Log.d("ANIMATION_TEST", "✅ like.json found in assets!")
+            }
+        } catch (e: Exception) {
+            Log.e("ANIMATION_TEST", "❌ like.json NOT found! Check assets folder")
+            Toast.makeText(this, "Animation file missing!", Toast.LENGTH_LONG).show()
+        }
 
         sessionManager = SessionManager(this)
 
@@ -74,21 +213,48 @@ class HomeActivity : BaseNavigationActivity() {
         progressBar = findViewById(R.id.progress_bar)
         swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout)
         notificationBadge = findViewById(R.id.notification_badge)
+        bottomNav = findViewById(R.id.bottom_navigation)
 
-        // Request notification permission for Android 13+
+        // Setup bottom navigation to handle system bar insets
+        setupBottomNavigationInsets()
+
+        // Initialize category filters - ADDED
+        initCategoryFilters()
+
+        val bigPlusButton = findViewById<LinearLayout>(R.id.big_plus_button)
+        bigPlusButton?.setOnClickListener {
+            // Use the launcher instead of just starting activity
+            createPostLauncher.launch(Intent(this, CreatePostActivity::class.java))
+        }
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (postsContainer.childCount > 0) {
+                val firstPost = postsContainer.getChildAt(0)
+                val testButton = firstPost.findViewById<com.example.pawsociety.widget.LikeButton>(R.id.btn_like_lottie_view)
+                testButton?.let {
+                    Log.d("LIKE_TEST", "Testing animation on first post")
+                    // Force animation
+                    it.setLiked(true, animate = true)
+
+                    // Revert after 2 seconds
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        it.setLiked(false, animate = true)
+                    }, 2000)
+                }
+            }
+        }, 3000)
+
         requestNotificationPermission()
-
-        // Initialize FCM and save token
         FCMTokenManager.initialize(currentUser.firebaseUid)
 
-        // Connect to socket and set online status
         SocketManager.connect()
         currentUser?.let {
             SocketManager.joinUserRoom(it.firebaseUid)
             println("🟢 User ${it.username} is now ONLINE")
         }
 
-        // Setup SwipeRefreshLayout
+        setupSocketListeners()
+
         swipeRefreshLayout.setColorSchemeColors(
             Color.parseColor("#7A4F2B"),
             Color.parseColor("#FF6B35"),
@@ -98,7 +264,6 @@ class HomeActivity : BaseNavigationActivity() {
             refreshData()
         }
 
-        // Setup notification badge
         NotificationManager.setupNotificationBadge(
             context = this,
             badgeView = notificationBadge,
@@ -108,14 +273,313 @@ class HomeActivity : BaseNavigationActivity() {
             startActivity(Intent(this, NotificationsActivity::class.java))
         }
 
-        // Setup socket for real-time notifications
         NotificationManager.setupSocketNotifications(currentUser.firebaseUid, this)
-
-        setupObservers()
 
         findViewById<ImageView>(R.id.btn_notifications)?.setOnClickListener {
             startActivity(Intent(this, NotificationsActivity::class.java))
         }
+
+        setupObservers()
+    }
+
+    // 🔥 NEW: Method to refresh ALL data
+    private fun refreshAllData() {
+        // Force refresh posts from server (not cache)
+        viewModel.forceRefreshAndFilter(currentCategory)
+
+        // Reload current user data
+        viewModel.loadCurrentUser()
+
+        // Reload hidden posts
+        loadHiddenPosts()
+
+        // Restart notification polling
+        val currentUser = sessionManager.getCurrentUser()
+        currentUser?.let {
+            NotificationManager.startPolling(it.firebaseUid, this)
+        }
+    }
+
+    /**
+     * Setup bottom navigation to automatically adjust to system navigation bar
+     * Works with gesture nav, 2-button nav, and 3-button nav
+     */
+    private fun setupBottomNavigationInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNav) { view, insets ->
+            val systemBarInsets = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                        WindowInsetsCompat.Type.displayCutout() or
+                        WindowInsetsCompat.Type.ime()
+            )
+
+            // Get the navigation bar insets specifically
+            val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+
+            // Apply padding based on system navigation bar height
+            // This ensures the app's nav bar sits ON TOP of the system nav bar
+            view.updatePadding(
+                bottom = navBarInsets.bottom
+            )
+
+            // Log the insets for debugging
+            Log.d("Insets", "System bars bottom: ${systemBarInsets.bottom}")
+            Log.d("Insets", "Nav bars bottom: ${navBarInsets.bottom}")
+
+            // Return the insets without consuming them
+            insets
+        }
+
+        // Request insets to be dispatched
+        bottomNav.requestApplyInsets()
+    }
+
+
+    // ADDED: Initialize category filters
+    private fun initCategoryFilters() {
+        layoutAll = findViewById(R.id.layout_all)
+        layoutDogs = findViewById(R.id.layout_dogs)
+        layoutCats = findViewById(R.id.layout_cats)
+        layoutFish = findViewById(R.id.layout_fish)
+        layoutBirds = findViewById(R.id.layout_birds)
+
+        allCircle = findViewById(R.id.all_circle)
+        dogCircle = findViewById(R.id.dog_circle)
+        catCircle = findViewById(R.id.cat_circle)
+        fishCircle = findViewById(R.id.fish_circle)
+        birdCircle = findViewById(R.id.bird_circle)
+
+        textAll = findViewById(R.id.text_all)
+        textDogs = findViewById(R.id.text_dogs)
+        textCats = findViewById(R.id.text_cats)
+        textFish = findViewById(R.id.text_fish)
+        textBirds = findViewById(R.id.text_birds)
+
+        chipDogs = findViewById(R.id.chip_dogs)
+        chipCats = findViewById(R.id.chip_cats)
+        chipFish = findViewById(R.id.chip_fish)
+        chipBirds = findViewById(R.id.chip_birds)
+
+        setupCategoryClickListeners()
+        highlightCategory("All")
+    }
+
+    // ADDED: Setup category click listeners
+    private fun setupCategoryClickListeners() {
+        layoutAll.setOnClickListener {
+            // Always force refresh first, regardless of current category
+            currentCategory = "All"
+            highlightCategory("All")
+            viewModel.forceRefreshAndFilter("All")  // This ALWAYS makes an API call
+        }
+
+        layoutDogs.setOnClickListener {
+            // Always force refresh first, regardless of current category
+            currentCategory = "Dogs"
+            highlightCategory("Dogs")
+            viewModel.forceRefreshAndFilter("Dogs")  // This ALWAYS makes an API call
+        }
+
+        layoutCats.setOnClickListener {
+            // Always force refresh first, regardless of current category
+            currentCategory = "Cats"
+            highlightCategory("Cats")
+            viewModel.forceRefreshAndFilter("Cats")  // This ALWAYS makes an API call
+        }
+
+        layoutFish.setOnClickListener {
+            // Always force refresh first, regardless of current category
+            currentCategory = "Fish"
+            highlightCategory("Fish")
+            viewModel.forceRefreshAndFilter("Fish")  // This ALWAYS makes an API call
+        }
+
+        layoutBirds.setOnClickListener {
+            // Always force refresh first, regardless of current category
+            currentCategory = "Birds"
+            highlightCategory("Birds")
+            viewModel.forceRefreshAndFilter("Birds")  // This ALWAYS makes an API call
+        }
+    }
+
+    // ADDED: Highlight selected category
+    private fun highlightCategory(category: String) {
+        // Reset all circles to default (white with gray border)
+        allCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
+        dogCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
+        catCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
+        fishCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
+        birdCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
+
+        // Reset text colors to gray
+        textAll.setTextColor(Color.parseColor("#666666"))
+        textDogs.setTextColor(Color.parseColor("#666666"))
+        textCats.setTextColor(Color.parseColor("#666666"))
+        textFish.setTextColor(Color.parseColor("#666666"))
+        textBirds.setTextColor(Color.parseColor("#666666"))
+
+        // Reset icon colors to gray
+        chipDogs.setColorFilter(Color.parseColor("#999999"))
+        chipCats.setColorFilter(Color.parseColor("#999999"))
+        chipFish.setColorFilter(Color.parseColor("#999999"))
+        chipBirds.setColorFilter(Color.parseColor("#999999"))
+
+        // For "All" text inside circle
+        val allTextView = allCircle.getChildAt(0) as TextView
+        allTextView.setTextColor(Color.parseColor("#7A4F2B")) // Keep "All" text brown by default
+
+        // Highlight selected category
+        when (category) {
+            "All" -> {
+                allCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_selected)
+                textAll.setTextColor(Color.parseColor("#7A4F2B"))
+                allTextView.setTextColor(Color.parseColor("#7A4F2B"))
+            }
+            "Dogs" -> {
+                dogCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_selected)
+                textDogs.setTextColor(Color.parseColor("#7A4F2B"))
+                chipDogs.setColorFilter(Color.parseColor("#7A4F2B")) // Brown icon when selected
+            }
+            "Cats" -> {
+                catCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_selected)
+                textCats.setTextColor(Color.parseColor("#7A4F2B"))
+                chipCats.setColorFilter(Color.parseColor("#7A4F2B"))
+            }
+            "Fish" -> {
+                fishCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_selected)
+                textFish.setTextColor(Color.parseColor("#7A4F2B"))
+                chipFish.setColorFilter(Color.parseColor("#7A4F2B"))
+            }
+            "Birds" -> {
+                birdCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_selected)
+                textBirds.setTextColor(Color.parseColor("#7A4F2B"))
+                chipBirds.setColorFilter(Color.parseColor("#7A4F2B"))
+            }
+        }
+    }
+
+    private fun loadHiddenPosts() {
+        val currentUser = sessionManager.getCurrentUser() ?: return
+
+        lifecycleScope.launch {
+            try {
+                val result = hidePostRepository.getHiddenPosts(currentUser.firebaseUid)
+                if (result.isSuccess) {
+                    val hiddenPosts = result.getOrNull() ?: emptyList()
+                    hiddenPostIds.clear()
+                    hiddenPostIds.addAll(hiddenPosts.map { it.postId })
+                    Log.d("HomeActivity", "Loaded ${hiddenPostIds.size} hidden post IDs")
+                } else {
+                    Log.e("HomeActivity", "Failed to load hidden posts: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                Log.e("HomeActivity", "Error loading hidden posts: ${e.message}")
+            }
+        }
+    }
+
+    private fun setupSocketListeners() {
+        SocketManager.on("new-post") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as? JSONObject
+                    if (data != null) {
+                        val post = parsePostFromJson(data)
+                        runOnUiThread {
+                            Snackbar.make(
+                                findViewById(android.R.id.content),
+                                "New post from ${post.userName}",
+                                Snackbar.LENGTH_LONG
+                            ).setAction("View") {
+                                val scrollView = findViewById<ScrollView>(R.id.feed_scrollview)
+                                scrollView?.smoothScrollTo(0, 0)
+                                Toast.makeText(this@HomeActivity, "New post added!", Toast.LENGTH_SHORT).show()
+                            }.show()
+
+                            viewModel.forceRefreshAndFilter(currentCategory)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("HomeActivity", "Error parsing new post: ${e.message}")
+                }
+            }
+        }
+
+        SocketManager.on("profile-updated") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    runOnUiThread {
+                        viewModel.forceRefreshAndFilter(currentCategory)
+                    }
+                } catch (e: Exception) {
+                    Log.e("HomeActivity", "Error parsing profile update: ${e.message}")
+                }
+            }
+        }
+
+        SocketManager.on("post-liked") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as? JSONObject
+                    val postId = data?.optString("postId", "")
+                    val likesCount = data?.optInt("likesCount", 0)
+                    val isLiked = data?.optBoolean("isLiked", false)
+
+                    runOnUiThread {
+                        updateLikeCountInFeed(postId, likesCount, isLiked)
+                    }
+                } catch (e: Exception) {
+                    Log.e("HomeActivity", "Error parsing post like: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private fun updateLikeCountInFeed(postId: String?, likesCount: Int?, isLiked: Boolean? = null) {
+        if (postId == null || likesCount == null) return
+
+        for (i in 0 until postsContainer.childCount) {
+            val postView = postsContainer.getChildAt(i)
+            val viewPostId = postView.tag as? String
+
+            if (viewPostId == postId) {
+                val tvLikeCount = postView.findViewById<TextView>(R.id.tv_like_count)
+                tvLikeCount?.text = likesCount.toString()
+
+                // Add pop animation to like count
+                tvLikeCount?.animate()?.scaleX(1.2f)?.scaleY(1.2f)?.setDuration(100)?.withEndAction {
+                    tvLikeCount?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.setDuration(100)?.start()
+                }?.start()
+
+                val likeButton = postView.findViewById<com.example.pawsociety.widget.LikeButton>(R.id.btn_like_lottie_view)
+
+                if (isLiked != null && likeButton != null) {
+                    likeButton.setLiked(isLiked, animate = false)
+                }
+                break
+            }
+        }
+    }
+
+    private fun parsePostFromJson(json: JSONObject): ApiPost {
+        return ApiPost(
+            postId = json.optString("postId", ""),
+            firebaseUid = json.optString("firebaseUid", ""),
+            userName = json.optString("userName", ""),
+            userImageUrl = json.optString("userImageUrl", ""),
+            petName = json.optString("petName", ""),
+            petType = json.optString("petType", ""),
+            gender = json.optString("gender", "Unknown"),
+            status = json.optString("status", ""),
+            description = json.optString("description", ""),
+            location = json.optString("location", ""),
+            reward = json.optString("reward", ""),
+            contactInfo = json.optString("contactInfo", ""),
+            imageUrls = json.optJSONArray("imageUrls")?.let {
+                (0 until it.length()).map { i -> it.getString(i) }
+            } ?: emptyList(),
+            likesCount = json.optInt("likesCount", 0),
+            createdAt = json.optString("createdAt", "")
+        )
     }
 
     private fun requestNotificationPermission() {
@@ -131,6 +595,19 @@ class HomeActivity : BaseNavigationActivity() {
         }
     }
 
+    private fun updateLikeCountsOnly(posts: List<ApiPost>) {
+        for (post in posts) {
+            for (i in 0 until postsContainer.childCount) {
+                val postView = postsContainer.getChildAt(i)
+                if (postView.tag == post.postId) {
+                    val tvLikeCount = postView.findViewById<TextView>(R.id.tv_like_count)
+                    tvLikeCount?.text = post.likesCount.toString()
+                    break
+                }
+            }
+        }
+    }
+
     private fun setupObservers() {
         viewModel.currentUser.observe(this, Observer { user ->
             currentUser = user
@@ -140,13 +617,77 @@ class HomeActivity : BaseNavigationActivity() {
             }
         })
 
+        // FIXED: ALWAYS clear and recreate views when posts change
         viewModel.posts.observe(this, Observer { posts ->
-            displayPosts(posts)
+            Log.d("HomeActivity", "📊 Received ${posts.size} posts for category: $currentCategory")
+
+            // Check if this is just a like count update or a full refresh
+            val isLikeUpdate = posts.size == postsContainer.childCount &&
+                    posts.all { post ->
+                        postsContainer.findViewWithTag<View>(post.postId) != null
+                    }
+
+            if (isLikeUpdate) {
+                // Just update like counts without recreating views
+                updateLikeCountsOnly(posts)
+            } else {
+                // ALWAYS clear all existing views first for major changes
+                postsContainer.removeAllViews()
+
+                if (posts.isEmpty()) {
+                    postsContainer.visibility = View.GONE
+                    emptyState.visibility = View.VISIBLE
+                    val emptyText = findViewById<TextView>(R.id.empty_state_text)
+                    emptyText?.text = "No posts in $currentCategory"
+                    Log.d("HomeActivity", "📊 Showing empty state for $currentCategory")
+                } else {
+                    postsContainer.visibility = View.VISIBLE
+                    emptyState.visibility = View.GONE
+
+                    // Filter out hidden posts
+                    val visiblePosts = if (hiddenPostIds.isNotEmpty()) {
+                        posts.filter { post ->
+                            post.postId != null && !hiddenPostIds.contains(post.postId)
+                        }
+                    } else {
+                        posts
+                    }
+
+                    Log.d("HomeActivity", "📊 Displaying ${visiblePosts.size} visible posts out of ${posts.size} total")
+
+                    val currentLikeMap = viewModel.likeStatus.value ?: emptyMap()
+                    val currentFavMap = viewModel.favoriteStatus.value ?: emptyMap()
+
+                    // Create views for each post
+                    for (post in visiblePosts) {
+                        createPostView(post, currentLikeMap, currentFavMap)
+                    }
+
+                    // Force layout update
+                    postsContainer.invalidate()
+                    postsContainer.requestLayout()
+                }
+            }
+
             if (swipeRefreshLayout.isRefreshing) {
                 swipeRefreshLayout.isRefreshing = false
             }
         })
 
+        // Keep your existing likeStatus observer
+        viewModel.likeStatus.observe(this, Observer { likeMap ->
+            for (i in 0 until postsContainer.childCount) {
+                val postView = postsContainer.getChildAt(i)
+                val postId = postView.tag as? String ?: continue
+                val isLiked = likeMap[postId] ?: false
+                val likeButton = postView.findViewById<com.example.pawsociety.widget.LikeButton>(R.id.btn_like_lottie_view)
+                if (likeButton?.isLiked != isLiked) {
+                    likeButton?.setLiked(isLiked, animate = false)  // No animation when syncing
+                }
+            }
+        })
+
+        // Rest of your observers...
         viewModel.isLoading.observe(this, Observer { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         })
@@ -161,24 +702,43 @@ class HomeActivity : BaseNavigationActivity() {
             }
         })
 
+        // Add this to setupObservers() - update favorite buttons when favoriteStatus changes
+        viewModel.favoriteStatus.observe(this, Observer { favMap ->
+            for (i in 0 until postsContainer.childCount) {
+                val postView = postsContainer.getChildAt(i)
+                val postId = postView.tag as? String ?: continue
+
+                val isFav = favMap[postId] ?: false
+                val btnFavorite = postView.findViewById<ImageView>(R.id.btn_favorite)
+
+                if (btnFavorite != null) {
+                    if (isFav) {
+                        btnFavorite.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                        btnFavorite.tag = "favorited"
+                    } else {
+                        btnFavorite.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
+                        btnFavorite.tag = "unfavorited"
+                    }
+                }
+            }
+        })
+
         viewModel.isOffline.observe(this, Observer { isOffline ->
             val offlineIndicator = findViewById<TextView>(R.id.tv_offline_indicator)
-            offlineIndicator.visibility = if (isOffline) View.VISIBLE else View.GONE
+            offlineIndicator?.visibility = if (isOffline) View.VISIBLE else View.GONE
         })
     }
 
     private fun refreshData() {
-        viewModel.loadPosts()
-        viewModel.loadCurrentUser()
-
-        val currentUser = sessionManager.getCurrentUser()
-        currentUser?.let {
-            NotificationManager.startPolling(it.firebaseUid, this)
-        }
+        refreshAllData()
     }
 
     private fun displayPosts(posts: List<ApiPost>) {
+        // This function is kept for compatibility but is no longer the primary display method
+        // The observer now handles display directly
         postsContainer.removeAllViews()
+
+        Log.d("HomeActivity", "📊 displayPosts called with ${posts.size} posts")
 
         if (posts.isEmpty()) {
             postsContainer.visibility = View.GONE
@@ -186,66 +746,133 @@ class HomeActivity : BaseNavigationActivity() {
             return
         }
 
+        // SAFETY: Filter out null posts and hidden posts
+        val validPosts = posts.filterNotNull()
+
+        val visiblePosts = if (hiddenPostIds.isNotEmpty()) {
+            validPosts.filter { post ->
+                post.postId != null && !hiddenPostIds.contains(post.postId)
+            }
+        } else {
+            validPosts
+        }
+
+        Log.d("HomeActivity", "Total posts: ${validPosts.size}, Hidden: ${hiddenPostIds.size}, Visible: ${visiblePosts.size}")
+
+        if (visiblePosts.isEmpty()) {
+            postsContainer.visibility = View.GONE
+            emptyState.visibility = View.VISIBLE
+            val emptyText = findViewById<TextView>(R.id.empty_state_text)
+            emptyText?.text = "No posts in this category"
+            return
+        }
+
         postsContainer.visibility = View.VISIBLE
         emptyState.visibility = View.GONE
 
-        for (post in posts) {
-            createPostView(post)
+        val currentLikeMap = viewModel.likeStatus.value ?: emptyMap()
+        val currentFavMap = viewModel.favoriteStatus.value ?: emptyMap()
+
+        // Force recreate ALL views for fresh data
+        for (post in visiblePosts) {
+            createPostView(post, currentLikeMap, currentFavMap)
         }
+
+        // Force layout update
+        postsContainer.invalidate()
+        postsContainer.requestLayout()
     }
 
-    private fun createPostView(post: ApiPost) {
+    private fun createPostView(
+        post: ApiPost,
+        likeStatusMap: Map<String, Boolean>,
+        favoriteStatusMap: Map<String, Boolean>
+    ) {
         try {
             val inflater = LayoutInflater.from(this)
             val postView = inflater.inflate(R.layout.item_post, postsContainer, false)
 
-            // ===== HEADER VIEWS =====
+            postView.tag = post.postId
+
+            // ===== FIND VIEWS =====
             val profileIcon = postView.findViewById<TextView>(R.id.post_profile_icon)
+            val profileImage = postView.findViewById<ImageView>(R.id.post_profile_image)
             val userNameText = postView.findViewById<TextView>(R.id.post_user_name)
+            val userRoleText = postView.findViewById<TextView>(R.id.post_user_role)
             val locationText = postView.findViewById<TextView>(R.id.post_location)
             val postDate = postView.findViewById<TextView>(R.id.post_date)
             val btnMore = postView.findViewById<ImageView>(R.id.btn_more)
 
-            // ===== IMAGE CAROUSEL VIEWS =====
+            // Image views
             val viewPager = postView.findViewById<ViewPager2>(R.id.post_view_pager)
             val singleImageView = postView.findViewById<ImageView>(R.id.post_image)
             val indicatorContainer = postView.findViewById<LinearLayout>(R.id.indicator_container)
             val noImagePlaceholder = postView.findViewById<LinearLayout>(R.id.no_image_placeholder)
+
+            // Status badges
             val statusBadge = postView.findViewById<TextView>(R.id.post_status)
             val rewardBadge = postView.findViewById<TextView>(R.id.post_reward_badge)
 
-            // ===== PET INFO VIEWS =====
-            val petNameText = postView.findViewById<TextView>(R.id.post_pet_name)
+            // Pet info
             val petTypeText = postView.findViewById<TextView>(R.id.post_pet_type)
+            val petNameText = postView.findViewById<TextView>(R.id.post_pet_name)
+
+            // Gender, Age, Weight
+            val genderIcon = postView.findViewById<ImageView>(R.id.post_gender_icon)
+            val genderText = postView.findViewById<TextView>(R.id.post_gender_text)
+            val postAge = postView.findViewById<TextView>(R.id.post_age)
+            val postWeight = postView.findViewById<TextView>(R.id.post_weight)
+
+            // About section
             val descriptionText = postView.findViewById<TextView>(R.id.post_description)
             val btnMoreDescription = postView.findViewById<TextView>(R.id.btn_more_description)
+
+            // Contact and reward
             val contactText = postView.findViewById<TextView>(R.id.post_contact)
             val rewardText = postView.findViewById<TextView>(R.id.post_reward)
+            val rewardContainer = postView.findViewById<LinearLayout>(R.id.reward_container)
 
-            // ===== ACTION BUTTONS =====
+            // Action buttons
             val btnLikeGroup = postView.findViewById<LinearLayout>(R.id.btn_like_group)
-            val btnLike = postView.findViewById<ImageView>(R.id.btn_like)
+            val likeButton = postView.findViewById<com.example.pawsociety.widget.LikeButton>(R.id.btn_like_lottie_view)
             val tvLikeCount = postView.findViewById<TextView>(R.id.tv_like_count)
-
-            val btnCommentGroup = postView.findViewById<LinearLayout>(R.id.btn_comment_group)
-            val btnComment = postView.findViewById<ImageView>(R.id.btn_comment)
-            val tvCommentCount = postView.findViewById<TextView>(R.id.tv_comment_count)
-
+            val btnMessageGroup = postView.findViewById<LinearLayout>(R.id.btn_message_group)
+            val btnMessage = postView.findViewById<ImageView>(R.id.btn_message)
             val btnShareGroup = postView.findViewById<LinearLayout>(R.id.btn_share_group)
+            val btnShare = postView.findViewById<ImageView>(R.id.btn_share)
             val btnFavoriteGroup = postView.findViewById<LinearLayout>(R.id.btn_favorite_group)
             val btnFavorite = postView.findViewById<ImageView>(R.id.btn_favorite)
-            val btnMessageGroup = postView.findViewById<LinearLayout>(R.id.btn_message_group)
 
-            // ===== SET BASIC DATA =====
-            userNameText.text = post.userName
-            locationText.text = post.location ?: "Unknown location"
-            postDate.text = getTimeAgo(post.createdAt)
-            petNameText.text = post.petName
-            petTypeText.text = "• ${post.petType}"
-            descriptionText.text = post.description
-            tvLikeCount.text = post.likesCount.toString()
-            tvCommentCount.text = post.commentsCount.toString()
-            contactText.text = "📞 ${post.contactInfo}"
+
+            // ===== SET BASIC DATA (ALL NULL-SAFE) =====
+            userNameText?.text = post.userName
+            locationText?.text = post.location ?: "Unknown location"
+            postDate?.text = getTimeAgo(post.createdAt)
+            petNameText?.text = post.petName
+            petTypeText?.text = post.petType
+            descriptionText?.text = post.description
+            tvLikeCount?.text = post.likesCount.toString()
+            contactText?.text = "📞 ${post.contactInfo}"
+
+            // ===== SET GENDER =====
+            // Alternative if you're using text view for gender
+            when (post.gender?.lowercase()) {
+                "male" -> {
+                    genderText?.text = "Male"
+                    genderText?.setTextColor(Color.parseColor("#2196F3")) // Blue
+                    genderIcon?.visibility = View.GONE
+                }
+                "female" -> {
+                    genderText?.text = "Female"
+                    genderText?.setTextColor(Color.parseColor("#E91E63")) // Pink
+                    genderIcon?.visibility = View.GONE
+                }
+                else -> {
+                    genderText?.text = post.gender ?: "Unknown"
+                    genderText?.setTextColor(Color.parseColor("#666666")) // Gray
+                    genderIcon?.visibility = View.GONE
+                }
+            }
 
             // ===== SET PROFILE ICON =====
             val firstLetter = if (post.userName.isNotEmpty()) {
@@ -253,91 +880,117 @@ class HomeActivity : BaseNavigationActivity() {
             } else {
                 "?"
             }
-            profileIcon.text = firstLetter
+            profileIcon?.text = firstLetter
+
+            // ===== LOAD PROFILE IMAGE IF AVAILABLE =====
+            if (!post.userImageUrl.isNullOrEmpty()) {
+                val fullImageUrl = if (post.userImageUrl.startsWith("http")) {
+                    post.userImageUrl
+                } else {
+                    "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}${post.userImageUrl}"
+                }
+
+                profileIcon?.visibility = View.GONE
+                profileImage?.visibility = View.VISIBLE
+
+                Glide.with(this@HomeActivity)
+                    .load(fullImageUrl)
+                    .circleCrop()
+                    .placeholder(R.drawable.circle_solid_profile)
+                    .error(R.drawable.circle_solid_profile)
+                    .into(profileImage!!)
+            }
+
+            // ===== SET AGE AND WEIGHT =====
+            if (post.age.isNullOrEmpty()) {
+                postAge?.visibility = View.GONE
+            } else {
+                postAge?.visibility = View.VISIBLE
+                postAge?.text = post.age
+            }
+
+            if (post.weight.isNullOrEmpty()) {
+                postWeight?.visibility = View.GONE
+            } else {
+                postWeight?.visibility = View.VISIBLE
+                postWeight?.text = post.weight
+            }
 
             // ===== SET STATUS BADGE =====
             when (post.status) {
                 "Lost" -> {
-                    statusBadge.setBackgroundResource(R.drawable.status_badge_lost)
-                    statusBadge.text = "LOST"
-                    statusBadge.setTextColor(Color.WHITE)
+                    statusBadge?.setBackgroundResource(R.drawable.status_badge_lost)
+                    statusBadge?.text = "LOST"
+                    statusBadge?.setTextColor(Color.WHITE)
 
                     if (!post.reward.isNullOrEmpty()) {
                         val formattedReward = formatReward(post.reward)
                         val digitsOnly = post.reward.replace("[^0-9]".toRegex(), "")
                         val originalNumber = if (digitsOnly.isNotEmpty()) digitsOnly.toLong() else 0
 
-                        rewardBadge.text = if (originalNumber > 1000000) {
-                            "💰 Reward: $formattedReward (max limit)"
+                        rewardBadge?.text = if (originalNumber > 1000000) {
+                            "Reward: ₱$formattedReward (max limit)"
                         } else {
-                            "💰 Reward: $formattedReward"
+                            "Reward: ₱$formattedReward"
                         }
-                        rewardBadge.visibility = View.VISIBLE
+                        rewardBadge?.visibility = View.VISIBLE
 
-                        rewardText.text = "💰 Reward: $formattedReward"
-                        rewardText.visibility = View.VISIBLE
+                        rewardText?.text = "Reward: ₱$formattedReward"
+                        rewardText?.visibility = View.VISIBLE
+                        rewardContainer?.visibility = View.VISIBLE
                     } else {
-                        rewardBadge.visibility = View.GONE
-                        rewardText.visibility = View.GONE
+                        rewardBadge?.visibility = View.GONE
+                        rewardText?.visibility = View.GONE
+                        rewardContainer?.visibility = View.GONE
                     }
                 }
                 "Found" -> {
-                    statusBadge.setBackgroundResource(R.drawable.status_badge_found)
-                    statusBadge.text = "FOUND"
-                    statusBadge.setTextColor(Color.WHITE)
-                    rewardBadge.visibility = View.GONE
-                    rewardText.visibility = View.GONE
+                    statusBadge?.setBackgroundResource(R.drawable.status_badge_found)
+                    statusBadge?.text = "FOUND"
+                    statusBadge?.setTextColor(Color.WHITE)
+                    rewardBadge?.visibility = View.GONE
+                    rewardText?.visibility = View.GONE
+                    rewardContainer?.visibility = View.GONE
                 }
                 "Adoption" -> {
-                    statusBadge.setBackgroundResource(R.drawable.status_badge_adoption)
-                    statusBadge.text = "ADOPTION"
-                    statusBadge.setTextColor(Color.WHITE)
-                    rewardBadge.visibility = View.GONE
-                    rewardText.visibility = View.GONE
+                    statusBadge?.setBackgroundResource(R.drawable.status_badge_adoption)
+                    statusBadge?.text = "ADOPTION"
+                    statusBadge?.setTextColor(Color.WHITE)
+                    rewardBadge?.visibility = View.GONE
+                    rewardText?.visibility = View.GONE
+                    rewardContainer?.visibility = View.GONE
                 }
             }
 
-            // ===== HANDLE IMAGES (CAROUSEL FOR MULTIPLE IMAGES) =====
-// REPLACE THIS ENTIRE BLOCK IN YOUR createPostView FUNCTION
+            // ===== HANDLE IMAGES =====
             if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
                 if (post.imageUrls.size > 1) {
-                    // Multiple images - use ViewPager carousel
-                    viewPager.visibility = View.VISIBLE
-                    singleImageView.visibility = View.GONE
-                    noImagePlaceholder.visibility = View.GONE
+                    viewPager?.visibility = View.VISIBLE
+                    singleImageView?.visibility = View.GONE
+                    noImagePlaceholder?.visibility = View.GONE
 
-                    // Setup ViewPager adapter
                     val imageAdapter = PostImagePagerAdapter(post.imageUrls)
-                    viewPager.adapter = imageAdapter
+                    viewPager?.adapter = imageAdapter
+                    viewPager?.offscreenPageLimit = 1
 
-                    // IMPORTANT: Set offscreen page limit to avoid reload issues
-                    viewPager.offscreenPageLimit = 1
+                    setupImageIndicators(indicatorContainer!!, post.imageUrls.size)
+                    indicatorContainer?.visibility = View.VISIBLE
 
-                    // Setup indicator dots
-                    setupImageIndicators(indicatorContainer, post.imageUrls.size)
-                    indicatorContainer.visibility = View.VISIBLE
-
-                    // Remove any existing callbacks to avoid multiple registrations
-                    viewPager.unregisterOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {})
-
-                    // Update indicator on page change
-                    viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                    viewPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                         override fun onPageSelected(position: Int) {
                             super.onPageSelected(position)
-                            updateIndicatorSelection(indicatorContainer, position)
+                            updateIndicatorSelection(indicatorContainer!!, position)
                         }
                     })
 
-                    // Click on image to open gallery
-                    viewPager.setOnClickListener {
-                        openImageGallery(post.imageUrls, viewPager.currentItem)
+                    viewPager?.setOnClickListener {
+                        openImageGallery(post.imageUrls, viewPager?.currentItem ?: 0)
                     }
                 } else {
-                    // Single image - use ImageView
-                    viewPager.visibility = View.GONE
-                    singleImageView.visibility = View.VISIBLE
-                    indicatorContainer.visibility = View.GONE
-                    noImagePlaceholder.visibility = View.GONE
+                    viewPager?.visibility = View.GONE
+                    singleImageView?.visibility = View.VISIBLE
+                    indicatorContainer?.visibility = View.GONE
+                    noImagePlaceholder?.visibility = View.GONE
 
                     val imageUrl = post.imageUrls[0]
                     val fullImageUrl = if (imageUrl.startsWith("http")) {
@@ -351,79 +1004,91 @@ class HomeActivity : BaseNavigationActivity() {
                         .centerCrop()
                         .placeholder(android.R.drawable.ic_menu_gallery)
                         .error(android.R.drawable.ic_menu_report_image)
-                        .into(singleImageView)
+                        .into(singleImageView!!)
 
-                    singleImageView.setOnClickListener {
+                    singleImageView?.setOnClickListener {
                         openImageGallery(post.imageUrls, 0)
                     }
                 }
             } else {
-                // No images - show placeholder
-                viewPager.visibility = View.GONE
-                singleImageView.visibility = View.GONE
-                indicatorContainer.visibility = View.GONE
-                noImagePlaceholder.visibility = View.VISIBLE
+                viewPager?.visibility = View.GONE
+                singleImageView?.visibility = View.GONE
+                indicatorContainer?.visibility = View.GONE
+                noImagePlaceholder?.visibility = View.VISIBLE
             }
 
             // ===== HANDLE "MORE" BUTTON FOR LONG DESCRIPTION =====
-            descriptionText.maxLines = Integer.MAX_VALUE
-            descriptionText.ellipsize = null
+            descriptionText?.maxLines = Integer.MAX_VALUE
+            descriptionText?.ellipsize = null
 
-            descriptionText.post {
+            descriptionText?.post {
                 val lineCount = descriptionText.lineCount
                 if (lineCount > 2) {
-                    descriptionText.maxLines = 2
-                    descriptionText.ellipsize = TextUtils.TruncateAt.END
-                    btnMoreDescription.visibility = View.VISIBLE
+                    descriptionText?.maxLines = 2
+                    descriptionText?.ellipsize = TextUtils.TruncateAt.END
+                    btnMoreDescription?.visibility = View.VISIBLE
 
-                    btnMoreDescription.tag = false
-                    btnMoreDescription.setOnClickListener {
-                        val isCollapsed = btnMoreDescription.tag as Boolean
+                    btnMoreDescription?.tag = false
+                    btnMoreDescription?.setOnClickListener {
+                        val isCollapsed = btnMoreDescription?.tag as? Boolean ?: false
                         if (isCollapsed) {
-                            descriptionText.maxLines = Integer.MAX_VALUE
-                            descriptionText.ellipsize = null
-                            btnMoreDescription.text = "less"
-                            btnMoreDescription.tag = false
+                            descriptionText?.maxLines = Integer.MAX_VALUE
+                            descriptionText?.ellipsize = null
+                            btnMoreDescription?.text = "less"
+                            btnMoreDescription?.tag = false
                         } else {
-                            descriptionText.maxLines = 2
-                            descriptionText.ellipsize = TextUtils.TruncateAt.END
-                            btnMoreDescription.text = "more"
-                            btnMoreDescription.tag = true
+                            descriptionText?.maxLines = 2
+                            descriptionText?.ellipsize = TextUtils.TruncateAt.END
+                            btnMoreDescription?.text = "more"
+                            btnMoreDescription?.tag = true
                         }
                     }
                 } else {
-                    btnMoreDescription.visibility = View.GONE
+                    btnMoreDescription?.visibility = View.GONE
                 }
             }
 
-            // ===== OBSERVE LIKE STATUS =====
-            viewModel.likeStatus.observe(this, Observer { likeMap ->
-                val isLiked = likeMap[post.postId]
-                if (isLiked == true) {
-                    btnLike.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
-                    btnLike.tag = "liked"
-                } else {
-                    btnLike.setColorFilter(Color.parseColor("#000000"), PorterDuff.Mode.SRC_ATOP)
-                    btnLike.tag = "unliked"
-                }
-            })
+            // ===== SET INITIAL LIKE STATE =====
+            val isLiked = likeStatusMap[post.postId] ?: false
+            likeButton?.setLiked(isLiked, animate = false)  // This should be false for initial state
+            Log.d("LIKE_ANIMATION", "Home - Initial state for post ${post.postId}: $isLiked")
 
-            // ===== OBSERVE FAVORITE STATUS =====
-            viewModel.favoriteStatus.observe(this, Observer { favMap ->
-                val isFav = favMap[post.postId]
-                if (isFav == true) {
-                    btnFavorite.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
-                    btnFavorite.tag = "favorited"
-                } else {
-                    btnFavorite.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
-                    btnFavorite.tag = "unfavorited"
+            // ===== SET INITIAL FAVORITE STATE =====
+            val isFav = favoriteStatusMap[post.postId] ?: false
+            if (isFav) {
+                btnFavorite?.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                btnFavorite?.tag = "favorited"
+            } else {
+                btnFavorite?.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
+                btnFavorite?.tag = "unfavorited"
+            }
+
+            // ===== FAVORITE BUTTON CLICK HANDLER =====
+            btnFavoriteGroup?.setOnClickListener {
+                val user = currentUser
+                if (user == null) {
+                    Toast.makeText(this, "Please login to favorite", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
                 }
-            })
+
+                val isFav = btnFavorite?.tag == "favorited"
+
+                // Toggle immediately for better UX
+                if (isFav) {
+                    btnFavorite?.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
+                    btnFavorite?.tag = "unfavorited"
+                } else {
+                    btnFavorite?.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                    btnFavorite?.tag = "favorited"
+                }
+
+                viewModel.toggleFavorite(post, isFav)
+            }
 
             // ===== CLICK LISTENERS =====
 
-            // Profile click - view user profile
-            profileIcon.setOnClickListener {
+            // Profile click
+            profileIcon?.setOnClickListener {
                 try {
                     val user = currentUser
                     if (user?.firebaseUid == post.firebaseUid) {
@@ -441,8 +1106,8 @@ class HomeActivity : BaseNavigationActivity() {
                 }
             }
 
-            // Username click - view user profile
-            userNameText.setOnClickListener {
+            // Username click
+            userNameText?.setOnClickListener {
                 try {
                     val user = currentUser
                     if (user?.firebaseUid == post.firebaseUid) {
@@ -461,51 +1126,80 @@ class HomeActivity : BaseNavigationActivity() {
             }
 
             // More options click
-            btnMore.setOnClickListener {
-                showPostOptions(post, btnLike)
+            btnMore?.setOnClickListener {
+                showPostOptions(post, likeButton!!)
             }
 
-            // Like button click
-            btnLikeGroup.setOnClickListener {
+            // ===== LIKE BUTTON CLICK HANDLER =====
+            btnLikeGroup?.setOnClickListener {
+                Log.d("LIKE_CLICK", "Like button clicked! isEnabled=${btnLikeGroup?.isEnabled}")
                 val user = currentUser
                 if (user == null) {
-                    Toast.makeText(this, "Please login to like posts", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@HomeActivity, "Please login to like posts", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
-                val isLiked = btnLike.tag == "liked"
-                viewModel.toggleLike(post, isLiked)
-            }
+                if (btnLikeGroup?.isEnabled == false) return@setOnClickListener
+                btnLikeGroup?.isEnabled = false
 
-            // Comment button click
-            btnCommentGroup.setOnClickListener {
-                showCommentsDialog(post)
+                val wasAlreadyLiked = likeButton?.isLiked ?: false
+
+                // DEBUG LOG
+                Log.d("LIKE_ANIMATION", "Home - Before: isLiked=$wasAlreadyLiked, setting to ${!wasAlreadyLiked} with animate=true")
+
+                // IMPORTANT: Force animation to play
+                if (likeButton != null) {
+                    // First make sure the animation view is visible
+                    likeButton.setLiked(!wasAlreadyLiked, animate = true)
+                }
+
+                // Update count immediately
+                val currentCount = tvLikeCount?.text.toString().toIntOrNull() ?: 0
+                tvLikeCount?.text = (if (!wasAlreadyLiked) currentCount + 1 else (currentCount - 1).coerceAtLeast(0)).toString()
+
+                // Call ViewModel
+                viewModel.toggleLike(post, wasAlreadyLiked)
+
+                Handler(Looper.getMainLooper()).postDelayed({
+                    btnLikeGroup?.isEnabled = true
+                }, 1000)
             }
 
             // Share button click
-            btnShareGroup.setOnClickListener {
+            btnShareGroup?.setOnClickListener {
                 sharePost(post)
             }
 
-            // Favorite button click
-            btnFavoriteGroup.setOnClickListener {
+            // ===== FIXED FAVORITE BUTTON CLICK HANDLER =====
+            btnFavoriteGroup?.setOnClickListener {
                 val user = currentUser
                 if (user == null) {
                     Toast.makeText(this, "Please login to favorite", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
-                val isFav = btnFavorite.tag == "favorited"
+                val isFav = btnFavorite?.tag == "favorited"
+
+                // Toggle immediately for better UX
+                if (isFav) {
+                    btnFavorite?.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
+                    btnFavorite?.tag = "unfavorited"
+                } else {
+                    btnFavorite?.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                    btnFavorite?.tag = "favorited"
+                }
+
+                // Call ViewModel to toggle favorite
                 viewModel.toggleFavorite(post, isFav)
             }
 
-            // Message button - only show if NOT your own post
+            // Message button - FIXED LINE 755
             val user = currentUser
             if (post.firebaseUid == user?.firebaseUid) {
-                btnMessageGroup.visibility = View.GONE
+                btnMessageGroup?.visibility = View.GONE
             } else {
-                btnMessageGroup.visibility = View.VISIBLE
-                btnMessageGroup.setOnClickListener {
+                btnMessageGroup?.visibility = View.VISIBLE
+                btnMessageGroup?.setOnClickListener {
                     val intent = Intent(this, ChatActivity::class.java)
                     intent.putExtra("receiverUid", post.firebaseUid)
                     intent.putExtra("receiverUsername", post.userName)
@@ -516,6 +1210,7 @@ class HomeActivity : BaseNavigationActivity() {
             postsContainer.addView(postView)
         } catch (e: Exception) {
             println("❌ Error creating post view: ${e.message}")
+            e.printStackTrace()
         }
     }
 
@@ -561,235 +1256,6 @@ class HomeActivity : BaseNavigationActivity() {
         }
     }
 
-    private fun showCommentsDialog(post: ApiPost) {
-        try {
-            val dialogView = layoutInflater.inflate(R.layout.dialog_comments, null)
-
-            val postIcon = dialogView.findViewById<TextView>(R.id.comment_post_icon)
-            val postUser = dialogView.findViewById<TextView>(R.id.comment_post_user)
-            val postCaption = dialogView.findViewById<TextView>(R.id.comment_post_caption)
-            val commentsRecyclerView = dialogView.findViewById<RecyclerView>(R.id.comments_recycler_view)
-            val btnClose = dialogView.findViewById<TextView>(R.id.btn_close_comments)
-            val commentInput = dialogView.findViewById<EditText>(R.id.comment_input)
-            val btnPostComment = dialogView.findViewById<TextView>(R.id.btn_post_comment)
-
-            if (commentsRecyclerView == null) {
-                Toast.makeText(this, "Comments UI error", Toast.LENGTH_SHORT).show()
-                return
-            }
-
-            val emoji = when {
-                post.petType.contains("dog", ignoreCase = true) -> "🐶"
-                post.petType.contains("cat", ignoreCase = true) -> "🐱"
-                post.petType.contains("bird", ignoreCase = true) -> "🐦"
-                post.petType.contains("rabbit", ignoreCase = true) -> "🐰"
-                post.petType.contains("fish", ignoreCase = true) -> "🐟"
-                else -> "🐾"
-            }
-
-            postIcon?.text = emoji
-            postIcon?.background = ContextCompat.getDrawable(this, R.drawable.circle_solid_profile)
-
-            postUser?.text = post.userName
-            postCaption?.text = "${post.petName} • ${post.status}\n${post.description}"
-
-            commentsRecyclerView.layoutManager = LinearLayoutManager(this)
-
-            loadCommentsForRecyclerView(commentsRecyclerView, post.postId)
-
-            val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
-            dialog.setContentView(dialogView)
-
-            dialog.window?.apply {
-                setLayout(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                setBackgroundDrawableResource(android.R.color.transparent)
-            }
-
-            btnClose?.setOnClickListener {
-                dialog.dismiss()
-            }
-
-            btnPostComment?.setOnClickListener {
-                val text = commentInput?.text.toString().trim()
-                if (text.isNotEmpty()) {
-                    val user = currentUser
-                    if (user == null) {
-                        Toast.makeText(this, "Please login to comment", Toast.LENGTH_SHORT).show()
-                        return@setOnClickListener
-                    }
-                    viewModel.addComment(post.postId, text)
-                    commentInput?.text?.clear()
-                    Toast.makeText(this, "Comment posted!", Toast.LENGTH_SHORT).show()
-                    loadCommentsForRecyclerView(commentsRecyclerView, post.postId)
-                } else {
-                    Toast.makeText(this, "Please enter a comment", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            dialog.show()
-        } catch (e: Exception) {
-            println("❌ Error showing comments: ${e.message}")
-            e.printStackTrace()
-            Toast.makeText(this, "Comments not available", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun loadCommentsForRecyclerView(recyclerView: RecyclerView, postId: String) {
-        println("💬 Loading comments for post: $postId")
-
-        lifecycleScope.launch {
-            try {
-                val result = commentRepository.getComments(postId)
-
-                if (result.isSuccess) {
-                    val apiComments = result.getOrNull()!!
-                    println("✅ Loaded ${apiComments.size} comments for post $postId")
-
-                    val user = currentUser
-                    val adapter = CommentsAdapter(
-                        apiComments,
-                        user?.firebaseUid ?: "",
-                        { commentId ->
-                            if (user != null) {
-                                lifecycleScope.launch {
-                                    commentRepository.likeComment(commentId, user.firebaseUid)
-                                    loadCommentsForRecyclerView(recyclerView, postId)
-                                }
-                            }
-                        },
-                        { comment ->
-                            showCommentOptions(comment)
-                        },
-                        { userId, userName ->
-                            try {
-                                if (user?.firebaseUid == userId) {
-                                    val intent = Intent(this@HomeActivity, ProfileActivity::class.java)
-                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                                    startActivity(intent)
-                                } else {
-                                    val intent = Intent(this@HomeActivity, UserProfileActivity::class.java)
-                                    intent.putExtra("userId", userId)
-                                    intent.putExtra("userName", userName)
-                                    startActivity(intent)
-                                }
-                            } catch (e: Exception) {
-                                println("❌ Error opening profile from comment: ${e.message}")
-                            }
-                        }
-                    )
-                    recyclerView.adapter = adapter
-                } else {
-                    println("❌ Failed to load comments")
-                    val adapter = CommentsAdapter(emptyList(), currentUser?.firebaseUid ?: "", {}, {}, { _, _ -> })
-                    recyclerView.adapter = adapter
-                }
-            } catch (e: Exception) {
-                println("❌ Error loading comments: ${e.message}")
-                e.printStackTrace()
-                val adapter = CommentsAdapter(emptyList(), currentUser?.firebaseUid ?: "", {}, {}, { _, _ -> })
-                recyclerView.adapter = adapter
-            }
-        }
-    }
-
-    private fun showCommentOptions(comment: ApiComment) {
-        try {
-            val dialogView = layoutInflater.inflate(R.layout.dialog_comment_options, null)
-
-            val btnClose = dialogView.findViewById<TextView>(R.id.btn_close)
-            val optionReport = dialogView.findViewById<LinearLayout>(R.id.option_report)
-            val optionDelete = dialogView.findViewById<LinearLayout>(R.id.option_delete)
-
-            val user = currentUser
-            if (user != null && comment.firebaseUid == user.firebaseUid) {
-                optionDelete?.visibility = View.VISIBLE
-            } else {
-                optionDelete?.visibility = View.GONE
-            }
-
-            val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
-            dialog.setContentView(dialogView)
-
-            dialog.window?.apply {
-                setGravity(android.view.Gravity.BOTTOM)
-                setLayout(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                setBackgroundDrawable(null)
-            }
-
-            btnClose?.setOnClickListener {
-                dialog.dismiss()
-            }
-
-            optionReport?.setOnClickListener {
-                AlertDialog.Builder(this)
-                    .setTitle("Report Comment")
-                    .setMessage("Are you sure you want to report this comment?")
-                    .setPositiveButton("Report") { _, _ ->
-                        reportComment(comment)
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
-                dialog.dismiss()
-            }
-
-            optionDelete?.setOnClickListener {
-                AlertDialog.Builder(this)
-                    .setTitle("Delete Comment")
-                    .setMessage("Are you sure you want to delete this comment?")
-                    .setPositiveButton("Delete") { _, _ ->
-                        val user = currentUser
-                        if (user != null) {
-                            lifecycleScope.launch {
-                                try {
-                                    val result = commentRepository.deleteComment(comment.commentId, user.firebaseUid)
-                                    if (result.isSuccess) {
-                                        Toast.makeText(this@HomeActivity, "Comment deleted", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(this@HomeActivity, "Failed to delete comment", Toast.LENGTH_SHORT).show()
-                                    }
-                                } catch (e: Exception) {
-                                    Toast.makeText(this@HomeActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
-                dialog.dismiss()
-            }
-
-            dialog.show()
-        } catch (e: Exception) {
-            println("❌ Error showing comment options: ${e.message}")
-            e.printStackTrace()
-            Toast.makeText(this, "Menu not available", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun reportComment(comment: ApiComment) {
-        val user = currentUser ?: return
-
-        lifecycleScope.launch {
-            val result = reportRepository.createReport(
-                reporterUid = user.firebaseUid,
-                reason = "inappropriate",
-                commentId = comment.commentId,
-                description = "Comment reported"
-            )
-
-            if (result.isSuccess) {
-                Toast.makeText(this@HomeActivity, "Comment reported", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this@HomeActivity, "Failed to report comment", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
     private fun getTimeAgo(dateTime: String): String {
         return try {
@@ -828,7 +1294,7 @@ class HomeActivity : BaseNavigationActivity() {
         }
     }
 
-    private fun showPostOptions(post: ApiPost, btnLike: ImageView?) {
+    private fun showPostOptions(post: ApiPost, likeButton: com.example.pawsociety.widget.LikeButton) {
         try {
             val dialogView = layoutInflater.inflate(R.layout.post_menu_instagram, null)
 
@@ -848,7 +1314,6 @@ class HomeActivity : BaseNavigationActivity() {
             val optionHide = dialogView.findViewById<LinearLayout>(R.id.option_hide)
             val optionAboutAccount = dialogView.findViewById<LinearLayout>(R.id.option_about_account)
 
-            // New options
             val optionEdit = dialogView.findViewById<LinearLayout>(R.id.option_edit)
             val ivEditIcon = dialogView.findViewById<ImageView>(R.id.iv_edit_icon)
             val tvEditText = dialogView.findViewById<TextView>(R.id.tv_edit_text)
@@ -877,10 +1342,8 @@ class HomeActivity : BaseNavigationActivity() {
             val user = currentUser
             val isFollowing = viewModel.checkFollowStatus(post.firebaseUid)
 
-            // Check if this is the user's own post
             val isOwnPost = (user != null && post.firebaseUid == user.firebaseUid)
 
-            // Create dialog
             val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
             dialog.setContentView(dialogView)
 
@@ -898,30 +1361,24 @@ class HomeActivity : BaseNavigationActivity() {
             }
 
             if (isOwnPost) {
-                // Show Edit option for own posts
                 optionEdit?.visibility = View.VISIBLE
                 optionEdit?.setOnClickListener {
                     openEditPost(post)
                     dialog.dismiss()
                 }
 
-                // Show Delete option for own posts
                 optionDelete?.visibility = View.VISIBLE
                 optionDelete?.setOnClickListener {
                     showDeleteConfirmation(post)
                     dialog.dismiss()
                 }
 
-                // Hide Follow option for own posts
                 optionFollow?.visibility = View.GONE
-                // Hide Block option for own posts
                 optionBlock?.visibility = View.GONE
             } else {
-                // Hide Edit and Delete for other users' posts
                 optionEdit?.visibility = View.GONE
                 optionDelete?.visibility = View.GONE
 
-                // Show Follow option for other users
                 optionFollow?.visibility = View.VISIBLE
                 if (isFollowing) {
                     tvFollowText?.text = "Unfollow"
@@ -939,7 +1396,6 @@ class HomeActivity : BaseNavigationActivity() {
                     dialog.dismiss()
                 }
 
-                // Show Block option for other users
                 optionBlock?.visibility = View.VISIBLE
                 optionBlock?.setOnClickListener {
                     showBlockConfirmation(post)
@@ -959,15 +1415,7 @@ class HomeActivity : BaseNavigationActivity() {
             }
 
             optionHide?.setOnClickListener {
-                AlertDialog.Builder(this)
-                    .setTitle("Hide this post?")
-                    .setMessage("You won't see this post again in your feed.")
-                    .setPositiveButton("Hide") { _, _ ->
-                        Toast.makeText(this, "Post hidden", Toast.LENGTH_SHORT).show()
-                        showUndoSnackbar(post)
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
+                showHideConfirmation(post)
                 dialog.dismiss()
             }
 
@@ -986,6 +1434,52 @@ class HomeActivity : BaseNavigationActivity() {
             println("❌ Error showing post options: ${e.message}")
             e.printStackTrace()
             Toast.makeText(this, "Menu not available", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showHideConfirmation(post: ApiPost) {
+        AlertDialog.Builder(this)
+            .setTitle("Hide Post")
+            .setMessage("This post will be hidden from your feed. You can unhide it later in Settings.")
+            .setPositiveButton("Hide") { _, _ ->
+                hidePost(post)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun hidePost(post: ApiPost) {
+        val currentUser = sessionManager.getCurrentUser() ?: return
+
+        lifecycleScope.launch {
+            val hideRepository = HidePostRepository()
+            val result = hideRepository.hidePost(currentUser.firebaseUid, post.postId)
+
+            if (result.isSuccess) {
+                Toast.makeText(this@HomeActivity, "Post hidden", Toast.LENGTH_SHORT).show()
+                hiddenPostIds.add(post.postId)
+                viewModel.forceRefreshAndFilter(currentCategory)
+            } else {
+                val error = result.exceptionOrNull()
+                Toast.makeText(this@HomeActivity, "Failed to hide post: ${error?.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun removePostFromFeed(postId: String) {
+        for (i in 0 until postsContainer.childCount) {
+            val postView = postsContainer.getChildAt(i)
+            val viewPostId = postView.tag as? String
+
+            if (viewPostId == postId) {
+                postsContainer.removeViewAt(i)
+                if (postsContainer.childCount == 0) {
+                    postsContainer.visibility = View.GONE
+                    emptyState.visibility = View.VISIBLE
+                    Toast.makeText(this, "All posts are hidden", Toast.LENGTH_SHORT).show()
+                }
+                break
+            }
         }
     }
 
@@ -1008,8 +1502,7 @@ class HomeActivity : BaseNavigationActivity() {
 
             if (result.isSuccess) {
                 Toast.makeText(this@HomeActivity, "Blocked $userName", Toast.LENGTH_SHORT).show()
-                // Refresh posts to hide blocked user's content
-                viewModel.loadPosts(true)
+                viewModel.forceRefreshAndFilter(currentCategory)
             } else {
                 Toast.makeText(this@HomeActivity, "Failed to block user", Toast.LENGTH_SHORT).show()
             }
@@ -1102,7 +1595,7 @@ class HomeActivity : BaseNavigationActivity() {
     private fun openEditPost(post: ApiPost) {
         val intent = Intent(this, EditPostActivity::class.java)
         intent.putExtra("post", post)
-        startActivityForResult(intent, EDIT_POST_REQUEST)
+        editPostLauncher.launch(intent)
     }
 
     private fun showDeleteConfirmation(post: ApiPost) {
@@ -1145,18 +1638,22 @@ class HomeActivity : BaseNavigationActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == EDIT_POST_REQUEST && resultCode == RESULT_OK) {
-            // Refresh posts
-            viewModel.loadPosts(true)
+    // Add this temporarily to see what's happening
+    private fun debugPostCount() {
+        Log.d("HomeActivity", "🔍 Container has ${postsContainer.childCount} views")
+        for (i in 0 until postsContainer.childCount) {
+            val view = postsContainer.getChildAt(i)
+            val tag = view.tag as? String ?: "no tag"
+            Log.d("HomeActivity", "   View $i: tag=$tag")
         }
     }
 
     override fun onResume() {
         super.onResume()
-        viewModel.loadPosts()
+        // Don't just load from cache - force refresh!
+        viewModel.forceRefreshAndFilter(currentCategory)  // Use force refresh
         viewModel.loadCurrentUser()
+        loadHiddenPosts()
     }
 
     override fun onDestroy() {
@@ -1164,11 +1661,11 @@ class HomeActivity : BaseNavigationActivity() {
         if (::notificationBadge.isInitialized) {
             NotificationManager.cleanup(notificationBadge)
         }
-        // Disconnect socket when activity is destroyed
         SocketManager.disconnect()
     }
 
     companion object {
-        private const val EDIT_POST_REQUEST = 1001
+        private const val CREATE_POST_REQUEST = 1001
+        private const val EDIT_POST_REQUEST = 1002
     }
 }

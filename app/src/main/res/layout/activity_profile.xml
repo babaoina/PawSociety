@@ -1,388 +1,496 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:layout_height="match_parent">
 
-    <!-- Top Bar -->
+    <!-- Your existing LinearLayout - NO CHANGES -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="#FFFFFF"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:gravity="center_vertical"
-        android:elevation="4dp">
-
-        <TextView
-            android:id="@+id/tv_username"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="#000000"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <ImageView
-            android:id="@+id/btn_settings"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/set"
-            android:tint="#000000"
-            android:contentDescription="Settings" />
-    </LinearLayout>
-
-    <!-- Scrollable Content -->
-    <ScrollView
-        android:id="@+id/profile_scroll_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
         android:background="#FFFFFF">
 
+        <!-- Top Bar - Instagram Style -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#FFFFFF">
+            android:layout_height="56dp"
+            android:background="#FFFFFF"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:gravity="center_vertical"
+            android:elevation="0dp">
 
-            <!-- Profile Header -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tv_username"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:layout_weight="1"
+                android:text=""
+                android:textColor="#000000"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <!-- Three horizontal lines menu (Instagram style) -->
+            <ImageView
+                android:id="@+id/btn_menu"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_menu_horizontal"
+                android:tint="#000000"
+                android:contentDescription="Menu" />
+        </LinearLayout>
+
+        <!-- SwipeRefreshLayout Wrapper -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <!-- Scrollable Content -->
+            <ScrollView
+                android:id="@+id/profile_scroll_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
                 android:background="#FFFFFF">
 
-                <!-- Profile Header Row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:paddingBottom="80dp">  <!-- ADDED: padding for paw -->
 
-                    <!-- Profile Picture with Circle Border -->
+                    <!-- Profile Header -->
                     <LinearLayout
-                        android:layout_width="90dp"
-                        android:layout_height="90dp"
-                        android:gravity="center"
-                        android:background="@drawable/circle_border"
-                        android:padding="3dp">
-
-                        <FrameLayout
-                            android:layout_width="84dp"
-                            android:layout_height="84dp">
-
-                            <View
-                                android:id="@+id/profile_circle_background"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@drawable/circle_solid_profile" />
-
-                            <ImageView
-                                android:id="@+id/profile_image"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:scaleType="centerCrop"
-                                android:visibility="gone" />
-
-                            <TextView
-                                android:id="@+id/profile_initial"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:gravity="center"
-                                android:text=""
-                                android:textSize="36sp"
-                                android:textColor="#FFFFFF"
-                                android:textStyle="bold"
-                                android:background="@null" />
-                        </FrameLayout>
-                    </LinearLayout>
-
-                    <!-- Stats -->
-                    <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="12dp"
                         android:orientation="vertical"
-                        android:gravity="center_vertical">
+                        android:background="#FFFFFF">
 
-                        <!-- Stats Row -->
+                        <!-- Profile Picture and Stats Row -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:weightSum="3">
+                            android:padding="16dp">
 
-                            <!-- Posts -->
+                            <!-- Profile Picture -->
                             <LinearLayout
-                                android:id="@+id/layout_posts"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="vertical"
+                                android:layout_width="90dp"
+                                android:layout_height="90dp"
                                 android:gravity="center"
-                                android:background="?android:attr/selectableItemBackground"
-                                android:clickable="true"
-                                android:focusable="true">
+                                android:background="@drawable/circle_border"
+                                android:padding="3dp">
 
-                                <TextView
-                                    android:id="@+id/tv_post_count"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="0"
-                                    android:textColor="#000000"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
+                                <FrameLayout
+                                    android:layout_width="84dp"
+                                    android:layout_height="84dp">
 
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Posts"
-                                    android:textColor="#666666"
-                                    android:textSize="11sp" />
+                                    <View
+                                        android:id="@+id/profile_circle_background"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:background="@drawable/circle_solid_profile" />
+
+                                    <ImageView
+                                        android:id="@+id/profile_image"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:scaleType="centerCrop"
+                                        android:visibility="gone" />
+
+                                    <TextView
+                                        android:id="@+id/profile_initial"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:gravity="center"
+                                        android:text=""
+                                        android:textSize="36sp"
+                                        android:textColor="#FFFFFF"
+                                        android:textStyle="bold"
+                                        android:background="@null" />
+                                </FrameLayout>
                             </LinearLayout>
 
-                            <!-- Followers -->
+                            <!-- Stats -->
                             <LinearLayout
-                                android:id="@+id/layout_followers"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
+                                android:layout_marginStart="16dp"
                                 android:orientation="vertical"
-                                android:gravity="center"
-                                android:background="?android:attr/selectableItemBackground"
-                                android:clickable="true"
-                                android:focusable="true">
+                                android:gravity="center_vertical">
 
-                                <TextView
-                                    android:id="@+id/tv_follower_count"
-                                    android:layout_width="wrap_content"
+                                <!-- Stats Row -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:text="0"
-                                    android:textColor="#000000"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
+                                    android:orientation="horizontal"
+                                    android:weightSum="3">
 
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Followers"
-                                    android:textColor="#666666"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
+                                    <!-- Posts -->
+                                    <LinearLayout
+                                        android:id="@+id/layout_posts"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical"
+                                        android:gravity="center"
+                                        android:clickable="true"
+                                        android:focusable="true">
 
-                            <!-- Following -->
-                            <LinearLayout
-                                android:id="@+id/layout_following"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="vertical"
-                                android:gravity="center"
-                                android:background="?android:attr/selectableItemBackground"
-                                android:clickable="true"
-                                android:focusable="true">
+                                        <TextView
+                                            android:id="@+id/tv_post_count"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="0"
+                                            android:textColor="#000000"
+                                            android:textSize="16sp"
+                                            android:textStyle="bold" />
 
-                                <TextView
-                                    android:id="@+id/tv_following_count"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="0"
-                                    android:textColor="#000000"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="posts"
+                                            android:textColor="#666666"
+                                            android:textSize="12sp" />
+                                    </LinearLayout>
 
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Following"
-                                    android:textColor="#666666"
-                                    android:textSize="11sp" />
+                                    <!-- Followers -->
+                                    <LinearLayout
+                                        android:id="@+id/layout_followers"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical"
+                                        android:gravity="center"
+                                        android:clickable="true"
+                                        android:focusable="true">
+
+                                        <TextView
+                                            android:id="@+id/tv_follower_count"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="0"
+                                            android:textColor="#000000"
+                                            android:textSize="16sp"
+                                            android:textStyle="bold" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="followers"
+                                            android:textColor="#666666"
+                                            android:textSize="12sp" />
+                                    </LinearLayout>
+
+                                    <!-- Following -->
+                                    <LinearLayout
+                                        android:id="@+id/layout_following"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:orientation="vertical"
+                                        android:gravity="center"
+                                        android:clickable="true"
+                                        android:focusable="true">
+
+                                        <TextView
+                                            android:id="@+id/tv_following_count"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="0"
+                                            android:textColor="#000000"
+                                            android:textSize="16sp"
+                                            android:textStyle="bold" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="following"
+                                            android:textColor="#666666"
+                                            android:textSize="12sp" />
+                                    </LinearLayout>
+                                </LinearLayout>
                             </LinearLayout>
                         </LinearLayout>
 
-                        <!-- Edit Profile Button -->
-                        <TextView
-                            android:id="@+id/btn_edit_profile"
+                        <!-- Bio Section -->
+                        <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="36dp"
-                            android:layout_marginTop="8dp"
-                            android:gravity="center"
-                            android:text="Edit Profile"
-                            android:textColor="#FFFFFF"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:background="@drawable/button_oval_brown"
-                            android:clickable="true"
-                            android:focusable="true" />
-                    </LinearLayout>
-                </LinearLayout>
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingHorizontal="16dp"
+                            android:paddingBottom="12dp">
 
-                <!-- Bio Section -->
-                <TextView
-                    android:id="@+id/tv_bio"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingHorizontal="16dp"
-                    android:paddingBottom="12dp"
-                    android:text=""
-                    android:textColor="#000000"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="2dp" />
+                            <!-- Full Name -->
+                            <TextView
+                                android:id="@+id/tv_full_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="#000000"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
 
-                <!-- Story Highlights Title -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Story Highlights"
-                    android:textColor="#7A4F2B"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:paddingHorizontal="16dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="4dp" />
+                            <!-- Username -->
+                            <TextView
+                                android:id="@+id/tv_username_bio"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="#666666"
+                                android:textSize="13sp"
+                                android:layout_marginTop="2dp" />
 
-                <!-- Highlights Container -->
-                <HorizontalScrollView
-                    android:id="@+id/highlights_scroll"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none"
-                    android:paddingLeft="12dp"
-                    android:paddingRight="12dp"
-                    android:paddingBottom="8dp"
-                    android:background="#FFFFFF">
+                            <!-- Bio Text -->
+                            <TextView
+                                android:id="@+id/tv_bio_text"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="#000000"
+                                android:textSize="13sp"
+                                android:layout_marginTop="4dp" />
 
-                    <LinearLayout
-                        android:id="@+id/highlights_container"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:paddingVertical="4dp" />
-                </HorizontalScrollView>
+                            <!-- Location -->
+                            <TextView
+                                android:id="@+id/tv_location_bio"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="#666666"
+                                android:textSize="13sp"
+                                android:layout_marginTop="2dp"
+                                android:visibility="gone" />
+                        </LinearLayout>
 
-                <!-- POSTS AND FAVORITES TABS -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:orientation="horizontal"
-                    android:background="#7A4F2B"
-                    android:elevation="2dp">
+                        <!-- Edit Profile and Share Profile Buttons - BELOW BIO -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="16dp"
+                            android:paddingBottom="12dp">
 
-                    <!-- Posts Tab -->
-                    <LinearLayout
-                        android:id="@+id/tab_posts"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?android:attr/selectableItemBackground">
+                            <TextView
+                                android:id="@+id/btn_edit_profile"
+                                android:layout_width="0dp"
+                                android:layout_height="36dp"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="4dp"
+                                android:gravity="center"
+                                android:text="Edit profile"
+                                android:textColor="#000000"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:background="@drawable/button_oval_white_border"
+                                android:clickable="true"
+                                android:focusable="true" />
 
-                        <ImageView
-                            android:id="@+id/tab_posts_icon"
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:src="@drawable/feed"
-                            android:tint="#FFFFFF"
-                            android:contentDescription="Posts" />
-                    </LinearLayout>
+                            <TextView
+                                android:id="@+id/btn_share_profile"
+                                android:layout_width="0dp"
+                                android:layout_height="36dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="4dp"
+                                android:gravity="center"
+                                android:text="Share profile"
+                                android:textColor="#000000"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:background="@drawable/button_oval_white_border"
+                                android:clickable="true"
+                                android:focusable="true" />
+                        </LinearLayout>
 
-                    <!-- Favorites Tab -->
-                    <LinearLayout
-                        android:id="@+id/tab_favorites"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?android:attr/selectableItemBackground">
-
-                        <ImageView
-                            android:id="@+id/tab_favorites_icon"
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:src="@drawable/faved"
-                            android:tint="#FFFFFF"
-                            android:contentDescription="Favorites" />
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- POSTS GRID AREA -->
-            <FrameLayout
-                android:id="@+id/posts_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="300dp"
-                android:background="#FFFFFF">
-
-                <!-- Big Plus Circle -->
-                <LinearLayout
-                    android:id="@+id/big_plus_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:visibility="gone">
-
-                    <LinearLayout
-                        android:layout_width="100dp"
-                        android:layout_height="100dp"
-                        android:gravity="center"
-                        android:background="@drawable/circle_transparent_brown_border">
-
+                        <!-- Story Highlights Title -->
                         <TextView
-                            android:layout_width="80dp"
-                            android:layout_height="80dp"
-                            android:gravity="center"
-                            android:text="+"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Story Highlights"
                             android:textColor="#7A4F2B"
-                            android:textSize="40sp"
-                            android:background="@android:color/transparent" />
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:paddingHorizontal="16dp"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="4dp" />
+
+                        <!-- Highlights Container -->
+                        <HorizontalScrollView
+                            android:id="@+id/highlights_scroll"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:scrollbars="none"
+                            android:paddingLeft="12dp"
+                            android:paddingRight="12dp"
+                            android:paddingBottom="8dp"
+                            android:background="#FFFFFF">
+
+                            <LinearLayout
+                                android:id="@+id/highlights_container"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:paddingVertical="4dp" />
+                        </HorizontalScrollView>
+
+                        <!-- ===== POSTS AND FAVORITES TABS - Like Instagram with moving indicator ===== -->
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="#FFFFFF">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="horizontal">
+
+                                <!-- Posts Tab (Grid Icon) -->
+                                <LinearLayout
+                                    android:id="@+id/tab_posts"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:layout_weight="1"
+                                    android:gravity="center"
+                                    android:orientation="vertical"
+                                    android:clickable="true"
+                                    android:focusable="true">
+
+                                    <ImageView
+                                        android:id="@+id/tab_posts_icon"
+                                        android:layout_width="24dp"
+                                        android:layout_height="24dp"
+                                        android:src="@drawable/feed"
+                                        android:tint="#999999" />
+                                </LinearLayout>
+
+                                <!-- Favorites Tab (Save/Bookmark Icon) -->
+                                <LinearLayout
+                                    android:id="@+id/tab_favorites"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:layout_weight="1"
+                                    android:gravity="center"
+                                    android:orientation="vertical"
+                                    android:clickable="true"
+                                    android:focusable="true">
+
+                                    <ImageView
+                                        android:id="@+id/tab_favorites_icon"
+                                        android:layout_width="24dp"
+                                        android:layout_height="24dp"
+                                        android:src="@drawable/faved"
+                                        android:tint="#999999" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <!-- Indicator Line - This will move with animation -->
+                            <View
+                                android:id="@+id/tab_indicator"
+                                android:layout_width="0dp"
+                                android:layout_height="2dp"
+                                android:layout_gravity="bottom"
+                                android:background="#B88B4A" />
+                        </FrameLayout>
                     </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <!-- POSTS GRID AREA -->
+                    <FrameLayout
+                        android:id="@+id/posts_container"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Add Post"
-                        android:textColor="#7A4F2B"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="4dp" />
+                        android:minHeight="300dp"
+                        android:background="#FFFFFF">
+
+                        <!-- Big Plus Circle -->
+                        <LinearLayout
+                            android:id="@+id/big_plus_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:visibility="gone">
+
+                            <LinearLayout
+                                android:layout_width="100dp"
+                                android:layout_height="100dp"
+                                android:gravity="center"
+                                android:background="@drawable/circle_transparent_brown_border">
+
+                                <TextView
+                                    android:layout_width="80dp"
+                                    android:layout_height="80dp"
+                                    android:gravity="center"
+                                    android:text="+"
+                                    android:textColor="#7A4F2B"
+                                    android:textSize="40sp"
+                                    android:background="@android:color/transparent" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Add Post"
+                                android:textColor="#7A4F2B"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp" />
+                        </LinearLayout>
+
+                        <!-- Posts Grid -->
+                        <LinearLayout
+                            android:id="@+id/posts_grid"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="0dp"
+                            android:visibility="gone"
+                            android:background="#FFFFFF" />
+                    </FrameLayout>
                 </LinearLayout>
+            </ScrollView>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-                <!-- Posts Grid -->
-                <LinearLayout
-                    android:id="@+id/posts_grid"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="4dp"
-                    android:visibility="gone"
-                    android:background="#FFFFFF" />
-            </FrameLayout>
-        </LinearLayout>
-    </ScrollView>
+        <!-- Bottom Navigation -->
+        <include
+            layout="@layout/bottom_nav_unified"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
 
-    <!-- Bottom Navigation -->
-    <include
-        layout="@layout/bottom_nav_unified"
+    <!-- ADD THIS: Floating Paw Button that overlaps everything -->
+    <FrameLayout
+        android:id="@+id/floating_paw_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-</LinearLayout>
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <FrameLayout
+            android:id="@+id/nav_paw_post"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="28dp"
+            android:background="@drawable/circle_paw_background"
+            android:elevation="10dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/nav_paw_icon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/paw"
+                android:layout_gravity="center" />
+        </FrameLayout>
+    </FrameLayout>
+</FrameLayout>

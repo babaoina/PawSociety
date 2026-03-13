@@ -5,9 +5,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class AuthRepository {
-    
+
     private val apiService = ApiClient.apiService
-    
+
     /**
      * Login/Register using Firebase UID
      * Creates new user if doesn't exist, otherwise returns existing user
@@ -27,9 +27,9 @@ class AuthRepository {
                 fullName = fullName,
                 phone = phone
             )
-            
+
             val response = apiService.firebaseLogin(request)
-            
+
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.success && body.data != null) {

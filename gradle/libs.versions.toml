@@ -35,7 +35,6 @@ room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 # BCrypt for password hashing
 bcrypt = { module = "at.favre.lib:bcrypt", version.ref = "bcrypt" }
 
-
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -6,10 +6,11 @@ import com.google.gson.annotations.SerializedName
 data class ApiResponse<T>(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String? = null,
-    @SerializedName("data") val data: T? = null
+    @SerializedName("data") val data: T? = null,
+    @SerializedName("count") val count: Int? = null
 )
 
-// Specific response for single user (backend returns "user" not "data")
+// Specific response for single user
 data class UserResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String? = null,
@@ -22,7 +23,6 @@ data class ApiListResponse<T>(
     @SerializedName("count") val count: Int = 0,
     @SerializedName("posts") val posts: List<T>? = null,
     @SerializedName("users") val users: List<T>? = null,
-    @SerializedName("comments") val comments: List<T>? = null,
     @SerializedName("messages") val messages: List<T>? = null,
     @SerializedName("conversations") val conversations: List<T>? = null,
     @SerializedName("pets") val pets: List<T>? = null,
@@ -61,7 +61,21 @@ data class UpdateUserRequest(
     @SerializedName("location") val location: String? = null
 )
 
-// Post API Models
+// Batch user response
+data class BatchUserResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("users") val users: Map<String, BatchUser>? = null,
+    @SerializedName("message") val message: String? = null
+)
+
+data class BatchUser(
+    @SerializedName("username") val username: String,
+    @SerializedName("fullName") val fullName: String,
+    @SerializedName("profileImageUrl") val profileImageUrl: String?
+)
+
+// Post API Models with GENDER
+// Post API Models with AGE and WEIGHT
 data class ApiPost(
     @SerializedName("postId") val postId: String,
     @SerializedName("firebaseUid") val firebaseUid: String,
@@ -69,6 +83,9 @@ data class ApiPost(
     @SerializedName("userImageUrl") val userImageUrl: String? = "",
     @SerializedName("petName") val petName: String,
     @SerializedName("petType") val petType: String,
+    @SerializedName("age") val age: String? = "",  // ADD THIS
+    @SerializedName("weight") val weight: String? = "",  // ADD THIS
+    @SerializedName("gender") val gender: String? = "Unknown",
     @SerializedName("status") val status: String,
     @SerializedName("description") val description: String,
     @SerializedName("location") val location: String? = "",
@@ -76,8 +93,6 @@ data class ApiPost(
     @SerializedName("contactInfo") val contactInfo: String,
     @SerializedName("imageUrls") val imageUrls: List<String>? = emptyList(),
     @SerializedName("likesCount") val likesCount: Int = 0,
-    @SerializedName("commentsCount") val commentsCount: Int = 0,
-    @SerializedName("shares") val shares: Int = 0,
     @SerializedName("createdAt") val createdAt: String
 ) : java.io.Serializable
 
@@ -85,31 +100,15 @@ data class CreatePostRequest(
     @SerializedName("firebaseUid") val firebaseUid: String,
     @SerializedName("petName") val petName: String,
     @SerializedName("petType") val petType: String,
+    @SerializedName("age") val age: String? = null,  // ADD THIS
+    @SerializedName("weight") val weight: String? = null,  // ADD THIS
+    @SerializedName("gender") val gender: String? = "Unknown",
     @SerializedName("status") val status: String,
     @SerializedName("description") val description: String,
     @SerializedName("location") val location: String? = null,
     @SerializedName("reward") val reward: String? = null,
     @SerializedName("contactInfo") val contactInfo: String,
     @SerializedName("imageUrls") val imageUrls: List<String>? = null
-)
-
-// Comment API Models
-data class ApiComment(
-    @SerializedName("commentId") val commentId: String,
-    @SerializedName("postId") val postId: String,
-    @SerializedName("firebaseUid") val firebaseUid: String,
-    @SerializedName("userName") val userName: String,
-    @SerializedName("userImageUrl") val userImageUrl: String? = "",
-    @SerializedName("text") val text: String,
-    @SerializedName("likesCount") val likesCount: Int = 0,
-    @SerializedName("createdAt") val createdAt: String
-)
-
-data class CreateCommentRequest(
-    @SerializedName("postId") val postId: String,
-    @SerializedName("firebaseUid") val firebaseUid: String,
-    @SerializedName("userName") val userName: String,
-    @SerializedName("text") val text: String
 )
 
 // Chat API Models
@@ -134,17 +133,37 @@ data class SendMessageRequest(
 data class ApiConversation(
     @SerializedName("chatId") val chatId: String,
     @SerializedName("participants") val participants: List<String>,
+    @SerializedName("otherUser") val otherUser: OtherUser? = null,
     @SerializedName("lastMessage") val lastMessage: LastMessage? = null,
     @SerializedName("lastMessageAt") val lastMessageAt: String,
     @SerializedName("createdAt") val createdAt: String,
-    @SerializedName("unreadCount") val unreadCount: Int = 0  // Add this
+    @SerializedName("unreadCount") val unreadCount: Int = 0,
+    @SerializedName("pendingCount") val pendingCount: Int = 0,
+    @SerializedName("clearedAt") val clearedAt: String? = null
+)
+
+data class ConversationsResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("messages") val messages: List<ApiConversation>? = null,
+    @SerializedName("requests") val requests: List<ApiConversation>? = null,
+    @SerializedName("messagesCount") val messagesCount: Int = 0,
+    @SerializedName("requestsCount") val requestsCount: Int = 0,
+    @SerializedName("message") val message: String? = null
+)
+
+data class OtherUser(
+    @SerializedName("firebaseUid") val firebaseUid: String,
+    @SerializedName("username") val username: String,
+    @SerializedName("fullName") val fullName: String,
+    @SerializedName("profileImageUrl") val profileImageUrl: String? = ""
 )
 
 data class LastMessage(
     @SerializedName("text") val text: String? = "",
     @SerializedName("imageUrl") val imageUrl: String? = "",
     @SerializedName("senderUid") val senderUid: String? = "",
-    @SerializedName("createdAt") val createdAt: String? = ""
+    @SerializedName("createdAt") val createdAt: String? = "",
+    @SerializedName("isRead") val isRead: Boolean = false
 )
 
 // Pet API Models
@@ -255,8 +274,7 @@ data class CheckUserResponse(
     @SerializedName("message") val message: String? = null
 )
 
-// ==================== BLOCK MODELS ====================
-
+// Block Models
 data class BlockCheckResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("isBlocked") val isBlocked: Boolean? = false,
@@ -270,8 +288,7 @@ data class Block(
     @SerializedName("createdAt") val createdAt: String
 )
 
-// ==================== REPORT MODELS ====================
-
+// Report Models
 data class ReportRequest(
     @SerializedName("reporterUid") val reporterUid: String,
     @SerializedName("reportedUid") val reportedUid: String? = null,
@@ -299,3 +316,11 @@ data class UserStatusResponse(
     @SerializedName("message") val message: String? = null
 )
 
+// Mute Feature Models
+data class MutedUser(
+    @SerializedName("userId") val userId: String,
+    @SerializedName("mutedAt") val mutedAt: String,
+    @SerializedName("username") val username: String,
+    @SerializedName("fullName") val fullName: String,
+    @SerializedName("profileImageUrl") val profileImageUrl: String?
+)

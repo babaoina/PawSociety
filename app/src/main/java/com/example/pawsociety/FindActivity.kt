@@ -19,6 +19,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.example.pawsociety.api.ApiPost
 import com.example.pawsociety.data.repository.PostRepository
 import com.example.pawsociety.data.repository.SearchRepository
@@ -315,8 +318,14 @@ class FindActivity : BaseNavigationActivity() {
         val rgTimeRange = dialogView.findViewById<RadioGroup>(R.id.rg_time_range)
         val etLocation = dialogView.findViewById<EditText>(R.id.et_location)
         val btnNearby = dialogView.findViewById<Button>(R.id.btn_nearby)
-        val btnApply = dialogView.findViewById<Button>(R.id.btn_apply)
-        val btnCancel = dialogView.findViewById<Button>(R.id.btn_cancel)
+        val btnApply = dialogView.findViewById<Button>(R.id.btn_apply_filter)  // Make sure this ID matches your XML
+        val btnCancel = dialogView.findViewById<Button>(R.id.btn_cancel_filter)  // Make sure this ID matches your XML
+
+        // Check if views exist before using them
+        if (rgSortBy == null || rgTimeRange == null || etLocation == null) {
+            Toast.makeText(this, "Error loading filter dialog", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         // Set current values
         when (currentSort) {
@@ -334,9 +343,10 @@ class FindActivity : BaseNavigationActivity() {
 
         etLocation.setText(currentLocationFilter)
 
-        btnNearby.setOnClickListener {
+        // Set up nearby button if it exists
+        btnNearby?.setOnClickListener {
             checkLocationPermissionAndSearch()
-            (dialogView.parent as? AlertDialog)?.dismiss()
+            // Dismiss dialog - you'll need a reference to the dialog
         }
 
         val dialog = AlertDialog.Builder(this)
@@ -345,7 +355,8 @@ class FindActivity : BaseNavigationActivity() {
             .setCancelable(false)
             .create()
 
-        btnApply.setOnClickListener {
+        // Set up apply button
+        btnApply?.setOnClickListener {
             // Get sort option
             currentSort = when (rgSortBy.checkedRadioButtonId) {
                 R.id.rb_newest -> "newest"
@@ -369,7 +380,8 @@ class FindActivity : BaseNavigationActivity() {
             dialog.dismiss()
         }
 
-        btnCancel.setOnClickListener {
+        // Set up cancel button
+        btnCancel?.setOnClickListener {
             dialog.dismiss()
         }
 

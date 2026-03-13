@@ -11,7 +11,6 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const postRoutes = require('./routes/posts');
-const commentRoutes = require('./routes/comments');
 const chatRoutes = require('./routes/chat');
 const petRoutes = require('./routes/pets');
 const favoriteRoutes = require('./routes/favorites');
@@ -141,7 +140,6 @@ mongoose.connect(MONGODB_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
-app.use('/api/comments', commentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/pets', petRoutes);
 app.use('/api/favorites', favoriteRoutes);
@@ -158,6 +156,20 @@ app.get('/api/health', (req, res) => {
     status: 'OK', 
     message: 'PawSociety Backend is running',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Test endpoint to verify hide post routes are working
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Server is running',
+    routes: {
+      hidePost: '/api/posts/hide (POST)',
+      unhidePost: '/api/posts/unhide (POST)',
+      getHidden: '/api/posts/hidden (GET)',
+      getHiddenCount: '/api/posts/hidden/count (GET)'
+    }
   });
 });
 
@@ -201,6 +213,11 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('📲 Emulator:', `http://10.0.2.2:${PORT}`);
   console.log('📱 For phone on same Wi-Fi use:', `http://${networkIp}:${PORT}`);
   console.log('🔌 Socket.IO server is ready');
+  console.log('📋 Available routes:');
+  console.log('   - POST /api/posts/hide');
+  console.log('   - POST /api/posts/unhide');
+  console.log('   - GET /api/posts/hidden');
+  console.log('   - GET /api/posts/hidden/count');
 });
 
 module.exports = app;

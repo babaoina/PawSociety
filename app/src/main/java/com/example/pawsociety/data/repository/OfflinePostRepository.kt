@@ -25,6 +25,25 @@ class OfflinePostRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Update a single post in the offline cache
+     */
+    /**
+     * Update a single post in the offline cache
+     */
+    suspend fun updatePostInCache(postEntity: PostEntity) = withContext(Dispatchers.IO) {
+        try {
+            postDao.insertPost(postEntity) // OnConflictStrategy.REPLACE will update existing
+            Log.d(tag, "✅ Updated post in cache: ${postEntity.postId} with likesCount: ${postEntity.likesCount}")
+
+            // Force refresh the flow to update UI
+            val updatedList = postDao.getAllPosts().first()
+            Log.d(tag, "📊 Cache now has ${updatedList.size} posts")
+        } catch (e: Exception) {
+            Log.e(tag, "❌ Error updating post in cache: ${e.message}")
+        }
+    }
+
     suspend fun loadPosts(forceRefresh: Boolean = false): Result<List<ApiPost>> {
         return withContext(Dispatchers.IO) {
             try {

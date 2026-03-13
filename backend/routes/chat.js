@@ -3,72 +3,151 @@ const router = express.Router();
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const ChatClear = require('../models/ChatClear');
 const { v4: uuidv4 } = require('uuid');
+
+// 👇 ADD THIS IMPORT
+const { sendPushNotification } = require('./notifications');
+
+// 👇 ADD THIS - Create ChatDelete model if it doesn't exist
+const mongoose = require('mongoose');
+const chatDeleteSchema = new mongoose.Schema({
+  chatId: {
+    type: String,
+    required: true,
+    index: true
+  },
+  userId: {
+    type: String, // The user who deleted the conversation
+    required: true,
+    index: true
+  },
+  deletedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true
+});
+chatDeleteSchema.index({ chatId: 1, userId: 1 }, { unique: true });
+const ChatDelete = mongoose.models.ChatDelete || mongoose.model('ChatDelete', chatDeleteSchema);
 
 /**
  * GET /api/chat/conversations/:firebaseUid
- * Get all conversations for a user with unread counts
+ * Get all conversations for a user (separates messages and requests)
  */
 router.get('/conversations/:firebaseUid', async (req, res) => {
   try {
+    const userId = req.params.firebaseUid;
+    
+    console.log(`📬 Getting conversations for user: ${userId}`);
+    
+    // Get all chats where user is a participant
     const chats = await Chat.find({
-      participants: req.params.firebaseUid
+      participants: userId
     })
     .sort({ lastMessageAt: -1 });
 
-    // Get last message and unread count for each chat
-    const conversations = await Promise.all(
-      chats.map(async (chat) => {
-        const lastMessage = await Message.findOne({ chatId: chat.chatId })
-          .sort({ createdAt: -1 });
+    // Get deleted conversations
+    const deletedChats = await ChatDelete.find({ userId });
+    const deletedChatIds = deletedChats.map(d => d.chatId);
 
-        // Count unread messages for this user
-        const unreadCount = await Message.countDocuments({
-          chatId: chat.chatId,
-          receiverUid: req.params.firebaseUid,
-          isRead: false
-        });
+    // Filter out deleted chats
+    const activeChats = chats.filter(chat => !deletedChatIds.includes(chat.chatId));
 
-        // Get other participant info
-        const otherParticipantUid = chat.participants.find(
-          uid => uid !== req.params.firebaseUid
-        );
-        const otherUser = await User.findOne({ firebaseUid: otherParticipantUid })
-          .select('username fullName profileImageUrl firebaseUid');
+    // Separate messages and requests
+    const messages = [];
+    const requests = [];
 
-        return {
-          chatId: chat.chatId,
-          participants: chat.participants,
-          otherUser: otherUser ? {
-            firebaseUid: otherUser.firebaseUid,
-            username: otherUser.username,
-            fullName: otherUser.fullName,
-            profileImageUrl: otherUser.profileImageUrl || ''
-          } : null,
-          lastMessage: lastMessage ? {
-            text: lastMessage.text,
-            imageUrl: lastMessage.imageUrl,
-            senderUid: lastMessage.senderUid,
-            createdAt: lastMessage.createdAt,
-            isRead: lastMessage.isRead
-          } : null,
-          lastMessageAt: chat.lastMessageAt,
-          createdAt: chat.createdAt,
-          unreadCount: unreadCount  // Add this
-        };
-      })
-    );
+    for (const chat of activeChats) {
+      const otherParticipantUid = chat.participants.find(uid => uid !== userId);
+      
+      if (!otherParticipantUid) continue;
+      
+      const otherUser = await User.findOne({ firebaseUid: otherParticipantUid })
+        .select('username fullName profileImageUrl firebaseUid');
 
-    // Filter out conversations where other user doesn't exist
-    const validConversations = conversations.filter(c => c.otherUser !== null);
+      if (!otherUser) continue;
+
+      // Check if user cleared this chat
+      const chatClear = await ChatClear.findOne({ chatId: chat.chatId, userId });
+
+      let lastMessageQuery = { chatId: chat.chatId };
+      if (chatClear) {
+        lastMessageQuery.createdAt = { $gt: chatClear.clearedAt };
+      }
+
+      // Get the latest message to determine status
+      const latestMessage = await Message.findOne(lastMessageQuery)
+        .sort({ createdAt: -1 });
+
+      if (!latestMessage) continue;
+
+      // 👇 CHECK IF THIS IS A PENDING REQUEST
+      const isRequest = latestMessage.status === 'pending' && 
+                        latestMessage.receiverUid === userId;
+
+      // Count unread messages
+      const unreadQuery = {
+        chatId: chat.chatId,
+        receiverUid: userId,
+        isRead: false,
+        status: { $ne: 'pending' } // Don't count pending as unread
+      };
+      if (chatClear) {
+        unreadQuery.createdAt = { $gt: chatClear.clearedAt };
+      }
+      const unreadCount = await Message.countDocuments(unreadQuery);
+
+      // Count pending requests
+      const pendingCount = await Message.countDocuments({
+        chatId: chat.chatId,
+        receiverUid: userId,
+        status: 'pending'
+      });
+
+      const conversationData = {
+        chatId: chat.chatId,
+        participants: chat.participants,
+        otherUser: {
+          firebaseUid: otherUser.firebaseUid,
+          username: otherUser.username,
+          fullName: otherUser.fullName,
+          profileImageUrl: otherUser.profileImageUrl || ''
+        },
+        lastMessage: {
+          text: latestMessage.text,
+          imageUrl: latestMessage.imageUrl,
+          senderUid: latestMessage.senderUid,
+          createdAt: latestMessage.createdAt,
+          isRead: latestMessage.isRead,
+          status: latestMessage.status
+        },
+        lastMessageAt: chat.lastMessageAt,
+        createdAt: chat.createdAt,
+        unreadCount: unreadCount,
+        pendingCount: pendingCount,  // 👈 NUMBER OF PENDING MESSAGES
+        clearedAt: chatClear ? chatClear.clearedAt : null
+      };
+
+      if (isRequest) {
+        requests.push(conversationData);
+      } else {
+        messages.push(conversationData);
+      }
+    }
+
+    console.log(`✅ Messages: ${messages.length}, Requests: ${requests.length}`);
 
     res.json({
       success: true,
-      count: validConversations.length,
-      conversations: validConversations
+      messages: messages,
+      requests: requests,
+      messagesCount: messages.length,
+      requestsCount: requests.length
     });
   } catch (error) {
-    console.error('Get conversations error:', error);
+    console.error('❌ Get conversations error:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -76,16 +155,138 @@ router.get('/conversations/:firebaseUid', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/chat/accept-request/:chatId
+ * Accept a message request (moves from requests to messages)
+ */
+router.post('/accept-request/:chatId', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const { chatId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId is required'
+      });
+    }
+
+    // Update all pending messages in this chat to 'delivered'
+    const result = await Message.updateMany(
+      { 
+        chatId: chatId,
+        receiverUid: userId,
+        status: 'pending'
+      },
+      { 
+        status: 'delivered',
+        deliveredAt: new Date()
+      }
+    );
+
+    console.log(`✅ Accepted ${result.modifiedCount} messages from requests`);
+
+    // Emit socket event
+    const io = req.app.get('io');
+    io.to(chatId).emit('request-accepted', {
+      chatId: chatId,
+      acceptedBy: userId
+    });
+
+    res.json({
+      success: true,
+      message: 'Request accepted',
+      acceptedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('❌ Accept request error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/chat/reject-request/:chatId
+ * Reject/delete a message request
+ */
+router.delete('/reject-request/:chatId', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const { chatId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId is required'
+      });
+    }
+
+    // Delete all pending messages in this chat
+    const result = await Message.deleteMany({
+      chatId: chatId,
+      receiverUid: userId,
+      status: 'pending'
+    });
+
+    // If no messages left, delete the chat or mark as deleted
+    const remainingMessages = await Message.countDocuments({ chatId: chatId });
+    
+    if (remainingMessages === 0) {
+      // Mark chat as deleted for this user
+      await ChatDelete.findOneAndUpdate(
+        { chatId, userId },
+        { deletedAt: new Date() },
+        { upsert: true }
+      );
+    }
+
+    console.log(`❌ Rejected ${result.deletedCount} messages`);
+
+    res.json({
+      success: true,
+      message: 'Request rejected',
+      rejectedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('❌ Reject request error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 /**
  * GET /api/chat/:chatId/messages
- * Get all messages in a chat
+ * Get all messages in a chat (filtered by who cleared)
  */
 router.get('/:chatId/messages', async (req, res) => {
   try {
-    const { limit = 50, skip = 0 } = req.query;
+    const { limit = 50, skip = 0, userId } = req.query;
 
-    const messages = await Message.find({ chatId: req.params.chatId })
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId is required to filter cleared messages'
+      });
+    }
+
+    // Check if this user cleared the chat
+    const chatClear = await ChatClear.findOne({ 
+      chatId: req.params.chatId, 
+      userId: userId 
+    });
+
+    let query = { chatId: req.params.chatId };
+    
+    // If user cleared the chat, only show messages AFTER the clear time
+    if (chatClear) {
+      query.createdAt = { $gt: chatClear.clearedAt };
+    }
+
+    const messages = await Message.find(query)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(parseInt(skip));
@@ -93,7 +294,8 @@ router.get('/:chatId/messages', async (req, res) => {
     res.json({
       success: true,
       count: messages.length,
-      messages: messages.reverse() // Return in chronological order
+      messages: messages.reverse(), // Return in chronological order
+      clearedAt: chatClear ? chatClear.clearedAt : null
     });
   } catch (error) {
     console.error('Get messages error:', error);
@@ -106,8 +308,7 @@ router.get('/:chatId/messages', async (req, res) => {
 
 /**
  * POST /api/chat/send
- * Send a message
- * Body: { senderUid, receiverUid, text, imageUrl }
+ * Send a message (goes to requests if not mutual followers)
  */
 router.post('/send', async (req, res) => {
   try {
@@ -118,6 +319,22 @@ router.post('/send', async (req, res) => {
         success: false,
         message: 'senderUid, receiverUid, and text or imageUrl are required'
       });
+    }
+
+    console.log(`📨 Send message from ${senderUid} to ${receiverUid}`);
+
+    // 👇 CHECK IF THEY ARE MUTUAL FOLLOWERS
+    const Follow = require('../models/Follow');
+    
+    const areMutual = await Follow.findOne({
+      followerUid: receiverUid,
+      followingUid: senderUid
+    });
+
+    // Determine message status
+    let messageStatus = 'pending'; // Default to request
+    if (areMutual) {
+      messageStatus = 'delivered'; // Mutual followers go straight to inbox
     }
 
     // Find or create chat
@@ -132,16 +349,22 @@ router.post('/send', async (req, res) => {
         participants: [senderUid, receiverUid]
       });
       await chat.save();
+      console.log(`✅ Created new chat: ${chat.chatId}`);
+      
+      // Remove any delete markers
+      await ChatDelete.deleteMany({ chatId: chat.chatId });
     }
 
-    // Create message
+    // Create message with appropriate status
     const message = new Message({
       messageId: `msg_${Date.now()}_${uuidv4().substring(0, 8)}`,
       chatId: chat.chatId,
       senderUid,
       receiverUid,
       text: text || '',
-      imageUrl: imageUrl || ''
+      imageUrl: imageUrl || '',
+      status: messageStatus,
+      deliveredAt: messageStatus === 'delivered' ? new Date() : null
     });
 
     await message.save();
@@ -151,7 +374,7 @@ router.post('/send', async (req, res) => {
     chat.lastMessageAt = new Date();
     await chat.save();
 
-    // Get sender info for the response
+    // Get sender info
     const sender = await User.findOne({ firebaseUid: senderUid })
       .select('username profileImageUrl');
 
@@ -162,38 +385,101 @@ router.post('/send', async (req, res) => {
       receiverUid: message.receiverUid,
       text: message.text,
       imageUrl: message.imageUrl,
-      isRead: message.isRead,
+      isRead: false,
+      status: message.status,  // 👈 SEND STATUS
       createdAt: message.createdAt,
       senderName: sender ? sender.username : 'Unknown',
       senderImage: sender ? sender.profileImageUrl : ''
     };
 
-    // Emit socket events for real-time updates
+    // Emit socket events
     const io = req.app.get('io');
     
-    // Emit to receiver's room
+    // Always notify receiver
     io.to(receiverUid).emit('new-message', messageData);
     
-    // Emit to sender's room (for multiple device sync)
-    io.to(senderUid).emit('message-sent', messageData);
+    // If it's a request, emit a special event
+    if (messageStatus === 'pending') {
+      io.to(receiverUid).emit('new-message-request', {
+        ...messageData,
+        message: 'Message request from ' + (sender ? sender.username : 'Someone')
+      });
+    }
     
-    // Emit to chat room
+    io.to(senderUid).emit('message-sent', messageData);
     io.to(chat.chatId).emit('chat-message', messageData);
 
-    console.log(`📨 Message sent from ${senderUid} to ${receiverUid}`);
+    console.log(`📨 Message sent with status: ${messageStatus}`);
+
+    // Create notification
+    try {
+      const Notification = require('../models/Notification');
+      
+      const notificationMessage = messageStatus === 'pending' 
+        ? `${sender ? sender.username : 'Someone'} sent you a message request`
+        : (text || (imageUrl ? '📷 Sent you an image' : 'New message'));
+      
+      const notification = new Notification({
+        notificationId: `notif_${Date.now()}_${uuidv4().substring(0, 8)}`,
+        userId: receiverUid,
+        fromUserId: senderUid,
+        fromUserName: sender ? sender.username : 'Someone',
+        fromUserImage: sender ? sender.profileImageUrl : '',
+        type: messageStatus === 'pending' ? 'message_request' : 'message',
+        postId: '',
+        message: notificationMessage
+      });
+      
+      await notification.save();
+      
+      io.to(receiverUid).emit('new-notification', {
+        notificationId: notification.notificationId,
+        message: notification.message,
+        type: notification.type,
+        fromUserName: sender ? sender.username : 'Someone',
+        createdAt: notification.createdAt
+      });
+      
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
+    }
 
     res.status(201).json({
       success: true,
       message: 'Message sent',
       data: messageData,
-      chatId: chat.chatId
+      chatId: chat.chatId,
+      status: messageStatus
     });
   } catch (error) {
-    console.error('Send message error:', error);
+    console.error('❌ Send message error:', error);
     res.status(500).json({
       success: false,
       message: error.message
     });
+  }
+});
+
+/**
+ * GET /api/chat/debug/:userId
+ * Debug endpoint to see all chats for a user (including deleted)
+ */
+router.get('/debug/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    const allChats = await Chat.find({ participants: userId });
+    const deletedChats = await ChatDelete.find({ userId });
+    const chatClears = await ChatClear.find({ userId });
+    
+    res.json({
+      success: true,
+      allChats: allChats.map(c => ({ chatId: c.chatId, lastMessageAt: c.lastMessageAt })),
+      deletedChats: deletedChats.map(d => ({ chatId: d.chatId, deletedAt: d.deletedAt })),
+      clearedChats: chatClears.map(c => ({ chatId: c.chatId, clearedAt: c.clearedAt }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -245,8 +531,24 @@ router.put('/:chatId/read-all', async (req, res) => {
   try {
     const { firebaseUid } = req.body;
 
+    // Check if user cleared this chat
+    const chatClear = await ChatClear.findOne({
+      chatId: req.params.chatId,
+      userId: firebaseUid
+    });
+
+    let query = { 
+      chatId: req.params.chatId, 
+      receiverUid: firebaseUid, 
+      isRead: false 
+    };
+    
+    if (chatClear) {
+      query.createdAt = { $gt: chatClear.clearedAt };
+    }
+
     const result = await Message.updateMany(
-      { chatId: req.params.chatId, receiverUid: firebaseUid, isRead: false },
+      query,
       { isRead: true }
     );
 
@@ -266,6 +568,165 @@ router.put('/:chatId/read-all', async (req, res) => {
     });
   } catch (error) {
     console.error('Mark all read error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/chat/mute
+ * Mute notifications from a specific user
+ * Body: { userId, userToMute }
+ */
+router.post('/mute', async (req, res) => {
+  try {
+    const { userId, userToMute } = req.body;
+    
+    if (!userId || !userToMute) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId and userToMute are required'
+      });
+    }
+
+    // Cannot mute yourself
+    if (userId === userToMute) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot mute yourself'
+      });
+    }
+
+    const user = await User.findOne({ firebaseUid: userId });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if already muted
+    const alreadyMuted = user.mutedUsers.some(m => m.userId === userToMute);
+    
+    if (alreadyMuted) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already muted'
+      });
+    }
+
+    // Add to muted list
+    user.mutedUsers.push({
+      userId: userToMute,
+      mutedAt: new Date()
+    });
+
+    await user.save();
+
+    console.log(`🔇 User ${userId} muted ${userToMute}`);
+
+    res.json({
+      success: true,
+      message: 'User muted successfully'
+    });
+  } catch (error) {
+    console.error('Mute error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/chat/unmute
+ * Unmute notifications from a specific user
+ * Body: { userId, userToUnmute }
+ */
+router.post('/unmute', async (req, res) => {
+  try {
+    const { userId, userToUnmute } = req.body;
+    
+    if (!userId || !userToUnmute) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId and userToUnmute are required'
+      });
+    }
+
+    const user = await User.findOne({ firebaseUid: userId });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Remove from muted list
+    user.mutedUsers = user.mutedUsers.filter(m => m.userId !== userToUnmute);
+    await user.save();
+
+    console.log(`🔊 User ${userId} unmuted ${userToUnmute}`);
+
+    res.json({
+      success: true,
+      message: 'User unmuted successfully'
+    });
+  } catch (error) {
+    console.error('Unmute error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/chat/muted/:userId
+ * Get all muted users for a user
+ */
+router.get('/muted/:userId', async (req, res) => {
+  try {
+    const user = await User.findOne({ firebaseUid: req.params.userId })
+      .select('mutedUsers');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Get details of muted users
+    const mutedUserIds = user.mutedUsers.map(m => m.userId);
+    
+    const mutedUsersDetails = await User.find({
+      firebaseUid: { $in: mutedUserIds }
+    }).select('firebaseUid username fullName profileImageUrl');
+
+    // Combine with mute timestamps
+    const result = user.mutedUsers.map(mute => {
+      const details = mutedUsersDetails.find(u => u.firebaseUid === mute.userId);
+      return {
+        userId: mute.userId,
+        mutedAt: mute.mutedAt,
+        username: details ? details.username : 'Unknown User',
+        fullName: details ? details.fullName : 'Unknown User',
+        profileImageUrl: details ? details.profileImageUrl : ''
+      };
+    });
+
+    res.json({
+      success: true,
+      count: result.length,
+      mutedUsers: result
+    });
+  } catch (error) {
+    console.error('Get muted users error:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -306,6 +767,120 @@ router.delete('/messages/:messageId', async (req, res) => {
     });
   } catch (error) {
     console.error('Delete message error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/chat/:chatId/clear
+ * Clear messages for a specific user (doesn't delete for the other person)
+ * Query: userId
+ */
+router.delete('/:chatId/clear', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const { chatId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId is required'
+      });
+    }
+
+    console.log(`🗑️ User ${userId} clearing chat ${chatId} (for themselves only)`);
+
+    // Verify user is part of this chat
+    const chat = await Chat.findOne({ 
+      chatId: chatId,
+      participants: userId 
+    });
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found or unauthorized'
+      });
+    }
+
+    // Save that this user cleared the chat
+    await ChatClear.findOneAndUpdate(
+      { chatId, userId },
+      { clearedAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    console.log(`✅ Chat cleared for user ${userId}`);
+
+    // Emit socket event to this specific user only
+    const io = req.app.get('io');
+    io.to(userId).emit('chat-cleared', { 
+      chatId, 
+      clearedBy: userId 
+    });
+
+    res.json({
+      success: true,
+      message: 'Chat cleared successfully (for you only)'
+    });
+  } catch (error) {
+    console.error('❌ Clear chat error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/chat/conversation/:chatId
+ * Remove conversation from user's inbox (hide it completely)
+ */
+router.delete('/conversation/:chatId', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const { chatId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId is required'
+      });
+    }
+
+    console.log(`🗑️ User ${userId} removing conversation ${chatId} from inbox`);
+
+    // Verify user is part of this chat
+    const chat = await Chat.findOne({ 
+      chatId: chatId,
+      participants: userId 
+    });
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found or unauthorized'
+      });
+    }
+
+    // Save that this user deleted the conversation
+    await ChatDelete.findOneAndUpdate(
+      { chatId, userId },
+      { deletedAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    console.log(`✅ Conversation removed from user ${userId}'s inbox`);
+
+    res.json({
+      success: true,
+      message: 'Conversation removed from inbox successfully'
+    });
+  } catch (error) {
+    console.error('❌ Delete conversation error:', error);
     res.status(500).json({
       success: false,
       message: error.message

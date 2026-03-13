@@ -3,6 +3,8 @@ package com.example.pawsociety.offline.data.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.pawsociety.api.ApiPost
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 @Entity(tableName = "posts")
 data class PostEntity(
@@ -13,19 +15,28 @@ data class PostEntity(
     val userImageUrl: String?,
     val petName: String,
     val petType: String,
+    val age: String? = "",  // ADD THIS
+    val weight: String? = "",  // ADD THIS
+    val gender: String? = "Unknown",
     val status: String,
     val description: String,
     val location: String?,
     val reward: String?,
     val contactInfo: String,
-    val imageUrls: List<String>,
+    val imageUrls: String,  // Store as JSON string
     val likesCount: Int,
-    val commentsCount: Int,
-    val shares: Int,
     val createdAt: String,
     val lastUpdated: Long = System.currentTimeMillis()
 ) {
     fun toApiPost(): ApiPost {
+        val gson = Gson()
+        val type = object : TypeToken<List<String>>() {}.type
+        val imageList: List<String> = try {
+            gson.fromJson(imageUrls, type)
+        } catch (e: Exception) {
+            emptyList()
+        }
+
         return ApiPost(
             postId = postId,
             firebaseUid = firebaseUid,
@@ -33,21 +44,25 @@ data class PostEntity(
             userImageUrl = userImageUrl,
             petName = petName,
             petType = petType,
+            age = age,
+            weight = weight,
+            gender = gender,
             status = status,
             description = description,
             location = location,
             reward = reward,
             contactInfo = contactInfo,
-            imageUrls = imageUrls,
+            imageUrls = imageList,
             likesCount = likesCount,
-            commentsCount = commentsCount,
-            shares = shares,
             createdAt = createdAt
         )
     }
 
     companion object {
         fun fromApiPost(post: ApiPost): PostEntity {
+            val gson = Gson()
+            val imageUrlsJson = gson.toJson(post.imageUrls ?: emptyList<String>())
+
             return PostEntity(
                 postId = post.postId,
                 firebaseUid = post.firebaseUid,
@@ -55,15 +70,16 @@ data class PostEntity(
                 userImageUrl = post.userImageUrl,
                 petName = post.petName,
                 petType = post.petType,
+                age = post.age ?: "",
+                weight = post.weight ?: "",
+                gender = post.gender ?: "Unknown",
                 status = post.status,
                 description = post.description,
                 location = post.location,
                 reward = post.reward,
                 contactInfo = post.contactInfo,
-                imageUrls = post.imageUrls ?: emptyList(),
+                imageUrls = imageUrlsJson,
                 likesCount = post.likesCount,
-                commentsCount = post.commentsCount,
-                shares = post.shares,
                 createdAt = post.createdAt
             )
         }

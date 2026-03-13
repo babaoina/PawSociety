@@ -6,7 +6,7 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface UploadApi {
-    
+
     /**
      * Upload post images (multiple, max 5)
      * POST /api/upload/post
@@ -16,7 +16,7 @@ interface UploadApi {
     suspend fun uploadPostImages(
         @Part images: List<MultipartBody.Part>
     ): Response<UploadResponse>
-    
+
     /**
      * Upload pet image (single)
      * POST /api/upload/pet
@@ -26,7 +26,7 @@ interface UploadApi {
     suspend fun uploadPetImage(
         @Part image: MultipartBody.Part
     ): Response<UploadResponse>
-    
+
     /**
      * Upload profile picture (single)
      * POST /api/upload/profile
@@ -36,7 +36,7 @@ interface UploadApi {
     suspend fun uploadProfilePicture(
         @Part image: MultipartBody.Part
     ): Response<UploadResponse>
-    
+
     /**
      * Delete uploaded file
      * DELETE /api/upload/:type/:filename

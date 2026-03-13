@@ -1,18 +1,20 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.gms.google-services")
-    id("kotlin-kapt")
+    id("org.jetbrains.kotlin.kapt")
+    // CRITICAL: This must be applied for Kotlin 2.0+ to handle Compose
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")  // ADD THIS LINE
 }
 
 android {
     namespace = "com.example.pawsociety"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.pawsociety"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -28,74 +30,92 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
+
     buildFeatures {
+        compose = true
         viewBinding = true
     }
+
+    // ⚠️ DO NOT ADD composeOptions { kotlinCompilerExtensionVersion } HERE.
+    // It is now handled by the plugin above for Kotlin 2.0.21.
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+    // Android Core & UI
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
 
-    // Retrofit for API calls
+    implementation("com.airbnb.android:lottie:6.0.0")
+
+    // Lifecycle (Unified to 2.8.7)
+    val lifecycleVersion = "2.8.7"
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
+
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // Compose
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation(platform("androidx.compose:compose-bom:2024.10.01"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+
+    // Paging (Fixes "Unresolved reference paging" error)
+    implementation("androidx.paging:paging-runtime-ktx:3.3.4")
+
+    // Room
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
+
+    // Retrofit & Networking
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // Glide for image loading
+    // Lottie (For like.json animation)
+    implementation("com.airbnb.android:lottie:6.4.0")
+
+    // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    kapt("com.github.bumptech.glide:compiler:4.16.0")
 
     // Firebase
-    implementation("com.google.firebase:firebase-auth:22.3.1")
-    implementation("com.google.firebase:firebase-messaging:23.4.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-messaging")
 
-    // PhotoView for pinch-to-zoom
-    implementation("com.github.chrisbanes:PhotoView:2.3.0")
-
-
-    // Gson for type converters
-    implementation("com.google.code.gson:gson:2.10.1")
-
-    // Socket.IO for real-time
-    implementation("io.socket:socket.io-client:2.1.0")
-
+    // Other Utilities
     implementation("com.github.yalantis:ucrop:2.2.8")
+    implementation("com.github.chrisbanes:photoview:2.3.0")
+    implementation("io.socket:socket.io-client:2.1.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-
-    // RecyclerView and SwipeRefreshLayout
+    // UI Components
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
 
-    // ViewPager2
-    implementation("androidx.viewpager2:viewpager2:1.0.0")
-
-    // Room for offline storage
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
-
-    implementation("com.google.android.gms:play-services-location:21.0.1")
-
-    // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
-
+    // Testing
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }

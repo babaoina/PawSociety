@@ -1,25 +1,21 @@
 package com.example.pawsociety.offline.data
 
-import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import android.content.Context
 import com.example.pawsociety.offline.data.dao.PostDao
-import com.example.pawsociety.offline.data.dao.UserDao
 import com.example.pawsociety.offline.data.entity.PostEntity
-import com.example.pawsociety.offline.data.entity.UserEntity
 
 @Database(
-    entities = [PostEntity::class, UserEntity::class],
-    version = 1,
+    entities = [PostEntity::class],
+    version = 2,  // Keep this at 2
     exportSchema = false
 )
-@TypeConverters(Converters::class)
+@TypeConverters(Converters::class)  // ← ADD THIS LINE
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun postDao(): PostDao
-    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile

@@ -1,11 +1,13 @@
 package com.example.pawsociety
 
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,17 +21,17 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
-import com.example.pawsociety.api.ApiComment
+
 import com.example.pawsociety.api.ApiPost
-import com.example.pawsociety.data.repository.CommentRepository
-import com.example.pawsociety.data.repository.FavoriteRepository
-import com.example.pawsociety.data.repository.PostRepository
+import com.example.pawsociety.data.repository.*
 import com.example.pawsociety.util.SessionManager
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.pawsociety.widget.LikeButton
+import kotlin.math.max
 
 class PostDetailsActivity : AppCompatActivity() {
 
@@ -39,15 +41,18 @@ class PostDetailsActivity : AppCompatActivity() {
 
     // Repositories
     private val postRepository = PostRepository()
-    private val commentRepository = CommentRepository()
+
     private val favoriteRepository = FavoriteRepository()
+    private val reportRepository = ReportRepository()
+    private val blockRepository = BlockRepository()
+    private val hidePostRepository = HidePostRepository()
 
     // Views
     private lateinit var viewPager: ViewPager2
-    private lateinit var tabLayout: TabLayout
+
     private lateinit var pageIndicator: TextView
     private lateinit var btnBack: ImageView
-    private lateinit var btnMore: TextView
+    private lateinit var btnMore: ImageView
     private lateinit var profileIcon: TextView
     private lateinit var profileImage: ImageView
     private lateinit var userName: TextView
@@ -60,21 +65,18 @@ class PostDetailsActivity : AppCompatActivity() {
     private lateinit var btnMoreDescription: TextView
     private lateinit var postContact: TextView
     private lateinit var btnLike: LinearLayout
-    private lateinit var btnLikeIcon: ImageView
     private lateinit var tvLikeCount: TextView
-
-    // REMOVED: btnComment and related views
-
     private lateinit var btnShare: LinearLayout
     private lateinit var btnFavorite: LinearLayout
     private lateinit var btnFavoriteIcon: ImageView
+    private lateinit var btnMessage: LinearLayout
+    private lateinit var genderIcon: ImageView
+    private lateinit var genderText: TextView
+    private lateinit var btnLikeLottieDetails: LikeButton
 
-    // CHAT BUTTON - Directs to chat
-    private lateinit var btnChat: Button
 
-    private lateinit var commentsRecyclerView: RecyclerView
-    private lateinit var commentInput: EditText
-    private lateinit var btnPostComment: ImageView
+
+
     private lateinit var progressBar: ProgressBar
     private lateinit var indicatorContainer: LinearLayout
     private lateinit var imageCarouselContainer: FrameLayout
@@ -84,8 +86,7 @@ class PostDetailsActivity : AppCompatActivity() {
     private var currentUser: com.example.pawsociety.api.ApiUser? = null
     private var isLiked = false
     private var isFavorited = false
-    private var commentsList = mutableListOf<ApiComment>()
-    private lateinit var commentsAdapter: CommentsAdapter
+
 
     companion object {
         private const val EDIT_POST_REQUEST = 1002
@@ -100,12 +101,9 @@ class PostDetailsActivity : AppCompatActivity() {
 
         // Get post from intent
         post = intent.getSerializableExtra("post") as? ApiPost ?: run {
-            // Try to get by postId if post object is missing
             val postId = intent.getStringExtra("postId")
             if (postId != null) {
-                // You might need to fetch the post from repository here
                 Toast.makeText(this, "Loading post...", Toast.LENGTH_SHORT).show()
-                // For now, just finish
                 finish()
                 return
             }
@@ -114,8 +112,6 @@ class PostDetailsActivity : AppCompatActivity() {
             return
         }
 
-        // Debug log
-        println("📱 PostDetailsActivity - Loading post: ${post.postId} with ${post.commentsCount} comments")
 
         viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
         viewModel.setSessionManager(sessionManager)
@@ -123,17 +119,15 @@ class PostDetailsActivity : AppCompatActivity() {
         initializeViews()
         setupClickListeners()
         loadPostData()
-        loadComments()  // This will now load ALL comments
         checkLikeStatus()
         checkFavoriteStatus()
     }
 
     private fun initializeViews() {
         viewPager = findViewById(R.id.post_view_pager)
-        tabLayout = findViewById(R.id.tab_layout)
         pageIndicator = findViewById(R.id.page_indicator)
         btnBack = findViewById(R.id.btn_back)
-        btnMore = findViewById(R.id.btn_more)
+        btnMore = findViewById(R.id.btn_more_details)
         profileIcon = findViewById(R.id.post_profile_icon)
         profileImage = findViewById(R.id.post_profile_image)
         userName = findViewById(R.id.post_user_name)
@@ -146,37 +140,26 @@ class PostDetailsActivity : AppCompatActivity() {
         btnMoreDescription = findViewById(R.id.btn_more_description)
         postContact = findViewById(R.id.post_contact)
         btnLike = findViewById(R.id.btn_like)
-        btnLikeIcon = findViewById(R.id.btn_like_icon)
         tvLikeCount = findViewById(R.id.tv_like_count)
-
-        // COMMENT BUTTON REMOVED
-
         btnShare = findViewById(R.id.btn_share)
         btnFavorite = findViewById(R.id.btn_favorite)
         btnFavoriteIcon = findViewById(R.id.btn_favorite_icon)
-
-        // CHAT BUTTON
-        btnChat = findViewById(R.id.btn_chat)
-
-        commentsRecyclerView = findViewById(R.id.comments_recycler_view)
-        commentInput = findViewById(R.id.comment_input)
-        btnPostComment = findViewById(R.id.btn_post_comment)
+        btnMessage = findViewById(R.id.btn_message)
+        genderIcon = findViewById(R.id.post_gender_icon)
+        genderText = findViewById(R.id.post_gender_text)
+        btnLikeLottieDetails = findViewById(R.id.btn_like_lottie_view)
         progressBar = findViewById(R.id.progress_bar)
         indicatorContainer = findViewById(R.id.indicator_container)
         imageCarouselContainer = findViewById(R.id.image_carousel_container)
         singleImageView = findViewById(R.id.post_image)
         noImagePlaceholder = findViewById(R.id.no_image_placeholder)
 
-        // Setup comments RecyclerView
-        commentsRecyclerView.layoutManager = LinearLayoutManager(this)
-        commentsAdapter = CommentsAdapter(
-            commentsList,
-            currentUser?.firebaseUid ?: "",
-            { commentId -> likeComment(commentId) },
-            { comment -> showCommentOptions(comment) },
-            { userId, userName -> openUserProfile(userId, userName) }
-        )
-        commentsRecyclerView.adapter = commentsAdapter
+        // Set click listener for the 3 dots menu
+        btnMore.setOnClickListener {
+            showPostOptions()
+        }
+
+
 
         // Set initial data
         userName.text = post.userName
@@ -188,7 +171,43 @@ class PostDetailsActivity : AppCompatActivity() {
         postContact.text = "📞 ${post.contactInfo}"
         tvLikeCount.text = post.likesCount.toString()
 
-        // Set profile icon (show text initially)
+        // Set gender display
+        when (post.gender?.lowercase()) {
+            "male" -> {
+                try {
+                    genderIcon.setImageResource(R.drawable.ic_male)
+                    genderIcon.visibility = View.VISIBLE
+                    genderText.visibility = View.GONE
+                    genderIcon.setColorFilter(Color.parseColor("#2196F3"))
+                } catch (e: Exception) {
+                    genderIcon.visibility = View.GONE
+                    genderText.visibility = View.VISIBLE
+                    genderText.text = "• Male"
+                    genderText.setTextColor(Color.parseColor("#2196F3"))
+                }
+            }
+            "female" -> {
+                try {
+                    genderIcon.setImageResource(R.drawable.ic_female)
+                    genderIcon.visibility = View.VISIBLE
+                    genderText.visibility = View.GONE
+                    genderIcon.setColorFilter(Color.parseColor("#E91E63"))
+                } catch (e: Exception) {
+                    genderIcon.visibility = View.GONE
+                    genderText.visibility = View.VISIBLE
+                    genderText.text = "• Female"
+                    genderText.setTextColor(Color.parseColor("#E91E63"))
+                }
+            }
+            else -> {
+                genderIcon.visibility = View.GONE
+                genderText.visibility = View.VISIBLE
+                genderText.text = "• Unknown"
+                genderText.setTextColor(Color.parseColor("#999999"))
+            }
+        }
+
+        // Set profile icon
         val firstLetter = if (post.userName.isNotEmpty()) {
             post.userName.first().toString().uppercase()
         } else {
@@ -203,23 +222,23 @@ class PostDetailsActivity : AppCompatActivity() {
 
         // Set status color and reward
         when (post.status) {
-            "LOST" -> {
+            "Lost" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_lost)
                 postStatus.setTextColor(Color.WHITE)
                 if (!post.reward.isNullOrEmpty()) {
                     val formattedReward = formatReward(post.reward ?: "")
-                    postReward.text = "💰 Reward: $formattedReward"
+                    postReward.text = "Reward = ₱ $formattedReward"
                     postReward.visibility = View.VISIBLE
                 } else {
                     postReward.visibility = View.GONE
                 }
             }
-            "FOUND" -> {
+            "Found" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_found)
                 postStatus.setTextColor(Color.WHITE)
                 postReward.visibility = View.GONE
             }
-            "ADOPTION" -> {
+            "Adoption" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_adoption)
                 postStatus.setTextColor(Color.WHITE)
                 postReward.visibility = View.GONE
@@ -239,11 +258,14 @@ class PostDetailsActivity : AppCompatActivity() {
             }
         }
 
-        // Show/hide chat button based on whether it's user's own post
+        // Show/hide chat button
         if (post.firebaseUid == currentUser?.firebaseUid) {
-            btnChat.visibility = View.GONE
+            btnMessage.visibility = View.GONE
         } else {
-            btnChat.visibility = View.VISIBLE
+            btnMessage.visibility = View.VISIBLE
+            btnMessage.setOnClickListener {
+                startChat()
+            }
         }
     }
 
@@ -251,26 +273,19 @@ class PostDetailsActivity : AppCompatActivity() {
         val imageUrls = post.imageUrls
         if (!imageUrls.isNullOrEmpty() && imageUrls.isNotEmpty()) {
             if (imageUrls.size > 1) {
-                // Multiple images - use ViewPager carousel
                 viewPager.visibility = View.VISIBLE
                 singleImageView.visibility = View.GONE
                 noImagePlaceholder.visibility = View.GONE
 
-                // Setup ViewPager adapter
                 val adapter = PostImagePagerAdapter(imageUrls)
                 viewPager.adapter = adapter
-
-                // Set offscreen page limit to avoid reload issues
                 viewPager.offscreenPageLimit = 1
 
-                // Setup indicator dots
                 setupImageIndicators(imageUrls.size)
                 indicatorContainer.visibility = View.VISIBLE
 
-                // Remove any existing callbacks to avoid multiple registrations
                 viewPager.unregisterOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {})
 
-                // Update indicator on page change
                 viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                     override fun onPageSelected(position: Int) {
                         super.onPageSelected(position)
@@ -281,7 +296,6 @@ class PostDetailsActivity : AppCompatActivity() {
                     }
                 })
 
-                // Click on image to open gallery
                 viewPager.setOnClickListener {
                     openImageGallery(imageUrls, viewPager.currentItem)
                 }
@@ -291,7 +305,6 @@ class PostDetailsActivity : AppCompatActivity() {
                     pageIndicator.visibility = View.VISIBLE
                 }
             } else {
-                // Single image - use ImageView
                 viewPager.visibility = View.GONE
                 singleImageView.visibility = View.VISIBLE
                 indicatorContainer.visibility = View.GONE
@@ -319,7 +332,6 @@ class PostDetailsActivity : AppCompatActivity() {
                 }
             }
         } else {
-            // No images - show placeholder
             viewPager.visibility = View.GONE
             singleImageView.visibility = View.GONE
             indicatorContainer.visibility = View.GONE
@@ -406,18 +418,13 @@ class PostDetailsActivity : AppCompatActivity() {
             toggleFavorite()
         }
 
-        // CHAT BUTTON CLICK - Opens chat with post owner
-        btnChat.setOnClickListener {
+        btnMessage.setOnClickListener {
             startChat()
         }
 
-        btnPostComment.setOnClickListener {
-            postComment()
-        }
     }
 
     private fun loadPostData() {
-        // Load user profile image
         viewModel.getUserById(post.firebaseUid) { user ->
             user?.let {
                 if (!it.profileImageUrl.isNullOrEmpty()) {
@@ -427,7 +434,6 @@ class PostDetailsActivity : AppCompatActivity() {
                         "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}${it.profileImageUrl}"
                     }
 
-                    // Hide text icon and show image
                     profileIcon.visibility = View.GONE
                     profileImage.visibility = View.VISIBLE
 
@@ -445,53 +451,18 @@ class PostDetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadComments() {
-        progressBar.visibility = View.VISIBLE
-        lifecycleScope.launch {
-            try {
-                val result = commentRepository.getComments(post.postId)
 
-                if (result.isSuccess) {
-                    val comments = result.getOrNull() ?: emptyList()
-
-                    // Clear and add ALL comments
-                    commentsList.clear()
-                    commentsList.addAll(comments)
-
-                    // Sort by date (newest first)
-                    commentsList.sortByDescending { it.createdAt }
-
-                    commentsAdapter.notifyDataSetChanged()
-
-                    println("✅ Loaded ${commentsList.size} comments for post ${post.postId}")
-
-                    // Scroll to top to show newest comments
-                    if (commentsList.isNotEmpty()) {
-                        commentsRecyclerView.scrollToPosition(0)
-                    }
-                } else {
-                    println("❌ Failed to load comments: ${result.exceptionOrNull()?.message}")
-                    commentsList.clear()
-                    commentsAdapter.notifyDataSetChanged()
-                }
-            } catch (e: Exception) {
-                println("❌ Error loading comments: ${e.message}")
-                e.printStackTrace()
-                commentsList.clear()
-                commentsAdapter.notifyDataSetChanged()
-            } finally {
-                progressBar.visibility = View.GONE
-            }
-        }
-    }
 
     private fun checkLikeStatus() {
         val userId = currentUser?.firebaseUid ?: return
         lifecycleScope.launch {
             val result = postRepository.checkLikeStatus(post.postId, userId)
             if (result.isSuccess) {
-                isLiked = result.getOrNull() ?: false
-                updateLikeButton()
+                val response = result.getOrNull()!!
+                isLiked = response.isLiked ?: false
+                btnLikeLottieDetails.setLiked(isLiked, animate = false)
+                tvLikeCount.text = response.likesCount.toString()
+                post = post.copy(likesCount = response.likesCount)
             }
         }
     }
@@ -513,17 +484,55 @@ class PostDetailsActivity : AppCompatActivity() {
             return
         }
 
+        // Get current state from the button
+        val wasAlreadyLiked = btnLikeLottieDetails.isLiked
+        val willBeLiked = !wasAlreadyLiked
+
+        // Update UI immediately (optimistic update)
+        btnLikeLottieDetails.setLiked(willBeLiked, animate = willBeLiked)
+
+        // Calculate optimistic count
+        val optimisticCount = if (willBeLiked) {
+            post.likesCount + 1
+        } else {
+            max(0, post.likesCount - 1)
+        }
+        tvLikeCount.text = optimisticCount.toString()
+
+        // Disable button to prevent double-clicks
+        btnLike.isEnabled = false
+
+        // Call repository - now returns Result<LikeResponse>
         lifecycleScope.launch {
             val result = postRepository.likePost(post.postId, user.firebaseUid)
+
             if (result.isSuccess) {
-                isLiked = result.getOrNull() ?: !isLiked
-                // Update the post object
-                val newCount = if (isLiked) post.likesCount + 1 else if (post.likesCount > 0) post.likesCount - 1 else 0
-                val updatedPost = post.copy(likesCount = newCount)
-                post = updatedPost
-                updateLikeButton()
+                val response = result.getOrNull()!!
+
+                // Get the ACTUAL values from server
+                val serverLiked = response.liked ?: response.isLiked ?: willBeLiked
+                val serverCount = response.likesCount
+
+                // Update with server values
+                btnLikeLottieDetails.setLiked(serverLiked, animate = false)
+                tvLikeCount.text = serverCount.toString()
+
+                // Update post object
+                post = post.copy(likesCount = serverCount)
+                isLiked = serverLiked
+
+                // Optional log to debug
+                Log.d("LikeDebug", "Server returned: liked=$serverLiked, count=$serverCount")
+            } else {
+                // Revert on failure
+                btnLikeLottieDetails.setLiked(wasAlreadyLiked, animate = false)
                 tvLikeCount.text = post.likesCount.toString()
+                Toast.makeText(this@PostDetailsActivity,
+                    "Failed to update like", Toast.LENGTH_SHORT).show()
             }
+
+            // Re-enable button
+            btnLike.isEnabled = true
         }
     }
 
@@ -550,14 +559,6 @@ class PostDetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateLikeButton() {
-        if (isLiked) {
-            btnLikeIcon.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
-        } else {
-            btnLikeIcon.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
-        }
-    }
-
     private fun updateFavoriteButton() {
         if (isFavorited) {
             btnFavoriteIcon.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
@@ -566,106 +567,273 @@ class PostDetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun postComment() {
-        val text = commentInput.text.toString().trim()
-        if (text.isEmpty()) {
-            Toast.makeText(this, "Please enter a comment", Toast.LENGTH_SHORT).show()
-            return
-        }
 
-        val user = currentUser ?: run {
-            Toast.makeText(this, "Please login to comment", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        lifecycleScope.launch {
-            try {
-                val result = commentRepository.createComment(
-                    postId = post.postId,
-                    firebaseUid = user.firebaseUid,
-                    userName = user.username,
-                    text = text
-                )
-
-                if (result.isSuccess) {
-                    val newComment = result.getOrNull()
-                    commentInput.text.clear()
-
-                    // IMPORTANT: Add the new comment to the list, don't replace
-                    if (newComment != null) {
-                        commentsList.add(0, newComment) // Add at the beginning (newest first)
-                        commentsAdapter.notifyItemInserted(0)
-                        commentsRecyclerView.scrollToPosition(0)
-                    }
-
-                    Toast.makeText(this@PostDetailsActivity, "Comment posted", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this@PostDetailsActivity, "Failed to post comment", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@PostDetailsActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun likeComment(commentId: String) {
-        val user = currentUser ?: return
-        lifecycleScope.launch {
-            commentRepository.likeComment(commentId, user.firebaseUid)
-            loadComments()
-        }
-    }
-
-    private fun showCommentOptions(comment: ApiComment) {
-        val options = mutableListOf("Report")
-        if (comment.firebaseUid == currentUser?.firebaseUid) {
-            options.add(0, "Delete")
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle("Comment Options")
-            .setItems(options.toTypedArray()) { _, which ->
-                when (options[which]) {
-                    "Delete" -> deleteComment(comment.commentId)
-                    "Report" -> reportComment()
-                }
-            }
-            .show()
-    }
-
-    private fun deleteComment(commentId: String) {
-        val user = currentUser ?: return
-        lifecycleScope.launch {
-            val result = commentRepository.deleteComment(commentId, user.firebaseUid)
-            if (result.isSuccess) {
-                loadComments()
-                Toast.makeText(this@PostDetailsActivity, "Comment deleted", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun reportComment() {
-        Toast.makeText(this, "Comment reported", Toast.LENGTH_SHORT).show()
-    }
-
+    // ========== POST MENU WITH INSTAGRAM STYLE ==========
     private fun showPostOptions() {
-        val options = mutableListOf("Share", "Report")
-        if (post.firebaseUid == currentUser?.firebaseUid) {
-            options.add(0, "Edit")
-            options.add(1, "Delete")
-        }
+        try {
+            val dialogView = layoutInflater.inflate(R.layout.post_menu_instagram, null)
 
-        AlertDialog.Builder(this)
-            .setTitle("Post Options")
-            .setItems(options.toTypedArray()) { _, which ->
-                when (options[which]) {
-                    "Edit" -> openEditPost()
-                    "Delete" -> deletePost()
-                    "Share" -> sharePost()
-                    "Report" -> reportPost()
+            val menuUsername = dialogView.findViewById<TextView>(R.id.menu_username)
+            val menuPostInfo = dialogView.findViewById<TextView>(R.id.menu_post_info)
+            val btnClose = dialogView.findViewById<TextView>(R.id.btn_close)
+
+            val optionAddFavorites = dialogView.findViewById<LinearLayout>(R.id.option_add_favorites)
+            val ivFavoriteIcon = dialogView.findViewById<ImageView>(R.id.iv_favorite_icon)
+            val tvFavoriteText = dialogView.findViewById<TextView>(R.id.tv_favorite_text)
+
+            val optionFollow = dialogView.findViewById<LinearLayout>(R.id.option_follow)
+            val ivFollowIcon = dialogView.findViewById<ImageView>(R.id.iv_follow_icon)
+            val tvFollowText = dialogView.findViewById<TextView>(R.id.tv_follow_text)
+
+            val optionWhySeeing = dialogView.findViewById<LinearLayout>(R.id.option_why_seeing)
+            val optionHide = dialogView.findViewById<LinearLayout>(R.id.option_hide)
+            val optionAboutAccount = dialogView.findViewById<LinearLayout>(R.id.option_about_account)
+
+            val optionEdit = dialogView.findViewById<LinearLayout>(R.id.option_edit)
+            val ivEditIcon = dialogView.findViewById<ImageView>(R.id.iv_edit_icon)
+            val tvEditText = dialogView.findViewById<TextView>(R.id.tv_edit_text)
+
+            val optionBlock = dialogView.findViewById<LinearLayout>(R.id.option_block)
+            val ivBlockIcon = dialogView.findViewById<ImageView>(R.id.iv_block_icon)
+            val tvBlockText = dialogView.findViewById<TextView>(R.id.tv_block_text)
+
+            val optionReport = dialogView.findViewById<LinearLayout>(R.id.option_report)
+            val optionDelete = dialogView.findViewById<LinearLayout>(R.id.option_delete)
+
+            // Set data
+            menuUsername?.text = post.userName
+            menuPostInfo?.text = "${post.petName} • ${post.status}"
+
+            // Check favorite status
+            viewModel.favoriteStatus.value?.let { favMap ->
+                val isFav = favMap[post.postId] ?: false
+                if (isFav) {
+                    tvFavoriteText?.text = "Remove from favorites"
+                    ivFavoriteIcon?.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                } else {
+                    tvFavoriteText?.text = "Add to favorites"
+                    ivFavoriteIcon?.setColorFilter(Color.parseColor("#000000"), PorterDuff.Mode.SRC_ATOP)
                 }
             }
+
+            val user = currentUser
+            val isFollowing = viewModel.checkFollowStatus(post.firebaseUid)
+            val isOwnPost = (user != null && post.firebaseUid == user.firebaseUid)
+
+            // Create dialog
+            val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
+            dialog.setContentView(dialogView)
+
+            dialog.window?.apply {
+                setGravity(android.view.Gravity.BOTTOM)
+                setLayout(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                setBackgroundDrawable(null)
+            }
+
+            btnClose?.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            // Configure options based on post ownership
+            if (isOwnPost) {
+                // OWN POST - Show Edit and Delete options
+                optionEdit?.visibility = View.VISIBLE
+                optionEdit?.setOnClickListener {
+                    openEditPost()
+                    dialog.dismiss()
+                }
+
+                optionDelete?.visibility = View.VISIBLE
+                optionDelete?.setOnClickListener {
+                    showDeleteConfirmation()
+                    dialog.dismiss()
+                }
+
+                // Hide other options
+                optionFollow?.visibility = View.GONE
+                optionBlock?.visibility = View.GONE
+                optionReport?.visibility = View.GONE
+                optionWhySeeing?.visibility = View.GONE
+                optionHide?.visibility = View.GONE
+                optionAboutAccount?.visibility = View.GONE
+            } else {
+                // OTHER USER'S POST - Show Follow, Block, Report, etc.
+                optionEdit?.visibility = View.GONE
+                optionDelete?.visibility = View.GONE
+
+                optionFollow?.visibility = View.VISIBLE
+                if (isFollowing) {
+                    tvFollowText?.text = "Unfollow"
+                    ivFollowIcon?.setImageResource(R.drawable.delete)
+                    ivFollowIcon?.setColorFilter(Color.parseColor("#F44336"), PorterDuff.Mode.SRC_ATOP)
+                } else {
+                    tvFollowText?.text = "Follow"
+                    ivFollowIcon?.setImageResource(R.drawable.add)
+                    ivFollowIcon?.setColorFilter(Color.parseColor("#000000"), PorterDuff.Mode.SRC_ATOP)
+                }
+
+                optionFollow?.setOnClickListener {
+                    val isFollowing = viewModel.checkFollowStatus(post.firebaseUid)
+                    viewModel.toggleFollow(post.firebaseUid, isFollowing)
+                    dialog.dismiss()
+                }
+
+                optionBlock?.visibility = View.VISIBLE
+                optionBlock?.setOnClickListener {
+                    showBlockConfirmation()
+                    dialog.dismiss()
+                }
+
+                optionReport?.visibility = View.VISIBLE
+                optionWhySeeing?.visibility = View.VISIBLE
+                optionHide?.visibility = View.VISIBLE
+                optionAboutAccount?.visibility = View.VISIBLE
+            }
+
+            optionAddFavorites?.setOnClickListener {
+                val isFav = viewModel.favoriteStatus.value?.get(post.postId) ?: false
+                viewModel.toggleFavorite(post, isFav)
+                dialog.dismiss()
+            }
+
+            optionWhySeeing?.setOnClickListener {
+                showWhySeeingDialog()
+                dialog.dismiss()
+            }
+
+            optionHide?.setOnClickListener {
+                showHideConfirmation()
+                dialog.dismiss()
+            }
+
+            optionAboutAccount?.setOnClickListener {
+                showAboutAccountDialog()
+                dialog.dismiss()
+            }
+
+            optionReport?.setOnClickListener {
+                showReportDialog()
+                dialog.dismiss()
+            }
+
+            dialog.show()
+        } catch (e: Exception) {
+            println("❌ Error showing post options: ${e.message}")
+            e.printStackTrace()
+            Toast.makeText(this, "Menu not available", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showWhySeeingDialog() {
+        try {
+            val message = """
+                You're seeing this post because:
+                
+                • You follow @${post.userName}
+                • This post has high engagement
+                • Similar content you've liked before
+            """.trimIndent()
+
+            AlertDialog.Builder(this)
+                .setTitle("Why you're seeing this post")
+                .setMessage(message)
+                .setPositiveButton("Got it", null)
+                .show()
+        } catch (e: Exception) {
+            println("❌ Error showing why seeing dialog: ${e.message}")
+        }
+    }
+
+    private fun showAboutAccountDialog() {
+        try {
+            val message = """
+                About @${post.userName}
+
+                📝 This account posts about pets and rescue stories.
+                📍 Location information not available
+            """.trimIndent()
+
+            AlertDialog.Builder(this)
+                .setTitle("About this account")
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show()
+        } catch (e: Exception) {
+            println("❌ Error showing about dialog: ${e.message}")
+        }
+    }
+
+    private fun showHideConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("Hide Post")
+            .setMessage("This post will be hidden from your feed. You can unhide it later in Settings.")
+            .setPositiveButton("Hide") { _, _ ->
+                hidePost()
+            }
+            .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun hidePost() {
+        val currentUser = currentUser ?: return
+        lifecycleScope.launch {
+            val result = hidePostRepository.hidePost(currentUser.firebaseUid, post.postId)
+            if (result.isSuccess) {
+                Toast.makeText(this@PostDetailsActivity, "Post hidden", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
+    }
+
+    private fun showBlockConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("Block User")
+            .setMessage("Are you sure you want to block ${post.userName}?")
+            .setPositiveButton("Block") { _, _ ->
+                blockUser()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun blockUser() {
+        val currentUser = currentUser ?: return
+        lifecycleScope.launch {
+            val result = blockRepository.blockUser(currentUser.firebaseUid, post.firebaseUid)
+            if (result.isSuccess) {
+                Toast.makeText(this@PostDetailsActivity, "Blocked ${post.userName}", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
+    }
+
+    private fun showReportDialog() {
+        val options = arrayOf("Spam", "Inappropriate", "False information", "Scam", "Harassment", "Other")
+        AlertDialog.Builder(this)
+            .setTitle("Report Post")
+            .setItems(options) { _, which ->
+                submitReport(options[which])
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun submitReport(reason: String) {
+        val currentUser = currentUser ?: return
+        lifecycleScope.launch {
+            val result = reportRepository.createReport(
+                reporterUid = currentUser.firebaseUid,
+                reason = reason.lowercase().replace(" ", "_"),
+                postId = post.postId,
+                description = "Reported for: $reason"
+            )
+            if (result.isSuccess) {
+                Toast.makeText(this@PostDetailsActivity, "Report submitted", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun openEditPost() {
@@ -674,31 +842,34 @@ class PostDetailsActivity : AppCompatActivity() {
         startActivityForResult(intent, EDIT_POST_REQUEST)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == EDIT_POST_REQUEST && resultCode == RESULT_OK) {
-            // Refresh post data
-            finish()
-            startActivity(intent)
-        }
-    }
-
-    private fun deletePost() {
+    private fun showDeleteConfirmation() {
         AlertDialog.Builder(this)
             .setTitle("Delete Post")
             .setMessage("Are you sure you want to delete this post?")
             .setPositiveButton("Delete") { _, _ ->
-                val user = currentUser ?: return@setPositiveButton
-                lifecycleScope.launch {
-                    val result = postRepository.deletePost(post.postId, user.firebaseUid)
-                    if (result.isSuccess) {
-                        Toast.makeText(this@PostDetailsActivity, "Post deleted", Toast.LENGTH_SHORT).show()
-                        finish()
-                    }
-                }
+                deletePost()
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun deletePost() {
+        val user = currentUser ?: return
+        lifecycleScope.launch {
+            val result = postRepository.deletePost(post.postId, user.firebaseUid)
+            if (result.isSuccess) {
+                Toast.makeText(this@PostDetailsActivity, "Post deleted", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == EDIT_POST_REQUEST && resultCode == RESULT_OK) {
+            finish()
+            startActivity(intent)
+        }
     }
 
     private fun sharePost() {
@@ -721,18 +892,12 @@ class PostDetailsActivity : AppCompatActivity() {
         startActivity(Intent.createChooser(shareIntent, "Share post"))
     }
 
-    private fun reportPost() {
-        Toast.makeText(this, "Post reported", Toast.LENGTH_SHORT).show()
-    }
-
-    // CHAT FUNCTION - Opens chat with post owner
     private fun startChat() {
         val currentUser = currentUser ?: run {
             Toast.makeText(this, "Please login to chat", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Don't allow chatting with yourself
         if (currentUser.firebaseUid == post.firebaseUid) {
             Toast.makeText(this, "This is your own post", Toast.LENGTH_SHORT).show()
             return
@@ -803,7 +968,6 @@ class PostDetailsActivity : AppCompatActivity() {
         }
     }
 
-    // Image Pager Adapter (inner class)
     inner class ImagePagerAdapter(private val images: List<String>) :
         RecyclerView.Adapter<ImagePagerAdapter.ImageViewHolder>() {
 

@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawSociety — Because Every Pet Deserves a Home</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #FFFFFF;
+            color: #1A1A1A;
+            line-height: 1.5;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            z-index: 100;
+            padding: 16px 24px;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 20px;
+            color: #7A4F2B;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #4A4A4A;
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #7A4F2B;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 24px;
+        }
+
+        /* Hero Section */
+        .hero {
+            display: flex;
+            align-items: center;
+            gap: 60px;
+            margin-bottom: 100px;
+            padding-top: 40px;
+        }
+
+        .hero-content {
+            flex: 1;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: #F5E6D3;
+            color: #7A4F2B;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 100px;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            color: #1A1A1A;
+        }
+
+        .hero h1 span {
+            color: #7A4F2B;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #4A4A4A;
+            margin-bottom: 30px;
+            max-width: 500px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #7A4F2B;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .hero-image {
+            flex: 1;
+            background: #F5E6D3;
+            border-radius: 30px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(122, 79, 43, 0.1);
+        }
+
+        .hero-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Features Section */
+        .section-title {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-title h2 {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1A1A1A;
+            margin-bottom: 12px;
+        }
+
+        .section-title p {
+            font-size: 18px;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 100px;
+        }
+
+        .feature-card {
+            background: #F8F8F8;
+            border-radius: 20px;
+            padding: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: #7A4F2B;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1A1A1A;
+        }
+
+        .feature-card p {
+            color: #4A4A4A;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* App Screenshots */
+        .screenshots {
+            margin-bottom: 100px;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .screenshot {
+            background: #F5E6D3;
+            border-radius: 20px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .screenshot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: #F5E6D3;
+            border-radius: 30px;
+            padding: 60px;
+            margin-bottom: 100px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            text-align: center;
+        }
+
+        .stat-large {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-large .number {
+            font-size: 48px;
+            font-weight: 800;
+            color: #7A4F2B;
+            margin-bottom: 8px;
+        }
+
+        .stat-large .label {
+            font-size: 16px;
+            color: #1A1A1A;
+            font-weight: 500;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            margin-bottom: 100px;
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+        }
+
+        .step {
+            text-align: center;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: #7A4F2B;
+            color: white;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 auto 20px;
+        }
+
+        .step h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .step p {
+            color: #4A4A4A;
+            font-size: 15px;
+        }
+
+        /* Testimonials */
+        .testimonials {
+            margin-bottom: 100px;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+
+        .testimonial {
+            background: #F8F8F8;
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .testimonial-content {
+            font-size: 16px;
+            color: #1A1A1A;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .author-avatar {
+            width: 40px;
+            height: 40px;
+            background: #7A4F2B;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .author-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .author-name {
+            font-weight: 600;
+            color: #1A1A1A;
+        }
+
+        .author-title {
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* FAQ Section */
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 100px;
+        }
+
+        .faq-item {
+            background: #F8F8F8;
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .faq-item h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1A1A1A;
+        }
+
+        .faq-item p {
+            color: #4A4A4A;
+            font-size: 15px;
+        }
+
+        /* CTA Section */
+        .cta {
+            background: #7A4F2B;
+            border-radius: 30px;
+            padding: 60px;
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+        }
+
+        .cta h2 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .cta p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .cta-button {
+            background: white;
+            color: #7A4F2B;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .cta-button.secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .cta-button.secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid #F0F0F0;
+            padding: 40px 0;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 60px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 18px;
+            color: #7A4F2B;
+            margin-bottom: 16px;
+        }
+
+        .footer-about {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer-links h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1A1A1A;
+        }
+
+        .footer-links a {
+            display: block;
+            color: #666;
+            text-decoration: none;
+            margin-bottom: 12px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: #7A4F2B;
+        }
+
+        .footer-bottom {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #F0F0F0;
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                flex-direction: column;
+            }
+            
+            .features-grid,
+            .screenshots-grid,
+            .stats-grid,
+            .steps-grid,
+            .testimonials-grid,
+            .faq-grid,
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero h1 {
+                font-size: 36px;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .stats-section {
+                padding: 40px 20px;
+            }
+            
+            .cta {
+                padding: 40px 20px;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">🐾</span>
+                PawSociety
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#testimonials">Testimonials</a>
+                <a href="#faq">FAQ</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">🐕 Community of 50,000+ Pet Lovers</div>
+                <h1>Because Every Pet <span>Deserves a Home</span></h1>
+                <p>The compassionate community for lost pets, adoptions, and happy reunions. Join thousands of pet lovers making a difference.</p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">15K+</span>
+                        <span class="stat-label">Pets Reunited</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">8K+</span>
+                        <span class="stat-label">Adoptions</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">50K+</span>
+                        <span class="stat-label">Active Users</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div style="background: #7A4F2B; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 100px; color: white;">🐕 🐈</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features">
+            <div class="section-title">
+                <h2>Everything You Need</h2>
+                <p>A complete platform for pet lovers, rescuers, and adopters</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Lost & Found</h3>
+                    <p>Post lost pets, search found animals, and get real-time notifications when matches are found in your area.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏠</div>
+                    <h3>Pet Adoption</h3>
+                    <p>Browse hundreds of adoptable pets from shelters and individuals. Find your perfect companion today.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>Real-time Chat</h3>
+                    <p>Connect instantly with pet owners, shelters, and adopters through our built-in messaging system.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📍</div>
+                    <h3>Location-Based</h3>
+                    <p>See posts from your neighborhood first. Location tagging helps reunite pets with their families faster.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📸</div>
+                    <h3>Photo Sharing</h3>
+                    <p>Upload multiple photos, create pet highlights, and share your pet's story with the community.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">❤️</div>
+                    <h3>Favorites & Alerts</h3>
+                    <p>Save posts you love and get instant alerts when new pets match your preferences.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- App Screenshots -->
+        <section class="screenshots">
+            <div class="section-title">
+                <h2>Beautifully Designed</h2>
+                <p>Simple, intuitive, and focused on what matters — helping pets</p>
+            </div>
+            
+            <div class="screenshots-grid">
+                <div class="screenshot" style="background: #7A4F2B;">
+                    <span style="color: white; font-size: 32px;">🏠 Home</span>
+                </div>
+                <div class="screenshot" style="background: #B88B4A;">
+                    <span style="color: white; font-size: 32px;">📝 Posts</span>
+                </div>
+                <div class="screenshot" style="background: #DAA520;">
+                    <span style="color: white; font-size: 32px;">💬 Chat</span>
+                </div>
+                <div class="screenshot" style="background: #CD853F;">
+                    <span style="color: white; font-size: 32px;">👤 Profile</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-large">
+                    <span class="number">50K+</span>
+                    <span class="label">Active Users</span>
+                </div>
+                <div class="stat-large">
+                    <span class="number">15K+</span>
+                    <span class="label">Pets Reunited</span>
+                </div>
+                <div class="stat-large">
+                    <span class="number">8K+</span>
+                    <span class="label">Adoptions</span>
+                </div>
+                <div class="stat-large">
+                    <span class="number">100K+</span>
+                    <span class="label">Posts Shared</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section id="how-it-works" class="how-it-works">
+            <div class="section-title">
+                <h2>How PawSociety Works</h2>
+                <p>Three simple steps to join our community</p>
+            </div>
+            
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Create Your Profile</h3>
+                    <p>Sign up in seconds with your email or Google account. Set up your pet parent profile.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Post or Browse</h3>
+                    <p>Report a lost pet, list one for adoption, or browse animals needing homes.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Connect & Help</h3>
+                    <p>Message directly, share posts, and be part of happy reunions and adoptions.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section id="testimonials" class="testimonials">
+            <div class="section-title">
+                <h2>Happy Stories</h2>
+                <p>Real stories from our community</p>
+            </div>
+            
+            <div class="testimonials-grid">
+                <div class="testimonial">
+                    <div class="testimonial-content">
+                        "I lost my dog Max for 3 days. PawSociety helped me find him within hours of posting. The community support was incredible!"
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">M</div>
+                        <div class="author-info">
+                            <span class="author-name">Maria Santos</span>
+                            <span class="author-title">Pet Owner</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial">
+                    <div class="testimonial-content">
+                        "We found our adopted dog Luna through PawSociety. The adoption process was smooth and now she's part of our family."
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">J</div>
+                        <div class="author-info">
+                            <span class="author-name">James Reyes</span>
+                            <span class="author-title">Adopter</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="faq">
+            <div class="section-title">
+                <h2>Frequently Asked Questions</h2>
+                <p>Everything you need to know about PawSociety</p>
+            </div>
+            
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h4>Is PawSociety free to use?</h4>
+                    <p>Yes! PawSociety is completely free for all users. No hidden fees, no premium subscriptions.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>How do I report a lost pet?</h4>
+                    <p>Simply tap the + button, add your pet's photo, details, and location. Your post will be visible to everyone in your area.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>Can I adopt through the app?</h4>
+                    <p>Absolutely! Browse adoption posts, contact the poster directly through chat, and arrange meetups.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>Is my data safe?</h4>
+                    <p>We take privacy seriously. Your contact info is only shared when you initiate a conversation.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta">
+            <h2>Ready to Make a Difference?</h2>
+            <p>Join thousands of pet lovers who are reuniting families and finding forever homes.</p>
+            <div class="cta-buttons">
+                <a href="#" class="cta-button">Download on iOS</a>
+                <a href="#" class="cta-button">Download on Android</a>
+                <a href="#" class="cta-button secondary">Learn More</a>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-content">
+                <div>
+                    <div class="footer-logo">
+                        <span>🐾</span> PawSociety
+                    </div>
+                    <p class="footer-about">Because Every Pet Deserves a Home. A compassionate community for lost pets, adoptions, and happy reunions.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Product</h4>
+                    <a href="#features">Features</a>
+                    <a href="#how-it-works">How It Works</a>
+                    <a href="#">Download</a>
+                    <a href="#">Pricing</a>
+                </div>
+                <div class="footer-links">
+                    <h4>Company</h4>
+                    <a href="#">About Us</a>
+                    <a href="#">Blog</a>
+                    <a href="#">Careers</a>
+                    <a href="#">Contact</a>
+                </div>
+                <div class="footer-links">
+                    <h4>Legal</h4>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Cookie Policy</a>
+                    <a href="#">Security</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2026 PawSociety. All rights reserved. Made with ❤️ for pet lovers everywhere.
+            </div>
+        </footer>
+    </main>
+</body>
+</html>

@@ -18,8 +18,15 @@ import com.example.pawsociety.api.ApiUser
 import com.example.pawsociety.data.repository.AuthRepository
 import com.example.pawsociety.util.FirebaseAuthHelper
 import com.example.pawsociety.util.SessionManager
-import kotlinx.coroutines.launch
 import com.example.pawsociety.util.SocketManager
+import com.example.pawsociety.util.FCMTokenManager
+import kotlinx.coroutines.launch
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+
+
 
 class LoginActivity : AppCompatActivity() {
 
@@ -38,6 +45,8 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+
+        requestNotificationPermission()
 
         // Check if we were logged out with a message
         intent.getStringExtra("logout_message")?.let { message ->
@@ -67,6 +76,8 @@ class LoginActivity : AppCompatActivity() {
         setupEmailValidation()
     }
 
+
+
     private fun initializeViews() {
         emailInput = findViewById(R.id.email_input)
         passwordInput = findViewById(R.id.password_input)
@@ -78,6 +89,19 @@ class LoginActivity : AppCompatActivity() {
         passwordError = findViewById(R.id.password_error)
     }
 
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    1001
+                )
+            }
+        }
+    }
+
     private fun setupClickListeners() {
         loginButton.setOnClickListener {
             val email = emailInput.text.toString().trim()
@@ -87,8 +111,6 @@ class LoginActivity : AppCompatActivity() {
                 performLogin(email, password)
             }
         }
-
-
 
         signupButton.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
@@ -222,10 +244,13 @@ class LoginActivity : AppCompatActivity() {
 
                     Toast.makeText(this@LoginActivity, "Logged in! (Offline mode)", Toast.LENGTH_SHORT).show()
 
-                    // ADD SOCKET CONNECTION HERE
+                    // Connect socket
                     SocketManager.connect()
                     SocketManager.joinUserRoom(localUser.firebaseUid)
                     println("🟢 User ${localUser.username} is now ONLINE")
+
+                    // Initialize FCM token for push notifications
+                    FCMTokenManager.initialize(localUser.firebaseUid)
 
                     navigateToHome()
                     return@launch
@@ -245,10 +270,13 @@ class LoginActivity : AppCompatActivity() {
                 sessionManager.saveUserSession(finalUser)
                 println("💾 Session saved successfully")
 
-                // ADD SOCKET CONNECTION HERE
+                // Connect socket
                 SocketManager.connect()
                 SocketManager.joinUserRoom(finalUser.firebaseUid)
                 println("🟢 User ${finalUser.username} is now ONLINE")
+
+                // Initialize FCM token for push notifications
+                FCMTokenManager.initialize(finalUser.firebaseUid)
 
                 Toast.makeText(this@LoginActivity, "Welcome back, ${finalUser.username}!", Toast.LENGTH_SHORT).show()
                 navigateToHome()

@@ -29,6 +29,18 @@ async function sendPushNotification(userId, title, body, type, postId = null, fr
       return;
     }
 
+    // Check if user has muted the sender
+    if (fromUserId) {
+      const user = await User.findOne({ firebaseUid: userId });
+      if (user && user.mutedUsers) {
+        const isMuted = user.mutedUsers.some(m => m.userId === fromUserId);
+        if (isMuted) {
+          console.log(`🔇 Notification suppressed - User ${userId} muted ${fromUserId}`);
+          return; // Don't send notification
+        }
+      }
+    }
+
     // Get user's FCM token from database
     const user = await User.findOne({ firebaseUid: userId });
     if (!user || !user.fcmToken) {
@@ -158,12 +170,25 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Don't create notification for self-actions (liking your own post, etc.)
+    // Don't create notification for self-actions
     if (userId === fromUserId) {
       return res.json({
         success: true,
         message: 'Self-action, no notification needed'
       });
+    }
+
+    // Check if user has muted the sender
+    const recipient = await User.findOne({ firebaseUid: userId });
+    if (recipient && recipient.mutedUsers) {
+      const isMuted = recipient.mutedUsers.some(m => m.userId === fromUserId);
+      if (isMuted) {
+        console.log(`🔇 In-app notification suppressed - User ${userId} muted ${fromUserId}`);
+        return res.json({
+          success: true,
+          message: 'User muted, no notification created'
+        });
+      }
     }
 
     // Create notification

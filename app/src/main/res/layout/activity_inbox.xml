@@ -1,150 +1,307 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#FAF0E6">
+    android:layout_height="match_parent">
 
-    <!-- Top Bar -->
+    <!-- Your existing LinearLayout - NO CHANGES -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="#FFFFFF"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:gravity="center_vertical"
-        android:elevation="4dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#FFFFFF">
 
-        <TextView
-            android:id="@+id/tv_username"
-            android:layout_width="wrap_content"
+        <!-- Top Bar - Instagram Style -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="#FFFFFF"
+            android:elevation="0dp">
+
+            <TextView
+                android:id="@+id/tv_username"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="16dp"
+                android:text=""
+                android:textColor="#000000"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <!-- New Message Icon -->
+            <ImageButton
+                android:id="@+id/btn_new_message"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="16dp"
+                android:src="@drawable/newmessage"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="New Message"
+                android:tint="#262626" />
+        </RelativeLayout>
+
+        <!-- Search Bar - Instagram Style -->
+        <LinearLayout
+            android:id="@+id/search_container"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="mark_18"
-            android:textColor="#000000"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:gravity="center_vertical"
+                android:background="@drawable/search_instagram">
 
-        <!-- New Message Icon -->
-        <ImageButton
-            android:id="@+id/btn_new_message"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/newmessage"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="New Message"
-            android:tint="#666666" />
-    </LinearLayout>
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/find"
+                    android:tint="#8E8E8E" />
 
-    <!-- Search Bar -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:background="#FAF0E6">
+                <TextView
+                    android:id="@+id/search_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:hint="Search"
+                    android:textColorHint="#8E8E8E"
+                    android:textColor="#262626"
+                    android:textSize="14sp"
+                    android:background="@null"
+                    android:layout_marginStart="8dp"
+                    android:maxLines="1"
+                    android:clickable="false"
+                    android:focusable="false" />
+            </LinearLayout>
+        </LinearLayout>
 
-        <!-- Search Input Field -->
+        <!-- Friends/Stories Carousel - Horizontal Scroll -->
+        <TextView
+            android:id="@+id/tv_mutual_friends"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Your friends"
+            android:textColor="#262626"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone" />
+
+        <HorizontalScrollView
+            android:id="@+id/friends_carousel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="16dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/friends_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical" />
+        </HorizontalScrollView>
+
+        <!-- Messages and Requests Tabs -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
-            android:gravity="center_vertical"
-            android:background="@drawable/input_oval">
+            android:background="#FFFFFF">
 
-            <!-- Find icon -->
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/find"
-                android:tint="#7A4F2B" />
-
-            <EditText
-                android:id="@+id/search_input"
-                android:layout_width="match_parent"
+            <!-- Messages Tab -->
+            <RelativeLayout
+                android:id="@+id/tab_messages"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:hint="Search users..."
-                android:textColorHint="#666666"
-                android:textColor="#000000"
-                android:textSize="14sp"
-                android:background="@null"
-                android:layout_marginStart="8dp"
-                android:maxLines="1"
-                android:imeOptions="actionSearch" />
+                android:layout_weight="1"
+                android:gravity="center"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/tv_messages"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Messages"
+                    android:textColor="#262626"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_centerInParent="true" />
+            </RelativeLayout>
+
+            <!-- Requests Tab with Badge -->
+            <RelativeLayout
+                android:id="@+id/tab_requests"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/tv_requests"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Requests"
+                    android:textColor="#8E8E8E"
+                    android:textSize="14sp"
+                    android:layout_centerInParent="true" />
+
+                <!-- Request Badge - Shows number of pending requests -->
+                <TextView
+                    android:id="@+id/tv_requests_badge"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_toEndOf="@id/tv_requests"
+                    android:layout_alignTop="@id/tv_requests"
+                    android:layout_marginStart="-8dp"
+                    android:layout_marginTop="-8dp"
+                    android:gravity="center"
+                    android:text="3"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/circle_solid_red"
+                    android:visibility="gone" />
+            </RelativeLayout>
         </LinearLayout>
-    </LinearLayout>
 
-    <!-- Messages List with Pull-to-Refresh -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh_layout"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#FAF0E6">
-
+        <!-- Tab Indicator -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#FAF0E6">
+            android:layout_height="2dp"
+            android:background="#E0E0E0">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/inbox_recycler_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="#FAF0E6"
-                android:visibility="gone" />
-
-            <!-- Empty State -->
-            <LinearLayout
-                android:id="@+id/empty_state"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="32dp"
-                android:visibility="visible"
-                android:background="#FAF0E6">
-
-                <!-- Group icon -->
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:src="@drawable/group"
-                    android:background="@drawable/input_oval"
-                    android:backgroundTint="#F0F0F0"
-                    android:padding="20dp"
-                    android:tint="#7A4F2B" />
-
-                <!-- Text below -->
-                <TextView
-                    android:id="@+id/empty_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="No other users yet"
-                    android:textColor="#7A4F2B"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="When other people register, they will appear here"
-                    android:textColor="#666666"
-                    android:textSize="14sp"
-                    android:layout_marginTop="8dp" />
-            </LinearLayout>
+            <View
+                android:id="@+id/tab_indicator"
+                android:layout_width="0dp"
+                android:layout_height="2dp"
+                android:layout_gravity="start"
+                android:background="#7A4F2B" />
         </FrameLayout>
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- Bottom Navigation -->
-    <include
-        layout="@layout/bottom_nav_unified"
+        <!-- Messages List with Pull-to-Refresh -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh_layout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#FFFFFF">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#FFFFFF"
+                android:paddingBottom="80dp">
+
+                <!-- Messages RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/inbox_recycler_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#FFFFFF"
+                    android:visibility="gone" />
+
+                <!-- Requests RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/requests_recycler_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#FFFFFF"
+                    android:visibility="gone" />
+
+                <!-- Empty State -->
+                <LinearLayout
+                    android:id="@+id/empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:visibility="visible"
+                    android:background="#FFFFFF">
+
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/ic_message"
+                        android:tint="#CCCCCC" />
+
+                    <TextView
+                        android:id="@+id/empty_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No messages yet"
+                        android:textColor="#262626"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="16dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="When you message someone, they will appear here"
+                        android:textColor="#8E8E8E"
+                        android:textSize="14sp"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center" />
+                </LinearLayout>
+            </FrameLayout>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- Bottom Navigation -->
+        <include
+            layout="@layout/bottom_nav_unified"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- ADD THIS: Floating Paw Button that overlaps everything -->
+    <FrameLayout
+        android:id="@+id/floating_paw_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-</LinearLayout>
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <FrameLayout
+            android:id="@+id/nav_paw_post"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="28dp"
+            android:background="@drawable/circle_paw_background"
+            android:elevation="10dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/nav_paw_icon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/paw"
+                android:layout_gravity="center" />
+        </FrameLayout>
+    </FrameLayout>
+</FrameLayout>

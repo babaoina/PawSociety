@@ -28,6 +28,19 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  age: {
+    type: String,
+    default: ''
+  },
+  weight: {
+    type: String,
+    default: ''
+  },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Unknown'],
+    default: 'Unknown'
+  },
   status: {
     type: String,
     required: true,
@@ -57,16 +70,8 @@ const postSchema = new mongoose.Schema({
     default: 0
   },
   likedBy: [{
-    type: String // firebaseUid of users who liked
+    type: String
   }],
-  commentsCount: {
-    type: Number,
-    default: 0
-  },
-  shares: {
-    type: Number,
-    default: 0
-  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -75,9 +80,18 @@ const postSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for faster queries
+// Indexes
 postSchema.index({ firebaseUid: 1, createdAt: -1 });
 postSchema.index({ createdAt: -1 });
 postSchema.index({ status: 1 });
+postSchema.index({ gender: 1 });
+
+// Text indexes for search
+postSchema.index({ 
+  petName: 'text', 
+  description: 'text', 
+  location: 'text',
+  petType: 'text' 
+});
 
 module.exports = mongoose.model('Post', postSchema);

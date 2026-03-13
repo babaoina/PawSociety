@@ -75,6 +75,67 @@ router.get('/search', async (req, res) => {
 });
 
 /**
+ * GET /api/users/batch
+ * Get multiple users by their UIDs (for blocked users, etc.)
+ * Query: userIds (comma-separated list)
+ */
+router.get('/batch', async (req, res) => {
+  try {
+    const { userIds } = req.query;
+    
+    if (!userIds) {
+      return res.status(400).json({
+        success: false,
+        message: 'userIds are required'
+      });
+    }
+
+    const uidList = userIds.split(',');
+    console.log(`🔍 Batch fetching users: ${uidList}`);
+    
+    const users = await User.find({ 
+      firebaseUid: { $in: uidList } 
+    }).select('firebaseUid username fullName profileImageUrl');
+    
+    console.log(`✅ Found ${users.length} users`);
+    
+    // Create a map for easy lookup
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.firebaseUid] = {
+        username: user.username,
+        fullName: user.fullName,
+        profileImageUrl: user.profileImageUrl || ''
+      };
+      console.log(`📦 Mapped: ${user.firebaseUid} -> ${user.username}`);
+    });
+
+    // For any UID not found, add a placeholder
+    uidList.forEach(uid => {
+      if (!userMap[uid]) {
+        console.log(`⚠️ User not found in database: ${uid}`);
+        userMap[uid] = {
+          username: 'Unknown User',
+          fullName: 'Unknown User',
+          profileImageUrl: ''
+        };
+      }
+    });
+
+    res.json({
+      success: true,
+      users: userMap
+    });
+  } catch (error) {
+    console.error('❌ Batch get users error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
  * GET /api/users/:firebaseUid
  * Get user by Firebase UID
  */

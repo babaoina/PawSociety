@@ -1,173 +1,442 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#FAF0E6">
+    android:layout_height="match_parent">
 
-    <!-- Top Bar -->
+    <!-- Your existing LinearLayout - NO CHANGES -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="#FFFFFF"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:gravity="center_vertical"
-        android:elevation="4dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#F5F5F5"
+        android:weightSum="1"
+        android:fitsSystemWindows="false">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Top Bar - with padding for status bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="PawSociety"
-            android:textColor="#7A4F2B"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <!-- Notification Icon with Badge -->
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp">
-
-            <ImageView
-                android:id="@+id/btn_notifications"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/heart"
-                android:clickable="true"
-                android:focusable="true"
-                android:background="?android:attr/selectableItemBackgroundBorderless" />
+            android:minHeight="@dimen/nav_bar_height"
+            android:background="#FFFFFF"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/margin_xxlarge"
+            android:paddingTop="24dp"
+            android:gravity="center_vertical"
+            android:elevation="@dimen/margin_small">
 
             <TextView
-                android:id="@+id/notification_badge"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_gravity="top|end"
-                android:background="@drawable/circle_solid_red"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PawSociety"
+                android:textColor="#7A4F2B"
+                android:textSize="@dimen/text_size_xxxlarge"
                 android:textStyle="bold"
-                android:gravity="center"
-                android:visibility="gone"
-                android:layout_marginTop="-2dp"
-                android:layout_marginEnd="-2dp" />
-        </FrameLayout>
-    </LinearLayout>
+                android:fontFamily="sans-serif-medium" />
 
-    <!-- Offline Indicator (ADD THIS) -->
-    <TextView
-        android:id="@+id/tv_offline_indicator"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="You are offline - showing cached content"
-        android:textColor="#FFFFFF"
-        android:background="#F44336"
-        android:gravity="center"
-        android:padding="4dp"
-        android:visibility="gone" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
-    <!-- Divider -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#F0F0F0" />
-
-    <!-- Feed with Pull-to-Refresh -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh_layout"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#FAF0E6">
-
-        <ScrollView
-            android:id="@+id/feed_scrollview"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#FAF0E6">
-
+            <!-- Notification Icon with Badge -->
             <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/margin_medium">
 
-                <!-- Progress Bar -->
-                <ProgressBar
-                    android:id="@+id/progress_bar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:visibility="gone" />
+                <ImageView
+                    android:id="@+id/btn_notifications"
+                    android:layout_width="@dimen/icon_size_xlarge"
+                    android:layout_height="@dimen/icon_size_xlarge"
+                    android:src="@drawable/heart"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?android:attr/selectableItemBackgroundBorderless" />
 
-                <!-- Posts Container -->
-                <LinearLayout
-                    android:id="@+id/posts_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingHorizontal="8dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:background="#FAF0E6">
-                    <!-- Posts will be added here dynamically -->
-                </LinearLayout>
-
-                <!-- Empty State -->
-                <LinearLayout
-                    android:id="@+id/empty_state"
-                    android:layout_width="match_parent"
-                    android:layout_height="300dp"
-                    android:orientation="vertical"
+                <TextView
+                    android:id="@+id/notification_badge"
+                    android:layout_width="@dimen/icon_size_small"
+                    android:layout_height="@dimen/icon_size_small"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/circle_solid_red"
+                    android:textColor="#FFFFFF"
+                    android:textSize="@dimen/text_size_xs"
+                    android:textStyle="bold"
                     android:gravity="center"
                     android:visibility="gone"
-                    android:padding="16dp"
-                    android:background="#FAF0E6">
-
-                    <TextView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:gravity="center"
-                        android:text="🐾"
-                        android:textSize="48sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="No posts yet"
-                        android:textColor="#7A4F2B"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="16dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Be the first to share a pet story!"
-                        android:textColor="#666666"
-                        android:textSize="14sp"
-                        android:layout_marginTop="8dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tap the paw button below to create your first post"
-                        android:textColor="#999999"
-                        android:textSize="12sp"
-                        android:layout_marginTop="4dp" />
-                </LinearLayout>
+                    android:layout_marginTop="-2dp"
+                    android:layout_marginEnd="-2dp" />
             </FrameLayout>
-        </ScrollView>
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+        </LinearLayout>
 
-    <!-- Bottom Navigation -->
-    <include
-        layout="@layout/bottom_nav_unified"
+        <!-- Category Filter Icons - Circular with Images -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Discover Pets"
+                android:textColor="#7A4F2B"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginStart="20dp"
+                android:layout_marginBottom="12dp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <!-- All - White Circle -->
+                    <LinearLayout
+                        android:id="@+id/layout_all"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginEnd="20dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?android:attr/selectableItemBackgroundBorderless">
+
+                        <FrameLayout
+                            android:id="@+id/all_circle"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:background="@drawable/circle_category_default"
+                            android:elevation="2dp">
+
+                            <TextView
+                                android:id="@+id/chip_all"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="All"
+                                android:textColor="#7A4F2B"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/text_all"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="All"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+
+                    <!-- Dogs - White Circle with Dog Icon -->
+                    <LinearLayout
+                        android:id="@+id/layout_dogs"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginEnd="20dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?android:attr/selectableItemBackgroundBorderless">
+
+                        <FrameLayout
+                            android:id="@+id/dog_circle"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:background="@drawable/circle_category_default"
+                            android:elevation="2dp">
+
+                            <ImageView
+                                android:id="@+id/chip_dogs"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/dog"
+                                android:scaleType="fitCenter" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/text_dogs"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Dogs"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+
+                    <!-- Cats - White Circle with Cat Icon -->
+                    <LinearLayout
+                        android:id="@+id/layout_cats"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginEnd="20dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?android:attr/selectableItemBackgroundBorderless">
+
+                        <FrameLayout
+                            android:id="@+id/cat_circle"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:background="@drawable/circle_category_default"
+                            android:elevation="2dp">
+
+                            <ImageView
+                                android:id="@+id/chip_cats"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/cat"
+                                android:scaleType="fitCenter" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/text_cats"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cats"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+
+                    <!-- Fish - White Circle with Fish Icon -->
+                    <LinearLayout
+                        android:id="@+id/layout_fish"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginEnd="20dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?android:attr/selectableItemBackgroundBorderless">
+
+                        <FrameLayout
+                            android:id="@+id/fish_circle"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:background="@drawable/circle_category_default"
+                            android:elevation="2dp">
+
+                            <ImageView
+                                android:id="@+id/chip_fish"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/fish"
+                                android:scaleType="fitCenter" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/text_fish"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Fish"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+
+                    <!-- Birds - White Circle with Bird Icon -->
+                    <LinearLayout
+                        android:id="@+id/layout_birds"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?android:attr/selectableItemBackgroundBorderless">
+
+                        <FrameLayout
+                            android:id="@+id/bird_circle"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:background="@drawable/circle_category_default"
+                            android:elevation="2dp">
+
+                            <ImageView
+                                android:id="@+id/chip_birds"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/bird"
+                                android:scaleType="fitCenter" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/text_birds"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Birds"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Thin divider line -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#F0F0F0"
+                android:layout_marginTop="12dp" />
+        </LinearLayout>
+
+
+        <!-- Offline Indicator -->
+        <TextView
+            android:id="@+id/tv_offline_indicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="You are offline - showing cached content"
+            android:textColor="#FFFFFF"
+            android:background="#F44336"
+            android:gravity="center"
+            android:padding="@dimen/margin_small"
+            android:visibility="gone" />
+
+        <!-- Feed with Pull-to-Refresh -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh_layout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <ScrollView
+                android:id="@+id/feed_scrollview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:scrollbars="vertical">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <!-- Progress Bar -->
+                    <ProgressBar
+                        android:id="@+id/progress_bar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:visibility="gone" />
+
+                    <!-- Posts Container -->
+                    <LinearLayout
+                        android:id="@+id/posts_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="@dimen/post_padding_horizontal"
+                        android:paddingTop="@dimen/margin_medium"
+                        android:paddingBottom="100dp"
+                    />
+
+                    <!-- Empty State -->
+                    <LinearLayout
+                        android:id="@+id/empty_state"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:visibility="gone"
+                        android:padding="@dimen/margin_xxlarge">
+
+                        <TextView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:gravity="center"
+                            android:text="🐾"
+                            android:textSize="48sp" />
+
+                        <TextView
+                            android:id="@+id/empty_state_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="No posts yet"
+                            android:textColor="#7A4F2B"
+                            android:textSize="@dimen/text_size_xxlarge"
+                            android:textStyle="bold"
+                            android:layout_marginTop="@dimen/margin_xxlarge" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Be the first to share a pet story!"
+                            android:textColor="#666666"
+                            android:textSize="@dimen/text_size_medium"
+                            android:layout_marginTop="@dimen/margin_medium" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tap the paw button below to create your first post"
+                            android:textColor="#999999"
+                            android:textSize="@dimen/text_size_small"
+                            android:layout_marginTop="@dimen/margin_small" />
+                    </LinearLayout>
+                </FrameLayout>
+            </ScrollView>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- Bottom Navigation - OVERLAPS system navigation bar (no padding) -->
+        <include
+            layout="@layout/bottom_nav_unified"
+            android:id="@+id/bottom_navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <!-- ADD THIS: Floating Paw Button that overlaps everything -->
+    <FrameLayout
+        android:id="@+id/floating_paw_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
-</LinearLayout>
+        <FrameLayout
+            android:id="@+id/nav_paw_post"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="28dp"
+            android:background="@drawable/circle_paw_background"
+            android:elevation="10dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/nav_paw_icon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/paw"
+                android:layout_gravity="center" />
+        </FrameLayout>
+    </FrameLayout>
+
+</FrameLayout>

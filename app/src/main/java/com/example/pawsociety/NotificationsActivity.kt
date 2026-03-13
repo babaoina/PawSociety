@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -56,7 +57,7 @@ class NotificationsActivity : AppCompatActivity() {
         markAllAsRead(currentUser.firebaseUid)
 
         // Back Button
-        findViewById<TextView>(R.id.btn_back).setOnClickListener {
+        findViewById<ImageView>(R.id.btn_back).setOnClickListener {
             finish()
         }
     }
@@ -69,15 +70,18 @@ class NotificationsActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         notificationsAdapter = NotificationsAdapter(notificationsList) { notification ->
             // Handle notification click
-            if (notification.type == "like" || notification.type == "comment") {
-                Toast.makeText(this, "Opening post...", Toast.LENGTH_SHORT).show()
-                // TODO: Navigate to post
-            } else if (notification.type == "follow") {
-                // Navigate to user profile
-                val intent = Intent(this, UserProfileActivity::class.java)
-                intent.putExtra("userId", notification.fromUserId)
-                intent.putExtra("userName", notification.fromUserName)
-                startActivity(intent)
+            when (notification.type) {
+                "like", "comment" -> {
+                    Toast.makeText(this, "Opening post...", Toast.LENGTH_SHORT).show()
+                    // TODO: Navigate to post
+                }
+                "follow" -> {
+                    // Navigate to user profile
+                    val intent = Intent(this, UserProfileActivity::class.java)
+                    intent.putExtra("userId", notification.fromUserId)
+                    intent.putExtra("userName", notification.fromUserName)
+                    startActivity(intent)
+                }
             }
         }
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -93,6 +97,7 @@ class NotificationsActivity : AppCompatActivity() {
                     val notifications = result.getOrNull()!!
                     notificationsList.clear()
                     notificationsList.addAll(notifications)
+                    notificationsList.sortByDescending { it.createdAt } // Newest first
                     notificationsAdapter.notifyDataSetChanged()
 
                     if (notifications.isEmpty()) {
@@ -124,7 +129,8 @@ class NotificationsActivity : AppCompatActivity() {
     }
 }
 
-// Notification Adapter
+// Updated Notification Adapter with Instagram style
+// Updated Notification Adapter with Instagram style
 class NotificationsAdapter(
     private val notifications: List<ApiNotification>,
     private val onItemClick: (ApiNotification) -> Unit
@@ -132,41 +138,99 @@ class NotificationsAdapter(
 
     class NotificationViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val userIcon: TextView = itemView.findViewById(R.id.notif_user_icon)
+        val userImage: ImageView = itemView.findViewById(R.id.notif_user_image)
         val message: TextView = itemView.findViewById(R.id.notif_message)
         val time: TextView = itemView.findViewById(R.id.notif_time)
+        val actionImage: ImageView = itemView.findViewById(R.id.notif_action_image)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotificationViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_notification, parent, false)
+            .inflate(R.layout.item_notification_instagram, parent, false)
         return NotificationViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: NotificationViewHolder, position: Int) {
         val notif = notifications[position]
 
-        // Set message
-        holder.message.text = notif.message
+        // Set message with bold username (you can use Html.fromHtml if needed)
+        val messageText = when (notif.type) {
+            "like" -> "${notif.fromUserName} liked your post"
+            "comment" -> {
+                if (notif.message.length > 50) {
+                    "${notif.fromUserName} commented: ${notif.message.substring(0, 47)}..."
+                } else {
+                    "${notif.fromUserName} commented: ${notif.message}"
+                }
+            }
+            "follow" -> "${notif.fromUserName} started following you"
+            else -> notif.message
+        }
+        holder.message.text = messageText
 
         // Set time
         holder.time.text = getTimeAgo(notif.createdAt)
 
-        // Set user icon (first letter)
-        val firstLetter = if (notif.fromUserName.isNotEmpty()) {
-            notif.fromUserName.first().toString().uppercase()
-        } else {
-            "?"
+        // Set action image based on type
+        when (notif.type) {
+            "like" -> {
+                holder.actionImage.setImageResource(R.drawable.ic_heart_filled)
+                holder.actionImage.visibility = View.VISIBLE
+            }
+            "comment" -> {
+                holder.actionImage.setImageResource(R.drawable.comment)
+                holder.actionImage.visibility = View.VISIBLE
+            }
+            "follow" -> {
+                holder.actionImage.setImageResource(R.drawable.add)
+                holder.actionImage.visibility = View.VISIBLE
+            }
+            else -> holder.actionImage.visibility = View.GONE
         }
-        holder.userIcon.text = firstLetter
+        holder.actionImage.setColorFilter(Color.parseColor("#7A4F2B"))
 
-        // Set icon color based on type
-        val color = when (notif.type) {
-            "like" -> "#FF6B35"
-            "comment" -> "#4CAF50"
-            "follow" -> "#2196F3"
-            else -> "#7A4F2B"
+        // ===== FIXED: Load user profile picture properly =====
+        if (!notif.fromUserImage.isNullOrEmpty() && notif.fromUserImage != "null") {
+            val fullImageUrl = if (notif.fromUserImage.startsWith("http")) {
+                notif.fromUserImage
+            } else {
+                // Make sure to use the correct base URL without double slashes
+                val baseUrl = com.example.pawsociety.api.ApiClient.FULL_BASE_URL
+                val cleanBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
+                val cleanImageUrl = if (notif.fromUserImage.startsWith("/")) notif.fromUserImage else "/$notif.fromUserImage"
+                "$cleanBaseUrl$cleanImageUrl"
+            }
+
+            holder.userIcon.visibility = View.GONE
+            holder.userImage.visibility = View.VISIBLE
+
+            Glide.with(holder.itemView.context)
+                .load(fullImageUrl)
+                .circleCrop()
+                .placeholder(R.drawable.circle_solid_profile)
+                .error(R.drawable.circle_solid_profile)
+                .into(holder.userImage)
+        } else {
+            // Show text icon with first letter
+            holder.userImage.visibility = View.GONE
+            holder.userIcon.visibility = View.VISIBLE
+
+            val firstLetter = if (notif.fromUserName.isNotEmpty()) {
+                notif.fromUserName.first().toString().uppercase()
+            } else {
+                "?"
+            }
+            holder.userIcon.text = firstLetter
+
+            // Set icon color based on type
+            val color = when (notif.type) {
+                "like" -> "#FF6B35"
+                "comment" -> "#4CAF50"
+                "follow" -> "#2196F3"
+                else -> "#7A4F2B"
+            }
+            holder.userIcon.setBackgroundColor(Color.parseColor(color))
         }
-        holder.userIcon.setBackgroundColor(Color.parseColor(color))
 
         holder.itemView.setOnClickListener {
             onItemClick(notif)
@@ -179,27 +243,23 @@ class NotificationsAdapter(
         return try {
             val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
             format.timeZone = TimeZone.getTimeZone("UTC")
-            val date = format.parse(dateString)
+            val date = format.parse(dateString) ?: return ""
+
             val now = Date()
+            val diff = now.time - date.time
+            val seconds = diff / 1000
+            val minutes = seconds / 60
+            val hours = minutes / 60
+            val days = hours / 24
 
-            if (date != null) {
-                val diff = now.time - date.time
-                val seconds = diff / 1000
-                val minutes = seconds / 60
-                val hours = minutes / 60
-                val days = hours / 24
-
-                when {
-                    days > 0 -> "${days}d ago"
-                    hours > 0 -> "${hours}h ago"
-                    minutes > 0 -> "${minutes}m ago"
-                    else -> "Just now"
-                }
-            } else {
-                "Unknown"
+            when {
+                days > 0 -> "${days}d"
+                hours > 0 -> "${hours}h"
+                minutes > 0 -> "${minutes}m"
+                else -> "now"
             }
         } catch (e: Exception) {
-            "Unknown"
+            ""
         }
     }
 }

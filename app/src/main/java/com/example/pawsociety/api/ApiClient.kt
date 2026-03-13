@@ -9,8 +9,12 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
 
     // FOR EMULATOR - Use your computer's actual IP
-    private const val BASE_URL = "http://192.168.254.105:5000/api/"
-    const val FULL_BASE_URL = "http://192.168.254.105:5000"
+    // Made public by removing 'private' keyword
+    const val BASE_URL = "http://10.0.2.2:5000/api/"
+    const val FULL_BASE_URL = "http://10.0.2.2:5000"
+
+    // For image loading without the /api prefix
+    const val BASE_URL_NO_API = "http://10.0.2.2:5000/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -32,7 +36,6 @@ object ApiClient {
     val apiService: PawSocietyApi = retrofit.create(PawSocietyApi::class.java)
     val uploadService: UploadApi = retrofit.create(UploadApi::class.java)
 
-
     /**
      * Update base URL for different environments
      * Call this before making API requests if needed
@@ -50,4 +53,9 @@ object ApiClient {
      * Get the current base URL
      */
     fun getBaseUrl(): String = BASE_URL
+
+    /**
+     * Get the full base URL (without /api) for image loading
+     */
+    fun getImageBaseUrl(): String = BASE_URL_NO_API
 }

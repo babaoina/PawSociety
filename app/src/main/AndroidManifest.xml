@@ -60,65 +60,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Search Activity -->
         <activity
-            android:name=".LoginActivity"
-            android:exported="false" />
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false" />
-        <activity
-            android:name=".HomeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".UserProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".FindActivity"
-            android:exported="false" />
-        <activity
-            android:name=".InboxActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ChatActivity"
-            android:exported="false" />
-        <activity
-            android:name=".CreatePostActivity"
-            android:exported="false" />
-        <activity
-            android:name=".NotificationsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".FollowersFollowingActivity"
-            android:exported="false" />
-        <activity
-            android:name=".PostDetailsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ImageGalleryActivity"
+            android:name=".SearchUsersActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.NoActionBar" />
-        <activity
-            android:name=".EditPostActivity"
-            android:exported="false" />
-        <activity
-            android:name=".DeleteAccountActivity"
-            android:exported="false" />
-        <!-- Activities -->
-        <activity
-            android:name=".SplashActivity"
-            android:exported="true"
-            android:theme="@style/Theme.PawSociety">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".LoginActivity"
@@ -171,18 +118,26 @@
             android:exported="false" />
         <activity
             android:name=".BlockedUsersActivity"
-        android:exported="false" />
-
+            android:exported="false" />
         <activity
             android:name=".PostViewActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
-
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            android:theme="@style/Theme.PawSociety.UCrop" />
 
+
+
+        <activity android:name=".EditProfileActivity" />
+        <activity android:name=".HiddenPostsActivity" />
+        <activity android:name=".NotificationsSettingsActivity" />
+        <activity android:name=".PrivacyActivity" />
+        <activity android:name=".SecurityActivity" />
+        <activity android:name=".HelpCenterActivity" />
+        <activity android:name=".AboutActivity" />
+        <activity android:name=".WebViewActivity" />
 
 
     </application>

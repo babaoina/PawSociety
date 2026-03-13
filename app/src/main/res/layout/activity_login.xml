@@ -17,228 +17,336 @@
         android:layout_height="match_parent"
         android:background="#80FFFFFF" />
 
-    <!-- Content - Centered and Non-Scrollable -->
-    <LinearLayout
+    <!-- Content - Centered and Scrollable for smaller screens -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center_vertical"
-        android:padding="32dp">
+        android:fillViewport="true">
 
-        <!-- App Name -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="PawSociety"
-            android:textColor="#7A4F2B"
-            android:textSize="42sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium"
-            android:letterSpacing="0.05" />
-
-        <!-- Tagline -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="12dp"
-            android:text="Because Every Pet Deserves a Home"
-            android:textColor="#7A4F2B"
-            android:textSize="15sp"
-            android:alpha="0.9" />
-
-        <!-- Welcome Title -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="30dp"
-            android:text="WELCOME"
-            android:textColor="#000000"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.03" />
-
-        <!-- Welcome Message -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp"
-            android:text="With many pets waiting for a loving home, PawSociety helps you discover adoptable pets and reconnect lost animals with their families."
-            android:textColor="#555555"
-            android:textSize="14sp"
-            android:lineSpacingExtra="6dp"
-            android:gravity="center"
-            android:paddingHorizontal="8dp" />
-
-        <!-- Card Container for Form -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
             android:orientation="vertical"
-            android:padding="24dp"
-            android:background="@drawable/card_rounded"
-            android:elevation="8dp">
+            android:gravity="center_vertical"
+            android:padding="32dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="40dp">
 
-            <!-- Email Label -->
+            <!-- App Name -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Email"
+                android:layout_gravity="center_horizontal"
+                android:text="PawSociety"
+                android:textColor="#7A4F2B"
+                android:textSize="42sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.05" />
+
+            <!-- Tagline -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:text="Because Every Pet Deserves a Home"
                 android:textColor="#7A4F2B"
                 android:textSize="15sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"
-                android:layout_marginStart="4dp" />
+                android:alpha="0.9" />
 
-            <!-- Email Input with Error -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <EditText
-                    android:id="@+id/email_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:hint="Enter your email"
-                    android:inputType="textEmailAddress"
-                    android:padding="16dp"
-                    android:background="@drawable/input_oval"
-                    android:textSize="14sp"
-                    android:paddingEnd="16dp" />
-
-                <TextView
-                    android:id="@+id/email_error"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="56dp"
-                    android:text=""
-                    android:textColor="#F44336"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
-            </FrameLayout>
-
-            <!-- Spacer -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="20dp" />
-
-            <!-- Password Label -->
+            <!-- Welcome Title -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Password"
-                android:textColor="#7A4F2B"
-                android:textSize="15sp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="30dp"
+                android:text="WELCOME"
+                android:textColor="#000000"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp"
-                android:layout_marginStart="4dp" />
+                android:letterSpacing="0.03" />
 
-            <!-- Password Input with Eye Icon and Error -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="54dp">
-
-                    <EditText
-                        android:id="@+id/password_input"
-                        android:layout_width="match_parent"
-                        android:layout_height="54dp"
-                        android:hint="Enter your password"
-                        android:inputType="textPassword"
-                        android:padding="16dp"
-                        android:background="@drawable/input_oval"
-                        android:textSize="14sp"
-                        android:paddingEnd="50dp" />
-
-                    <ImageView
-                        android:id="@+id/eye_icon"
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:layout_marginEnd="12dp"
-                        android:src="@drawable/ic_eye_closed"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?android:attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Show/Hide Password" />
-                </RelativeLayout>
-
-                <TextView
-                    android:id="@+id/password_error"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="56dp"
-                    android:text=""
-                    android:textColor="#F44336"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
-            </FrameLayout>
-
-            <!-- Spacer -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="20dp" />
-
-            <!-- Forgot Password -->
+            <!-- Welcome Message -->
             <TextView
-                android:id="@+id/forgot_password"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="24dp"
-                android:text="Forgot Password?"
-                android:textColor="#B88B4A"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:padding="4dp" />
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="With many pets waiting for a loving home, PawSociety helps you discover adoptable pets and reconnect lost animals with their families."
+                android:textColor="#555555"
+                android:textSize="14sp"
+                android:lineSpacingExtra="6dp"
+                android:gravity="center"
+                android:paddingHorizontal="8dp" />
 
-            <!-- Buttons Row -->
+            <!-- Card Container for Form -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginTop="4dp">
+                android:layout_marginTop="20dp"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:background="@drawable/card_rounded"
+                android:elevation="8dp">
 
-                <!-- Sign Up Button - OVAL -->
-                <Button
-                    android:id="@+id/signup_button"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/button_oval_white"
-                    android:text="Sign Up"
+                <!-- Email Label -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Email"
                     android:textColor="#7A4F2B"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    android:stateListAnimator="@null" />
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginStart="4dp" />
 
-                <!-- Log In Button - OVAL -->
-                <Button
-                    android:id="@+id/login_button"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/button_oval_brown"
-                    android:text="Log In"
-                    android:textColor="#FFFFFF"
+                <!-- Email Input with Error -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <EditText
+                        android:id="@+id/email_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="54dp"
+                        android:hint="Enter your email"
+                        android:inputType="textEmailAddress"
+                        android:padding="16dp"
+                        android:background="@drawable/input_oval"
+                        android:textSize="14sp"
+                        android:paddingEnd="16dp" />
+
+                    <TextView
+                        android:id="@+id/email_error"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="56dp"
+                        android:text=""
+                        android:textColor="#F44336"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <!-- Spacer -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="20dp" />
+
+                <!-- Password Label -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Password"
+                    android:textColor="#7A4F2B"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    android:stateListAnimator="@null" />
+                    android:layout_marginBottom="8dp"
+                    android:layout_marginStart="4dp" />
+
+                <!-- Password Input with Eye Icon and Error -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="54dp">
+
+                        <EditText
+                            android:id="@+id/password_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="54dp"
+                            android:hint="Enter your password"
+                            android:inputType="textPassword"
+                            android:padding="16dp"
+                            android:background="@drawable/input_oval"
+                            android:textSize="14sp"
+                            android:paddingEnd="50dp" />
+
+                        <ImageView
+                            android:id="@+id/eye_icon"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:layout_marginEnd="12dp"
+                            android:src="@drawable/ic_eye_closed"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?android:attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Show/Hide Password" />
+                    </RelativeLayout>
+
+                    <TextView
+                        android:id="@+id/password_error"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="56dp"
+                        android:text=""
+                        android:textColor="#F44336"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <!-- Spacer -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="20dp" />
+
+                <!-- Forgot Password -->
+                <TextView
+                    android:id="@+id/forgot_password"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="24dp"
+                    android:text="Forgot Password?"
+                    android:textColor="#B88B4A"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:padding="4dp" />
+
+                <!-- Buttons Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginTop="4dp">
+
+                    <!-- Sign Up Button - OVAL with FIXED text visibility -->
+                    <Button
+                        android:id="@+id/signup_button"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/button_oval_white"
+                        android:text="Sign Up"
+                        android:textColor="#7A4F2B"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:stateListAnimator="@null" />
+
+                    <!-- Log In Button - OVAL -->
+                    <Button
+                        android:id="@+id/login_button"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/button_oval_brown"
+                        android:text="Log In"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:stateListAnimator="@null" />
+
+                </LinearLayout>
+
+                <!-- Divider OR -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="16dp">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#E0E0E0" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="OR"
+                        android:textColor="#999999"
+                        android:textSize="14sp"
+                        android:paddingHorizontal="16dp" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#E0E0E0" />
+                </LinearLayout>
+
+                <!-- Google Sign-In Button - DIFFERENT STYLE -->
+                <LinearLayout
+                    android:id="@+id/google_signin_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingHorizontal="16dp"
+                    android:layout_marginBottom="8dp">
+
+                    <ImageView
+                        android:id="@+id/google_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_google"
+                        android:layout_marginEnd="12dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sign in with Google"
+                        android:textColor="#666666"
+                        android:textSize="16sp"
+                        android:textStyle="normal" />
+                </LinearLayout>
+
+                <!-- Alternative: Facebook Sign-In (Optional) -->
+                <LinearLayout
+                    android:id="@+id/facebook_signin_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:background="@drawable/button_facebook"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingHorizontal="16dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:id="@+id/facebook_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_facebook"
+                        android:layout_marginEnd="12dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Continue with Facebook"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
             </LinearLayout>
-        </LinearLayout>
 
-    </LinearLayout>
+            <!-- Terms and Privacy -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="By continuing, you agree to our Terms of Service and Privacy Policy"
+                android:textColor="#999999"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:lineSpacingExtra="2dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
 </FrameLayout>

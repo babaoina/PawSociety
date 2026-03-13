@@ -31,6 +31,34 @@ class UserRepository {
     }
 
     /**
+     * Get multiple users by their UIDs (batch fetch)
+     * Used for BlockedUsersActivity to load faster
+     */
+    suspend fun getUsersBatch(userIds: List<String>): Result<Map<String, BatchUser>> = withContext(Dispatchers.IO) {
+        try {
+            if (userIds.isEmpty()) {
+                return@withContext Result.success(emptyMap())
+            }
+
+            val userIdsString = userIds.joinToString(",")
+            val response = apiService.getUsersBatch(userIdsString)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.success) {
+                    Result.success(body.users ?: emptyMap())
+                } else {
+                    Result.failure(Exception(body?.message ?: "Failed to get users"))
+                }
+            } else {
+                Result.failure(Exception(response.errorBody()?.string() ?: "Failed to get users"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Delete user account
      */
     suspend fun deleteUser(firebaseUid: String): Result<Unit> = withContext(Dispatchers.IO) {
@@ -142,6 +170,35 @@ class UserRepository {
                 Result.failure(Exception(response.errorBody()?.string() ?: "Failed to update user"))
             }
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    /**
+     * Search users by username or full name
+     */
+    suspend fun searchUsers(
+        query: String,
+        limit: Int = 50,
+        skip: Int = 0
+    ): Result<List<ApiUser>> = withContext(Dispatchers.IO) {
+        try {
+            println("🔍 Searching users for: '$query'")
+            val response = apiService.searchUsers(query, limit, skip)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.success && body.users != null) {
+                    println("✅ Found ${body.users.size} users")
+                    Result.success(body.users)
+                } else {
+                    Result.success(emptyList())
+                }
+            } else {
+                println("❌ Search failed: ${response.errorBody()?.string()}")
+                Result.success(emptyList())
+            }
+        } catch (e: Exception) {
+            println("❌ Search exception: ${e.message}")
             Result.failure(e)
         }
     }

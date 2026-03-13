@@ -25,7 +25,12 @@
     <dimen name="margin_xlarge">12dp</dimen>
     <dimen name="margin_xxlarge">16dp</dimen>
 
-    <!-- Post Spacing - NEW VALUES FOR WIDER POSTS -->
+    <!-- Negative margins -->
+    <dimen name="margin_negative_tiny">-2dp</dimen>
+    <dimen name="margin_negative_small">-4dp</dimen>
+    <dimen name="margin_negative_medium">-8dp</dimen>
+
+    <!-- Post Spacing -->
     <dimen name="post_margin_bottom">12dp</dimen>
     <dimen name="post_padding_horizontal">8dp</dimen>
     <dimen name="post_image_height">200dp</dimen>
@@ -59,5 +64,7 @@
     <dimen name="badge_height">16dp</dimen>
     <dimen name="badge_text_size">8sp</dimen>
 
-
+    <!-- System Bar Padding -->
+    <dimen name="status_bar_padding">24dp</dimen>
+    <dimen name="navigation_bar_padding">56dp</dimen>
 </resources>

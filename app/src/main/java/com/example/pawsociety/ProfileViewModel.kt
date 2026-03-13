@@ -132,7 +132,8 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    private fun loadUserPosts(userId: String?) {
+    // FIXED: Changed from private to public
+    fun loadUserPosts(userId: String?) {
         println("📊 loadUserPosts called with userId: $userId")
 
         // Add null check at the beginning
@@ -158,6 +159,20 @@ class ProfileViewModel : ViewModel() {
                 println("❌ Exception in loadUserPosts: ${e.message}")
                 e.printStackTrace()
                 _userPosts.value = emptyList()
+            }
+        }
+    }
+
+    // Public method to refresh all data
+    fun refreshData() {
+        println("📊 refreshData called")
+        val currentUser = _user.value
+        if (currentUser != null) {
+            if (!currentUser.firebaseUid.isNullOrEmpty()) {
+                loadFavoritePosts(currentUser.firebaseUid)
+                loadUserPosts(currentUser.firebaseUid)
+                loadHighlights()
+                loadPets(currentUser.firebaseUid)
             }
         }
     }
@@ -251,6 +266,7 @@ class ProfileViewModel : ViewModel() {
                     println("✅ ProfileViewModel: Profile updated successfully")
                     _user.value = updatedUser
                     sessionMgr.saveUserSession(updatedUser)
+                    // Auto-refresh after update
                     loadUserData()
                 } else {
                     val errorMsg = result.exceptionOrNull()?.message ?: "Failed to update profile"
@@ -262,17 +278,6 @@ class ProfileViewModel : ViewModel() {
                 println("❌ Exception in updateProfile: ${e.message}")
                 e.printStackTrace()
                 _isLoading.value = false
-            }
-        }
-    }
-
-    fun refreshData() {
-        println("📊 refreshData called")
-        val currentUser = _user.value
-        if (currentUser != null) {
-            if (!currentUser.firebaseUid.isNullOrEmpty()) {
-                loadFavoritePosts(currentUser.firebaseUid)
-                loadUserPosts(currentUser.firebaseUid)
             }
         }
     }

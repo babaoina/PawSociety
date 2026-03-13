@@ -1,5 +1,6 @@
 package com.example.pawsociety
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,6 +11,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +20,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.pawsociety.data.repository.PostRepository
 import com.example.pawsociety.data.repository.UploadRepository
@@ -32,46 +35,77 @@ import java.util.*
 
 class CreatePostActivity : AppCompatActivity() {
 
-    private var selectedStatus: String = "Lost"
+    // Views
     private lateinit var etPetName: EditText
     private lateinit var actPetType: AutoCompleteTextView
+    private lateinit var etAge: EditText
+    private lateinit var etWeight: EditText
     private lateinit var etReward: EditText
     private lateinit var tvLocation: TextView
     private lateinit var btnSelectLocation: Button
     private lateinit var etContact: EditText
     private lateinit var etDescription: EditText
-
     private lateinit var btnStatusLost: TextView
     private lateinit var btnStatusFound: TextView
     private lateinit var btnStatusAdoption: TextView
-
+    private lateinit var btnGenderMale: TextView
+    private lateinit var btnGenderFemale: TextView
+    private lateinit var btnGenderUnknown: TextView
     private lateinit var layoutReward: LinearLayout
-
     private lateinit var btnPost: TextView
     private lateinit var btnCancel: TextView
+    private lateinit var btnAddPhoto: TextView
+    private lateinit var photoCountBadge: TextView
+    private lateinit var carouselContainer: FrameLayout
+    private lateinit var photoEmptyState: LinearLayout
+    private lateinit var photoViewPager: ViewPager2
+    private lateinit var btnRemoveCurrentPhoto: ImageView
+    private lateinit var photoIndicatorContainer: LinearLayout
+    private lateinit var imagePreviewContainer: LinearLayout
+    private lateinit var thumbnailScroll: HorizontalScrollView
+    private lateinit var thumbnailContainer: LinearLayout
+    private lateinit var photoUploadProgress: ProgressBar
 
-    // Error TextViews
+    // Error Views
     private lateinit var errorPetName: TextView
     private lateinit var errorPetType: TextView
+    private lateinit var errorAge: TextView
+    private lateinit var errorWeight: TextView
     private lateinit var errorStatus: TextView
     private lateinit var errorLocation: TextView
     private lateinit var errorContact: TextView
     private lateinit var errorDescription: TextView
 
-    // Adapter for breed suggestions
-    private lateinit var breedAdapter: SuggestionsAdapter
+    private lateinit var layoutCategorySelector: LinearLayout
+    private lateinit var layoutBreedSelector: LinearLayout
+    private lateinit var btnBackToCategories: ImageView
+    private lateinit var layoutCategoryDogs: LinearLayout
+    private lateinit var layoutCategoryCats: LinearLayout
+    private lateinit var layoutCategoryFish: LinearLayout
+    private lateinit var layoutCategoryBirds: LinearLayout
+    private lateinit var ivCategoryDogs: ImageView
+    private lateinit var ivCategoryCats: ImageView
+    private lateinit var ivCategoryFish: ImageView
+    private lateinit var ivCategoryBirds: ImageView
+    private lateinit var tvCategoryDogs: TextView
+    private lateinit var tvCategoryCats: TextView
+    private lateinit var tvCategoryFish: TextView
+    private lateinit var tvCategoryBirds: TextView
+    private var selectedCategory = ""
 
-    // Image upload with cropping
-    private val uploadRepository = UploadRepository()
+    // Data
+    private var selectedStatus = "Lost"
+    private var selectedGender = "Unknown"
     private val selectedImages = mutableListOf<Uri>()
     private val tempUris = mutableListOf<Uri>()
     private var currentImageUri: Uri? = null
-
-    private lateinit var btnAddPhoto: TextView
-    private lateinit var photoCountBadge: TextView
-    private lateinit var imagePreviewContainer: LinearLayout
-
     private lateinit var sessionManager: SessionManager
+    private lateinit var photoPagerAdapter: PhotoPagerAdapter
+    private var currentPhotoPosition = 0
+    private lateinit var breedAdapter: SuggestionsAdapter
+
+    // Repositories
+    private val uploadRepository = UploadRepository()
     private val postRepository = PostRepository()
 
     companion object {
@@ -80,6 +114,7 @@ class CreatePostActivity : AppCompatActivity() {
         private const val REQUEST_IMAGE_CAPTURE = 1003
         private const val REQUEST_CODE_CAMERA = 1004
         private const val REQUEST_CODE_STORAGE = 1005
+        private const val TAG = "CreatePostActivity"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,64 +122,118 @@ class CreatePostActivity : AppCompatActivity() {
         setContentView(R.layout.activity_create_post)
 
         sessionManager = SessionManager(this)
-
-        // Check if user is logged in
         val currentUser = sessionManager.getCurrentUser()
-        if (currentUser == null) {
-            Toast.makeText(this, "Please login to create posts", Toast.LENGTH_SHORT).show()
+
+        if (currentUser == null || currentUser.firebaseUid.isNullOrEmpty()) {
+            Toast.makeText(this, "Session error. Please login again.", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
-
-        // Verify user has valid UID
-        if (currentUser.firebaseUid.isNullOrEmpty()) {
-            println("❌ CreatePostActivity: User has null/empty UID!")
-            Toast.makeText(this, "User account error: Missing UID. Please logout and login again.", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-
-        println("✅ CreatePostActivity: User verified - ${currentUser.username} with UID: ${currentUser.firebaseUid}")
 
         initializeViews()
         setupAdapters()
         setupValidationListeners()
-        setupClickListeners(currentUser)
+        setupClickListeners()
+
+        // Set initial gender selection
+        updateGenderSelection("Unknown", btnGenderUnknown)
     }
 
     private fun initializeViews() {
+        // ===== INITIALIZE ALL VIEWS FIRST =====
+
+        // Category selector views - INITIALIZE THESE FIRST!
+        layoutCategorySelector = findViewById(R.id.layout_category_selector)
+        layoutBreedSelector = findViewById(R.id.layout_breed_selector)
+        btnBackToCategories = findViewById(R.id.btn_back_to_categories)
+
+        // Category layouts
+        layoutCategoryDogs = findViewById(R.id.layout_category_dogs)
+        layoutCategoryCats = findViewById(R.id.layout_category_cats)
+        layoutCategoryFish = findViewById(R.id.layout_category_fish)
+        layoutCategoryBirds = findViewById(R.id.layout_category_birds)
+
+        // Category images
+        ivCategoryDogs = findViewById(R.id.iv_category_dogs)
+        ivCategoryCats = findViewById(R.id.iv_category_cats)
+        ivCategoryFish = findViewById(R.id.iv_category_fish)
+        ivCategoryBirds = findViewById(R.id.iv_category_birds)
+
+        // Category text views
+        tvCategoryDogs = findViewById(R.id.tv_category_dogs)
+        tvCategoryCats = findViewById(R.id.tv_category_cats)
+        tvCategoryFish = findViewById(R.id.tv_category_fish)
+        tvCategoryBirds = findViewById(R.id.tv_category_birds)
+
+        // ===== MAIN INPUT FIELDS =====
         etPetName = findViewById(R.id.et_pet_name)
         actPetType = findViewById(R.id.act_pet_type)
+        etAge = findViewById(R.id.et_age)
+        etWeight = findViewById(R.id.et_weight)
         etReward = findViewById(R.id.et_reward)
         tvLocation = findViewById(R.id.tv_location)
         btnSelectLocation = findViewById(R.id.btn_select_location)
         etContact = findViewById(R.id.et_contact)
         etDescription = findViewById(R.id.et_description)
 
+        // ===== STATUS BUTTONS =====
         btnStatusLost = findViewById(R.id.btn_status_lost)
         btnStatusFound = findViewById(R.id.btn_status_found)
         btnStatusAdoption = findViewById(R.id.btn_status_adoption)
 
-        layoutReward = findViewById(R.id.layout_reward)
+        // ===== GENDER BUTTONS =====
+        btnGenderMale = findViewById(R.id.btn_gender_male)
+        btnGenderFemale = findViewById(R.id.btn_gender_female)
+        btnGenderUnknown = findViewById(R.id.btn_gender_unknown)
 
+        // ===== ACTION BUTTONS =====
+        layoutReward = findViewById(R.id.layout_reward)
         btnPost = findViewById(R.id.btn_post)
         btnCancel = findViewById(R.id.btn_cancel)
-
         btnAddPhoto = findViewById(R.id.btn_add_photo)
         photoCountBadge = findViewById(R.id.tv_photo_count)
+
+        // ===== PHOTO CAROUSEL VIEWS =====
+        carouselContainer = findViewById(R.id.carousel_container)
+        photoEmptyState = findViewById(R.id.photo_empty_state)
+        photoViewPager = findViewById(R.id.photo_view_pager)
+        btnRemoveCurrentPhoto = findViewById(R.id.btn_remove_current_photo)
+        photoIndicatorContainer = findViewById(R.id.photo_indicator_container)
+        thumbnailScroll = findViewById(R.id.thumbnail_scroll)
+        thumbnailContainer = findViewById(R.id.thumbnail_container)
+        photoUploadProgress = findViewById(R.id.photo_upload_progress)
         imagePreviewContainer = findViewById(R.id.image_preview_container)
 
-        // Create error TextViews
+        // ===== INITIALIZE ADAPTERS =====
+        photoPagerAdapter = PhotoPagerAdapter(selectedImages) { uri ->
+            // Handle click if needed
+        }
+        photoViewPager.adapter = photoPagerAdapter
+
+        // ===== SETUP VIEWPAGER CALLBACK =====
+        photoViewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                currentPhotoPosition = position
+                updatePhotoIndicators(position)
+            }
+        })
+
+        // ===== CREATE ERROR TEXTVIEWS =====
         errorPetName = createErrorTextView()
         errorPetType = createErrorTextView()
+        errorAge = createErrorTextView()
+        errorWeight = createErrorTextView()
         errorStatus = createErrorTextView()
         errorLocation = createErrorTextView()
         errorContact = createErrorTextView()
         errorDescription = createErrorTextView()
 
-        // Add error views after each input
+        // ===== ADD ERROR VIEWS AFTER EACH INPUT =====
         addErrorViewAfter(etPetName, errorPetName)
         addErrorViewAfter(actPetType, errorPetType)
+        addErrorViewAfter(etAge, errorAge)
+        addErrorViewAfter(etWeight, errorWeight)
         addErrorViewAfter(btnSelectLocation, errorLocation)
         addErrorViewAfter(etContact, errorContact)
         addErrorViewAfter(etDescription, errorDescription)
@@ -153,12 +242,14 @@ class CreatePostActivity : AppCompatActivity() {
         val statusLayout = findViewById<LinearLayout>(R.id.status_buttons_layout)
         addErrorViewAfter(statusLayout, errorStatus)
 
+        // ===== SET INITIAL STATES =====
         // Set initial status
         updateStatusButtons(btnStatusLost)
 
         // Initialize location TextView
         tvLocation.text = ""
         tvLocation.visibility = View.GONE
+
         updatePhotoCountBadge()
     }
 
@@ -186,17 +277,119 @@ class CreatePostActivity : AppCompatActivity() {
     }
 
     private fun setupAdapters() {
-        // Breed suggestions adapter
+        // Initially show empty adapter until category is selected
         breedAdapter = SuggestionsAdapter()
-        breedAdapter.setData(PetData.getAllBreeds())
+        breedAdapter.setData(emptyList())
         actPetType.setAdapter(breedAdapter)
         actPetType.threshold = 1
 
-        // Handle item clicks for breed
-        actPetType.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            val selected = breedAdapter.getItem(position) as String
-            actPetType.setText(selected)
-            validatePetType()
+        // Show category selector first, hide breed selector
+        layoutCategorySelector.visibility = View.VISIBLE
+        layoutBreedSelector.visibility = View.GONE
+
+        setupCategoryClickListeners()
+    }
+
+    private fun setupCategoryClickListeners() {
+        layoutCategoryDogs.setOnClickListener {
+            selectedCategory = "Dogs"
+            highlightCategory(layoutCategoryDogs, ivCategoryDogs, tvCategoryDogs)
+            showBreedSelector(PetData.dogBreeds)
+        }
+
+        layoutCategoryCats.setOnClickListener {
+            selectedCategory = "Cats"
+            highlightCategory(layoutCategoryCats, ivCategoryCats, tvCategoryCats)
+            showBreedSelector(PetData.catBreeds)
+        }
+
+        layoutCategoryFish.setOnClickListener {
+            selectedCategory = "Fish"
+            highlightCategory(layoutCategoryFish, ivCategoryFish, tvCategoryFish)
+            showBreedSelector(PetData.fishBreeds)
+        }
+
+        layoutCategoryBirds.setOnClickListener {
+            selectedCategory = "Birds"
+            highlightCategory(layoutCategoryBirds, ivCategoryBirds, tvCategoryBirds)
+            showBreedSelector(PetData.birdBreeds)
+        }
+
+        btnBackToCategories.setOnClickListener {
+            showCategorySelector()
+        }
+    }
+
+    private fun highlightCategory(selectedLayout: LinearLayout, selectedImage: ImageView, selectedText: TextView) {
+        // Reset all categories to default
+        val categories = listOf(
+            layoutCategoryDogs to Pair(ivCategoryDogs, tvCategoryDogs),
+            layoutCategoryCats to Pair(ivCategoryCats, tvCategoryCats),
+            layoutCategoryFish to Pair(ivCategoryFish, tvCategoryFish),
+            layoutCategoryBirds to Pair(ivCategoryBirds, tvCategoryBirds)
+        )
+
+        categories.forEach { (layout, views) ->
+            val (imageView, textView) = views
+            // Reset to default brown color
+            imageView.setColorFilter(Color.parseColor("#7A4F2B"))
+            textView.setTextColor(Color.parseColor("#7A4F2B"))
+            layout.alpha = 1.0f
+        }
+
+        // Highlight selected category
+        selectedImage.setColorFilter(Color.parseColor("#B88B4A")) // Lighter brown for selected
+        selectedText.setTextColor(Color.parseColor("#B88B4A"))
+        selectedLayout.alpha = 1.0f
+
+        // Optional: Add a scale animation
+        selectedLayout.animate()
+            .scaleX(1.1f)
+            .scaleY(1.1f)
+            .setDuration(100)
+            .withEndAction {
+                selectedLayout.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(100)
+                    .start()
+            }
+            .start()
+    }
+
+    private fun showBreedSelector(breeds: List<String>) {
+        layoutCategorySelector.visibility = View.GONE
+        layoutBreedSelector.visibility = View.VISIBLE
+
+        breedAdapter.setData(breeds)
+        actPetType.setText("") // Clear any previous text
+
+        // Show keyboard and focus on breed input
+        actPetType.requestFocus()
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.showSoftInput(actPetType, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun showCategorySelector() {
+        layoutCategorySelector.visibility = View.VISIBLE
+        layoutBreedSelector.visibility = View.GONE
+        actPetType.setText("") // Clear breed input
+        selectedCategory = ""
+
+        // Reset all category highlighting
+        val categories = listOf(
+            layoutCategoryDogs to Pair(ivCategoryDogs, tvCategoryDogs),
+            layoutCategoryCats to Pair(ivCategoryCats, tvCategoryCats),
+            layoutCategoryFish to Pair(ivCategoryFish, tvCategoryFish),
+            layoutCategoryBirds to Pair(ivCategoryBirds, tvCategoryBirds)
+        )
+
+        categories.forEach { (layout, views) ->
+            val (imageView, textView) = views
+            imageView.setColorFilter(Color.parseColor("#7A4F2B"))
+            textView.setTextColor(Color.parseColor("#7A4F2B"))
+            layout.scaleX = 1.0f
+            layout.scaleY = 1.0f
         }
     }
 
@@ -237,7 +430,63 @@ class CreatePostActivity : AppCompatActivity() {
 
         actPetType.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT) {
-                btnSelectLocation.requestFocus()
+                etAge.requestFocus()
+                true
+            } else {
+                false
+            }
+        }
+
+        // ===== AGE VALIDATION =====
+        etAge.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                validateAge()
+            }
+            override fun afterTextChanged(s: Editable?) {
+                // Format age input (allow numbers and text like "years", "months")
+                val input = s.toString()
+                if (input.matches(Regex("^\\d+$"))) {
+                    // If just numbers, keep as is
+                } else if (input.matches(Regex("^\\d+\\s*(year|month|yr|mo)s?$", RegexOption.IGNORE_CASE))) {
+                    // Valid format with unit
+                }
+            }
+        })
+
+        etAge.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT) {
+                etWeight.requestFocus()
+                true
+            } else {
+                false
+            }
+        }
+
+        // ===== WEIGHT VALIDATION =====
+        etWeight.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                validateWeight()
+            }
+            override fun afterTextChanged(s: Editable?) {
+                // Format weight input
+                val input = s.toString()
+                if (input.matches(Regex("^\\d+(\\.\\d{1,2})?$"))) {
+                    // Valid number format
+                } else if (input.matches(Regex("^\\d+(\\.\\d{1,2})?\\s*(kg|kgs|lb|lbs)$", RegexOption.IGNORE_CASE))) {
+                    // Valid format with unit
+                }
+            }
+        })
+
+        etWeight.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT) {
+                if (selectedStatus == "Lost") {
+                    etReward.requestFocus()
+                } else {
+                    btnSelectLocation.requestFocus()
+                }
                 true
             } else {
                 false
@@ -335,89 +584,54 @@ class CreatePostActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateCharCounter() {
-        val charCount = etDescription.text.toString().length
-        val counterView = findViewById<TextView>(R.id.tv_char_counter)
-        counterView.text = "$charCount/500 characters"
+    // ===== VALIDATION FUNCTIONS =====
 
-        when {
-            charCount > 450 -> counterView.setTextColor(Color.parseColor("#FF9800"))
-            charCount >= 500 -> counterView.setTextColor(Color.parseColor("#F44336"))
-            else -> counterView.setTextColor(Color.parseColor("#999999"))
-        }
-    }
-
-    private fun setupClickListeners(currentUser: com.example.pawsociety.api.ApiUser) {
-        // Cancel button
-        btnCancel.setOnClickListener {
-            finish()
-        }
-
-        // Add photo button
-        btnAddPhoto.setOnClickListener {
-            showImagePicker()
-        }
-
-        // Location selector button
-        btnSelectLocation.setOnClickListener {
-            try {
-                val dialog = LocationPickerDialog(this) { fullLocation ->
-                    tvLocation.text = fullLocation
-                    tvLocation.visibility = View.VISIBLE
-                    validateLocation()
-                }
-                dialog.show()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(this, "Error opening location picker", Toast.LENGTH_SHORT).show()
+    private fun validateAge(): Boolean {
+        val age = etAge.text.toString().trim()
+        return when {
+            age.isEmpty() -> {
+                etAge.setBackgroundResource(R.drawable.edittext_error_bg)
+                errorAge.text = "Age is required"
+                errorAge.visibility = View.VISIBLE
+                false
             }
-        }
-
-        // Status buttons
-        btnStatusLost.setOnClickListener {
-            updateStatusButtons(btnStatusLost)
-            selectedStatus = "Lost"
-            layoutReward.visibility = View.VISIBLE
-            errorStatus.visibility = View.GONE
-        }
-
-        btnStatusFound.setOnClickListener {
-            updateStatusButtons(btnStatusFound)
-            selectedStatus = "Found"
-            layoutReward.visibility = View.GONE
-            etReward.text.clear()
-            errorStatus.visibility = View.GONE
-        }
-
-        btnStatusAdoption.setOnClickListener {
-            updateStatusButtons(btnStatusAdoption)
-            selectedStatus = "Adoption"
-            layoutReward.visibility = View.GONE
-            etReward.text.clear()
-            errorStatus.visibility = View.GONE
-        }
-
-        // Post button
-        btnPost.setOnClickListener {
-            if (validateAllFields()) {
-                createNewPost(currentUser)
+            !age.matches(Regex("^\\d+\\s*(year|month|yr|mo)?s?$", RegexOption.IGNORE_CASE)) &&
+                    !age.matches(Regex("^\\d+$")) -> {
+                etAge.setBackgroundResource(R.drawable.edittext_error_bg)
+                errorAge.text = "Use format: 2 years, 8 months, or just 12"
+                errorAge.visibility = View.VISIBLE
+                false
+            }
+            else -> {
+                etAge.setBackgroundResource(R.drawable.edittext_bg)
+                errorAge.visibility = View.GONE
+                true
             }
         }
     }
 
-    private fun updateStatusButtons(selected: TextView) {
-        btnStatusLost.setBackgroundColor(Color.parseColor("#F44336"))
-        btnStatusLost.setTextColor(Color.WHITE)
-        btnStatusFound.setBackgroundColor(Color.parseColor("#4CAF50"))
-        btnStatusFound.setTextColor(Color.WHITE)
-        btnStatusAdoption.setBackgroundColor(Color.parseColor("#2196F3"))
-        btnStatusAdoption.setTextColor(Color.WHITE)
-
-        if (selected != btnStatusLost) btnStatusLost.alpha = 0.5f
-        if (selected != btnStatusFound) btnStatusFound.alpha = 0.5f
-        if (selected != btnStatusAdoption) btnStatusAdoption.alpha = 0.5f
-
-        selected.alpha = 1.0f
+    private fun validateWeight(): Boolean {
+        val weight = etWeight.text.toString().trim()
+        return when {
+            weight.isEmpty() -> {
+                etWeight.setBackgroundResource(R.drawable.edittext_error_bg)
+                errorWeight.text = "Weight is required"
+                errorWeight.visibility = View.VISIBLE
+                false
+            }
+            !weight.matches(Regex("^\\d+(\\.\\d{1,2})?\\s*(kg|kgs|lb|lbs)?$", RegexOption.IGNORE_CASE)) &&
+                    !weight.matches(Regex("^\\d+(\\.\\d{1,2})?$")) -> {
+                etWeight.setBackgroundResource(R.drawable.edittext_error_bg)
+                errorWeight.text = "Use format: 3.5 kg, 10 lbs, or just 3.5"
+                errorWeight.visibility = View.VISIBLE
+                false
+            }
+            else -> {
+                etWeight.setBackgroundResource(R.drawable.edittext_bg)
+                errorWeight.visibility = View.GONE
+                true
+            }
+        }
     }
 
     private fun validatePetName(): Boolean {
@@ -540,16 +754,150 @@ class CreatePostActivity : AppCompatActivity() {
         }
     }
 
+    private fun validateImages(): Boolean {
+        return if (selectedImages.isEmpty()) {
+            Toast.makeText(this, "Please add at least 1 photo", Toast.LENGTH_SHORT).show()
+            carouselContainer.setBackgroundResource(R.drawable.edittext_error_bg)
+            photoEmptyState.setBackgroundResource(R.drawable.edittext_error_bg)
+            false
+        } else {
+            carouselContainer.setBackgroundResource(0)
+            photoEmptyState.setBackgroundResource(0)
+            true
+        }
+    }
+
     private fun validateAllFields(): Boolean {
         val isPetNameValid = validatePetName()
         val isPetTypeValid = validatePetType()
+        val isAgeValid = validateAge()
+        val isWeightValid = validateWeight()
         val isStatusValid = validateStatus()
         val isLocationValid = validateLocation()
         val isContactValid = validateContact()
         val isDescriptionValid = validateDescription()
+        val isImagesValid = validateImages()
 
-        return isPetNameValid && isPetTypeValid && isStatusValid &&
-                isLocationValid && isContactValid && isDescriptionValid
+        return isPetNameValid && isPetTypeValid && isAgeValid && isWeightValid &&
+                isStatusValid && isLocationValid && isContactValid &&
+                isDescriptionValid && isImagesValid
+    }
+
+    private fun updateCharCounter() {
+        val charCount = etDescription.text.toString().length
+        val counterView = findViewById<TextView>(R.id.tv_char_counter)
+        counterView.text = "$charCount/500 characters"
+
+        when {
+            charCount > 450 -> counterView.setTextColor(Color.parseColor("#FF9800"))
+            charCount >= 500 -> counterView.setTextColor(Color.parseColor("#F44336"))
+            else -> counterView.setTextColor(Color.parseColor("#999999"))
+        }
+    }
+
+    private fun setupClickListeners() {
+        // Cancel button
+        btnCancel.setOnClickListener {
+            finish()
+        }
+
+        // Add photo button
+        btnAddPhoto.setOnClickListener {
+            showImagePicker()
+        }
+
+        // Location selector button
+        btnSelectLocation.setOnClickListener {
+            try {
+                val dialog = LocationPickerDialog(this) { fullLocation ->
+                    tvLocation.text = fullLocation
+                    tvLocation.visibility = View.VISIBLE
+                    validateLocation()
+                }
+                dialog.show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this, "Error opening location picker", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Status buttons
+        btnStatusLost.setOnClickListener {
+            updateStatusButtons(btnStatusLost)
+            selectedStatus = "Lost"
+            layoutReward.visibility = View.VISIBLE
+            errorStatus.visibility = View.GONE
+            Log.d(TAG, "Status selected: Lost")
+        }
+
+        btnStatusFound.setOnClickListener {
+            updateStatusButtons(btnStatusFound)
+            selectedStatus = "Found"
+            layoutReward.visibility = View.GONE
+            etReward.text.clear()
+            errorStatus.visibility = View.GONE
+            Log.d(TAG, "Status selected: Found")
+        }
+
+        btnStatusAdoption.setOnClickListener {
+            updateStatusButtons(btnStatusAdoption)
+            selectedStatus = "Adoption"
+            layoutReward.visibility = View.GONE
+            etReward.text.clear()
+            errorStatus.visibility = View.GONE
+            Log.d(TAG, "Status selected: Adoption")
+        }
+
+        // Gender Listeners
+        btnGenderMale.setOnClickListener { updateGenderSelection("Male", btnGenderMale) }
+        btnGenderFemale.setOnClickListener { updateGenderSelection("Female", btnGenderFemale) }
+        btnGenderUnknown.setOnClickListener { updateGenderSelection("Unknown", btnGenderUnknown) }
+
+        // Remove current photo button
+        btnRemoveCurrentPhoto.setOnClickListener {
+            if (selectedImages.isNotEmpty() && currentPhotoPosition < selectedImages.size) {
+                removePhotoAt(currentPhotoPosition)
+            }
+        }
+
+        // Post button
+        btnPost.setOnClickListener {
+            val currentUser = sessionManager.getCurrentUser()
+            if (currentUser != null && validateAllFields()) {
+                Log.d(TAG, "📝 Creating post with age: ${etAge.text}, weight: ${etWeight.text}")
+                Toast.makeText(this, "Creating post...", Toast.LENGTH_SHORT).show()
+                createNewPost(currentUser)
+            }
+        }
+    }
+
+    private fun updateGenderSelection(gender: String, selectedView: TextView) {
+        selectedGender = gender
+        Log.d(TAG, "Selected Gender: $selectedGender")
+
+        val buttons = listOf(btnGenderMale, btnGenderFemale, btnGenderUnknown)
+        buttons.forEach {
+            it.setBackgroundResource(R.drawable.button_oval_white)
+            it.setTextColor(Color.parseColor("#666666"))
+        }
+
+        selectedView.setBackgroundResource(R.drawable.button_oval_brown)
+        selectedView.setTextColor(Color.WHITE)
+    }
+
+    private fun updateStatusButtons(selected: TextView) {
+        btnStatusLost.setBackgroundColor(Color.parseColor("#F44336"))
+        btnStatusLost.setTextColor(Color.WHITE)
+        btnStatusFound.setBackgroundColor(Color.parseColor("#4CAF50"))
+        btnStatusFound.setTextColor(Color.WHITE)
+        btnStatusAdoption.setBackgroundColor(Color.parseColor("#2196F3"))
+        btnStatusAdoption.setTextColor(Color.WHITE)
+
+        if (selected != btnStatusLost) btnStatusLost.alpha = 0.5f
+        if (selected != btnStatusFound) btnStatusFound.alpha = 0.5f
+        if (selected != btnStatusAdoption) btnStatusAdoption.alpha = 0.5f
+
+        selected.alpha = 1.0f
     }
 
     // ==================== IMAGE PICKER WITH CROP ====================
@@ -641,7 +989,6 @@ class CreatePostActivity : AppCompatActivity() {
                     data?.let {
                         val clipData = it.clipData
                         if (clipData != null) {
-                            // Multiple images selected
                             tempUris.clear()
                             for (i in 0 until clipData.itemCount) {
                                 if (selectedImages.size + tempUris.size < 5) {
@@ -649,12 +996,10 @@ class CreatePostActivity : AppCompatActivity() {
                                     tempUris.add(uri)
                                 }
                             }
-                            // Start cropping the first one
                             if (tempUris.isNotEmpty()) {
                                 startCrop(tempUris[0])
                             }
                         } else {
-                            // Single image selected
                             it.data?.let { uri ->
                                 startCrop(uri)
                             }
@@ -665,23 +1010,14 @@ class CreatePostActivity : AppCompatActivity() {
                     data?.let {
                         val resultUri = UCrop.getOutput(it)
                         resultUri?.let { croppedUri ->
-                            // Add the cropped square image to selected images
-                            selectedImages.add(croppedUri)
+                            addImageToList(croppedUri)
 
-                            // Update preview
-                            addImageToPreview(croppedUri)
-
-                            // Update the temp list if we're processing multiple
                             if (tempUris.isNotEmpty()) {
                                 tempUris.removeAt(0)
                                 if (tempUris.isNotEmpty()) {
-                                    // Crop the next one
                                     startCrop(tempUris[0])
                                 }
                             }
-
-                            updatePhotoCountBadge()
-                            Toast.makeText(this, "Image added (${selectedImages.size}/5)", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -699,30 +1035,44 @@ class CreatePostActivity : AppCompatActivity() {
         val options = UCrop.Options().apply {
             setCompressionFormat(Bitmap.CompressFormat.JPEG)
             setCompressionQuality(90)
-            setCircleDimmedLayer(false)  // Square crop, not circle
+            setCircleDimmedLayer(false)
             setShowCropFrame(true)
             setCropFrameColor(Color.parseColor("#7A4F2B"))
             setCropFrameStrokeWidth(4)
             setShowCropGrid(true)
             setCropGridColor(Color.parseColor("#FFFFFF"))
             setCropGridStrokeWidth(2)
+            setStatusBarColor(Color.TRANSPARENT)
             setToolbarColor(Color.parseColor("#7A4F2B"))
-            setStatusBarColor(Color.parseColor("#7A4F2B"))
-            setActiveControlsWidgetColor(Color.parseColor("#7A4F2B"))
             setToolbarTitle("Crop Image")
         }
 
         UCrop.of(uri, destinationUri)
-            .withAspectRatio(1f, 1f)  // FORCE SQUARE (1:1 aspect ratio)
-            .withMaxResultSize(1024, 1024)  // Max size 1024x1024
+            .withAspectRatio(1f, 1f)
+            .withMaxResultSize(1024, 1024)
             .withOptions(options)
             .start(this, REQUEST_CROP_IMAGE)
     }
 
-    private fun addImageToPreview(uri: Uri) {
+    private fun addImageToList(uri: Uri) {
+        if (selectedImages.size < 5) {
+            selectedImages.add(uri)
+            updatePhotoDisplay()
+            addImageToHorizontalPreview(uri)
+            updatePhotoCountBadge()
+            photoViewPager.post {
+                photoViewPager.currentItem = selectedImages.size - 1
+            }
+            Toast.makeText(this, "Image added (${selectedImages.size}/5)", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Maximum 5 photos allowed", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun addImageToHorizontalPreview(uri: Uri) {
         val imageView = LayoutInflater.from(this).inflate(R.layout.item_image_preview, imagePreviewContainer, false) as ImageView
-        val params = LinearLayout.LayoutParams(200, 200)
-        params.setMargins(0, 0, 8, 0)
+        val params = LinearLayout.LayoutParams(200.dp, 200.dp)
+        params.setMargins(0, 0, 8.dp, 0)
         imageView.layoutParams = params
         imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
@@ -732,33 +1082,99 @@ class CreatePostActivity : AppCompatActivity() {
             .into(imageView)
 
         imageView.setOnClickListener {
-            // Show remove option
-            AlertDialog.Builder(this)
-                .setTitle("Remove Image")
-                .setMessage("Do you want to remove this image?")
-                .setPositiveButton("Remove") { _, _ ->
-                    val index = imagePreviewContainer.indexOfChild(imageView)
-                    if (index >= 0 && index < selectedImages.size) {
-                        selectedImages.removeAt(index)
-                        imagePreviewContainer.removeView(imageView)
-                        updatePhotoCountBadge()
+            val index = imagePreviewContainer.indexOfChild(imageView)
+            if (index >= 0 && index < selectedImages.size) {
+                AlertDialog.Builder(this)
+                    .setTitle("Remove Photo")
+                    .setMessage("Do you want to remove this photo?")
+                    .setPositiveButton("Remove") { _, _ ->
+                        removePhotoAt(index)
                     }
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
         }
 
         imagePreviewContainer.addView(imageView)
     }
 
+    private fun updatePhotoDisplay() {
+        if (selectedImages.isNotEmpty()) {
+            carouselContainer.visibility = View.VISIBLE
+            photoEmptyState.visibility = View.GONE
+            thumbnailScroll.visibility = View.GONE
+
+            photoPagerAdapter.updatePhotos(selectedImages)
+            updatePhotoIndicators(photoViewPager.currentItem)
+
+            if (selectedImages.size > 1) {
+                photoIndicatorContainer.visibility = View.VISIBLE
+            } else {
+                photoIndicatorContainer.visibility = View.GONE
+            }
+
+            btnRemoveCurrentPhoto.visibility = View.VISIBLE
+        } else {
+            carouselContainer.visibility = View.GONE
+            photoEmptyState.visibility = View.VISIBLE
+            btnRemoveCurrentPhoto.visibility = View.GONE
+        }
+    }
+
+    private fun updatePhotoIndicators(selectedPosition: Int) {
+        photoIndicatorContainer.removeAllViews()
+
+        for (i in 0 until selectedImages.size) {
+            val dot = View(this)
+            val params = LinearLayout.LayoutParams(8.dp, 8.dp)
+            params.setMargins(4.dp, 0, 4.dp, 0)
+            dot.layoutParams = params
+
+            if (i == selectedPosition) {
+                dot.setBackgroundResource(R.drawable.dot_indicator_selected)
+            } else {
+                dot.setBackgroundResource(R.drawable.dot_indicator)
+            }
+
+            photoIndicatorContainer.addView(dot)
+        }
+    }
+
+    private fun removePhotoAt(position: Int) {
+        selectedImages.removeAt(position)
+
+        if (position < imagePreviewContainer.childCount) {
+            imagePreviewContainer.removeViewAt(position)
+        }
+
+        updatePhotoDisplay()
+
+        if (selectedImages.isEmpty()) {
+            carouselContainer.visibility = View.GONE
+            photoEmptyState.visibility = View.VISIBLE
+            btnRemoveCurrentPhoto.visibility = View.GONE
+        } else {
+            val newPosition = if (position >= selectedImages.size) selectedImages.size - 1 else position
+            photoViewPager.currentItem = newPosition
+            photoPagerAdapter.updatePhotos(selectedImages)
+            updatePhotoIndicators(newPosition)
+        }
+
+        updatePhotoCountBadge()
+    }
+
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
+
     private fun updatePhotoCountBadge() {
         if (selectedImages.isNotEmpty()) {
-            photoCountBadge.text = "${selectedImages.size}/5"
+            photoCountBadge.text = "${selectedImages.size}/5 photos"
             photoCountBadge.visibility = View.VISIBLE
             btnAddPhoto.text = "Change Photos"
         } else {
-            photoCountBadge.visibility = View.GONE
-            btnAddPhoto.text = "Add Photos (Optional)"
+            photoCountBadge.text = "0/5 photos"
+            photoCountBadge.visibility = View.VISIBLE
+            btnAddPhoto.text = "+ Add Photo"
         }
     }
 
@@ -790,7 +1206,6 @@ class CreatePostActivity : AppCompatActivity() {
     // ==================== POST CREATION ====================
 
     private fun createNewPost(currentUser: com.example.pawsociety.api.ApiUser) {
-        // Double-check user and UID before proceeding
         if (currentUser.firebaseUid.isNullOrEmpty()) {
             Toast.makeText(this, "Error: User ID is missing. Please logout and login again.", Toast.LENGTH_LONG).show()
             btnPost.text = "Post"
@@ -800,6 +1215,8 @@ class CreatePostActivity : AppCompatActivity() {
 
         val petName = etPetName.text.toString().trim()
         val petType = actPetType.text.toString().trim()
+        val age = etAge.text.toString().trim()
+        val weight = etWeight.text.toString().trim()
 
         // Remove commas from reward before saving
         val rewardRaw = etReward.text.toString().trim().replace(",", "")
@@ -809,10 +1226,22 @@ class CreatePostActivity : AppCompatActivity() {
         val contact = etContact.text.toString().trim()
         val description = etDescription.text.toString().trim()
 
-        println("📝 Creating post with:")
-        println("   - User: ${currentUser.username} (UID: ${currentUser.firebaseUid})")
-        println("   - Pet: $petName")
-        println("   - Status: $selectedStatus")
+        // Log all values
+        Log.d(TAG, "=================================")
+        Log.d(TAG, "📝 CREATING POST WITH VALUES:")
+        Log.d(TAG, "   - User: ${currentUser.username} (UID: ${currentUser.firebaseUid})")
+        Log.d(TAG, "   - Pet Name: $petName")
+        Log.d(TAG, "   - Pet Type: $petType")
+        Log.d(TAG, "   - Age: $age")
+        Log.d(TAG, "   - Weight: $weight")
+        Log.d(TAG, "   - Status: $selectedStatus")
+        Log.d(TAG, "   - Gender: $selectedGender")
+        Log.d(TAG, "   - Location: $location")
+        Log.d(TAG, "   - Contact: $contact")
+        Log.d(TAG, "   - Description: $description")
+        Log.d(TAG, "   - Reward: $reward")
+        Log.d(TAG, "   - Images: ${selectedImages.size}")
+        Log.d(TAG, "=================================")
 
         // Show loading state
         btnPost.text = "Posting..."
@@ -828,11 +1257,14 @@ class CreatePostActivity : AppCompatActivity() {
                     emptyList()
                 }
 
-                // Step 2: Create post with image URLs
+                // Step 2: Create post with all fields including age and weight
                 val result = postRepository.createPost(
                     firebaseUid = currentUser.firebaseUid,
                     petName = petName,
                     petType = petType,
+                    age = age,
+                    weight = weight,
+                    gender = selectedGender,
                     status = selectedStatus,
                     description = description,
                     contactInfo = contact,
@@ -841,22 +1273,31 @@ class CreatePostActivity : AppCompatActivity() {
                     imageUrls = if (imageUrls.isNotEmpty()) imageUrls else null
                 )
 
+                // In createNewPost() function, after successful post creation:
+
                 if (result.isSuccess) {
+                    Log.d(TAG, "✅ Post created successfully with age: $age, weight: $weight")
                     Toast.makeText(this@CreatePostActivity, "✅ Post created successfully!", Toast.LENGTH_SHORT).show()
+
+                    // IMPORTANT: Return the category of the post that was created
+                    val intent = Intent()
+                    intent.putExtra("post_created", true)
+                    intent.putExtra("post_category", selectedCategory)  // Send the category (Dogs, Cats, etc.)
+                    setResult(RESULT_OK, intent)
+
                     clearForm()
-                    val intent = Intent(this@CreatePostActivity, HomeActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    startActivity(intent)
                     finish()
+
+
                 } else {
                     val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
-                    println("❌ Failed to create post: $errorMsg")
+                    Log.e(TAG, "❌ Failed to create post: $errorMsg")
                     Toast.makeText(this@CreatePostActivity, "❌ Failed: $errorMsg", Toast.LENGTH_SHORT).show()
                     btnPost.text = "Post"
                     btnPost.isEnabled = true
                 }
             } catch (e: Exception) {
-                println("❌ Exception: ${e.message}")
+                Log.e(TAG, "❌ Exception: ${e.message}")
                 e.printStackTrace()
                 Toast.makeText(this@CreatePostActivity, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 btnPost.text = "Post"
@@ -895,13 +1336,18 @@ class CreatePostActivity : AppCompatActivity() {
     private fun clearForm() {
         etPetName.text.clear()
         actPetType.text.clear()
+        etAge.text.clear()
+        etWeight.text.clear()
         etReward.text.clear()
         tvLocation.text = ""
         tvLocation.visibility = View.GONE
         etContact.text.clear()
         etDescription.text.clear()
+
+        // Clear photos
         selectedImages.clear()
         imagePreviewContainer.removeAllViews()
+        updatePhotoDisplay()
         updatePhotoCountBadge()
 
         // Reset to Lost as default
@@ -909,15 +1355,22 @@ class CreatePostActivity : AppCompatActivity() {
         selectedStatus = "Lost"
         layoutReward.visibility = View.VISIBLE
 
+        // Reset gender to Unknown
+        updateGenderSelection("Unknown", btnGenderUnknown)
+
         // Clear all errors
         etPetName.setBackgroundResource(R.drawable.edittext_bg)
         actPetType.setBackgroundResource(R.drawable.edittext_bg)
+        etAge.setBackgroundResource(R.drawable.edittext_bg)
+        etWeight.setBackgroundResource(R.drawable.edittext_bg)
         btnSelectLocation.setBackgroundResource(R.drawable.edittext_bg)
         etContact.setBackgroundResource(R.drawable.edittext_bg)
         etDescription.setBackgroundResource(R.drawable.edittext_bg)
 
         errorPetName.visibility = View.GONE
         errorPetType.visibility = View.GONE
+        errorAge.visibility = View.GONE
+        errorWeight.visibility = View.GONE
         errorStatus.visibility = View.GONE
         errorLocation.visibility = View.GONE
         errorContact.visibility = View.GONE

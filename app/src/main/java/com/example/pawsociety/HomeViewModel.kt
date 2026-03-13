@@ -7,7 +7,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.example.pawsociety.api.ApiComment
 import com.example.pawsociety.api.ApiPost
 import com.example.pawsociety.api.ApiUser
 import com.example.pawsociety.data.FavoritesManager
@@ -15,13 +14,15 @@ import com.example.pawsociety.data.repository.*
 import com.example.pawsociety.util.SessionManager
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import android.util.Log
+import kotlin.math.max
+import kotlinx.coroutines.delay
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context = application.applicationContext
     private val postRepository = PostRepository()
     private val offlinePostRepository = OfflinePostRepository(context)
-    private val commentRepository = CommentRepository()
     private val favoriteRepository = FavoriteRepository()
     private val userRepository = UserRepository()
     private val followRepository = FollowRepository()
@@ -53,18 +54,34 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private var sessionManager: SessionManager? = null
 
+    // Category Filter Variables
+    private val _currentCategory = MutableLiveData<String>("All")
+    val currentCategory: LiveData<String> = _currentCategory
+
+    private val _categoryPosts = MutableLiveData<List<ApiPost>>()
+    val categoryPosts: LiveData<List<ApiPost>> = _categoryPosts
+
+    // Store all posts (unfiltered)
+    private var allPosts = listOf<ApiPost>()
+
     init {
         _isLoading.value = false
         _isOffline.value = false
         _likeStatus.value = emptyMap()
         _favoriteStatus.value = emptyMap()
         _followStatus.value = emptyMap()
+        _currentCategory.value = "All"
 
         viewModelScope.launch {
-            offlinePostRepository.getPostsFlow().collect { cachedPosts ->
-                if (cachedPosts.isNotEmpty()) {
-                    _posts.value = cachedPosts
+            try {
+                val result = offlinePostRepository.loadPosts(false)
+                if (result.isSuccess) {
+                    allPosts = result.getOrNull() ?: emptyList()
+                    filterPostsByCategory(_currentCategory.value ?: "All")
+                    Log.d("HomeViewModel", "Initial posts loaded: ${allPosts.size}")
                 }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error loading posts", e)
             }
         }
     }
@@ -89,43 +106,134 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun refreshLikeStatus(postId: String) {
+        viewModelScope.launch {
+            val currentUser = _currentUser.value ?: return@launch
+            val result = postRepository.checkLikeStatus(postId, currentUser.firebaseUid)
+
+            if (result.isSuccess) {
+                val response = result.getOrNull()!!
+                val isLiked = response.isLiked ?: response.liked ?: false
+                val likesCount = response.likesCount
+
+                val currentMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
+                currentMap[postId] = isLiked
+                _likeStatus.value = currentMap
+
+                val currentPosts = _posts.value?.toMutableList() ?: return@launch
+                val index = currentPosts.indexOfFirst { it.postId == postId }
+                if (index >= 0) {
+                    currentPosts[index] = currentPosts[index].copy(likesCount = likesCount)
+                    _posts.value = currentPosts
+                }
+
+                Log.d("LikeDebug", "Refreshed like status for $postId: $isLiked, count: $likesCount")
+            }
+        }
+    }
+
+    fun loadPostsByCategory(category: String) {
+        forceRefreshAndFilter(category)
+        Log.d("HomeViewModel", "Loading posts for category: $category")
+
+        // If we have posts, filter them, otherwise load from server
+        if (allPosts.isNotEmpty()) {
+            filterPostsByCategory(category)
+        } else {
+            loadPosts(forceRefresh = true)
+        }
+    }
+
+    // UPDATED: Use PetData for filtering
+    private fun filterPostsByCategory(category: String) {
+        Log.d("HomeViewModel", "🔍 FILTERING ${allPosts.size} posts for category: $category")
+
+        // Log all posts for debugging
+        allPosts.forEachIndexed { index, post ->
+            Log.d("HomeViewModel", "   Post $index: petType='${post.petType}'")
+        }
+
+        val filteredPosts = when (category) {
+            "All" -> allPosts
+            "Dogs" -> allPosts.filter { post ->
+                val petType = post.petType.lowercase()
+                val isDog = petType.contains("dog") ||
+                        PetData.dogBreeds.any { breed ->
+                            petType.contains(breed.lowercase())
+                        }
+                if (isDog) Log.d("HomeViewModel", "🐕 DOG MATCH: ${post.petName} (${post.petType})")
+                isDog
+            }
+            "Cats" -> allPosts.filter { post ->
+                val petType = post.petType.lowercase()
+                val isCat = petType.contains("cat") ||
+                        PetData.catBreeds.any { breed ->
+                            petType.contains(breed.lowercase())
+                        }
+                if (isCat) Log.d("HomeViewModel", "🐱 CAT MATCH: ${post.petName} (${post.petType})")
+                isCat
+            }
+            "Fish" -> allPosts.filter { post ->
+                val petType = post.petType.lowercase()
+                val isFish = petType.contains("fish") ||
+                        PetData.fishBreeds.any { breed ->
+                            petType.contains(breed.lowercase())
+                        }
+                if (isFish) Log.d("HomeViewModel", "🐟 FISH MATCH: ${post.petName} (${post.petType})")
+                isFish
+            }
+            "Birds" -> allPosts.filter { post ->
+                val petType = post.petType.lowercase()
+                val isBird = petType.contains("bird") ||
+                        PetData.birdBreeds.any { breed ->
+                            petType.contains(breed.lowercase())
+                        }
+                if (isBird) Log.d("HomeViewModel", "🐦 BIRD MATCH: ${post.petName} (${post.petType})")
+                isBird
+            }
+            else -> allPosts
+        }
+
+        _posts.value = filteredPosts
+        _categoryPosts.value = filteredPosts
+        Log.d("HomeViewModel", "✅ Filtered posts for $category: ${filteredPosts.size} out of ${allPosts.size}")
+    }
+
     fun loadPosts(forceRefresh: Boolean = false) {
         if (sessionManager == null) return
 
         _isLoading.value = true
         viewModelScope.launch {
             try {
-                val result = offlinePostRepository.loadPosts(forceRefresh)
+                val category = _currentCategory.value ?: "All"
+
+                // If forceRefresh is true, bypass cache and get from network
+                val result = if (forceRefresh) {
+                    // Directly from network, not cache
+                    postRepository.getPosts(limit = 100)
+                } else {
+                    offlinePostRepository.loadPosts(false)
+                }
 
                 if (result.isSuccess) {
-                    val postsList = result.getOrNull()!!
-                    val filteredPosts = filterBlockedPosts(postsList)
-                    _posts.value = filteredPosts
+                    // IMPORTANT: Update allPosts FIRST
+                    allPosts = result.getOrNull()!!
+
+                    // Filter blocked posts
+                    allPosts = filterBlockedPosts(allPosts)
+
+                    Log.d("HomeViewModel", "✅ allPosts updated: ${allPosts.size} total posts")
+
+                    // THEN apply current category filter
+                    filterPostsByCategory(_currentCategory.value ?: "All")
+
                     _isOffline.value = false
 
                     val currentUser = _currentUser.value
                     if (currentUser != null) {
-                        val likeMap = mutableMapOf<String, Boolean>()
-                        val favMap = mutableMapOf<String, Boolean>()
-                        val followMap = mutableMapOf<String, Boolean>()
-
-                        for (post in postsList) {
-                            val likeResult = postRepository.checkLikeStatus(post.postId, currentUser.firebaseUid)
-                            likeMap[post.postId] = likeResult.getOrNull() ?: false
-
-                            val favResult = favoriteRepository.checkFavorite(post.postId, currentUser.firebaseUid)
-                            favMap[post.postId] = favResult.getOrNull() ?: false
-
-                            if (post.firebaseUid != currentUser.firebaseUid) {
-                                val followResult = followRepository.checkFollowStatus(currentUser.firebaseUid, post.firebaseUid)
-                                followMap[post.firebaseUid] = followResult.getOrNull() ?: false
-                            }
-                        }
-
-                        _likeStatus.value = likeMap
-                        _favoriteStatus.value = favMap
-                        _followStatus.value = followMap
+                        loadLikeAndFavoriteStatuses(allPosts, currentUser)
                     }
+
                 } else {
                     _error.value = result.exceptionOrNull()?.message ?: "Failed to load posts"
                     _isOffline.value = true
@@ -139,6 +247,103 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // UPDATED: Force refresh posts from server and update allPosts
+    fun forceRefreshPosts() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                Log.d("HomeViewModel", "🔄 Force refreshing all posts from server")
+
+                // Directly from network, bypass cache
+                val result = postRepository.getPosts(limit = 100)
+
+                if (result.isSuccess) {
+                    allPosts = result.getOrNull()!!
+
+                    // Filter blocked posts
+                    val currentUser = _currentUser.value
+                    if (currentUser != null) {
+                        val blockResult = blockRepository.getBlockedUsers(currentUser.firebaseUid)
+                        if (blockResult.isSuccess) {
+                            val blockedUsers = blockResult.getOrNull() ?: emptyList()
+                            val blockedUids = blockedUsers.map { it.blockedUid }
+                            allPosts = allPosts.filter { !blockedUids.contains(it.firebaseUid) }
+                        }
+                    }
+
+                    Log.d("HomeViewModel", "✅ Force refreshed: ${allPosts.size} posts from server")
+
+                    // Apply current category filter
+                    filterPostsByCategory(_currentCategory.value ?: "All")
+
+                    // Reload like/favorite statuses
+                    if (currentUser != null) {
+                        loadLikeAndFavoriteStatuses(allPosts, currentUser)
+                    }
+                } else {
+                    Log.e("HomeViewModel", "❌ Failed to force refresh: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error force refreshing: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    // UPDATED: Force refresh and then filter by category
+    // Force refresh and then filter by category - ALWAYS fetches fresh data
+    fun forceRefreshAndFilter(category: String) {
+        _currentCategory.value = category
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                Log.d("HomeViewModel", "🔄 FORCE REFRESHING for category: $category")
+
+                // ALWAYS fetch from network, NEVER use cache
+                val result = postRepository.getPosts(limit = 100)
+
+                if (result.isSuccess) {
+                    allPosts = result.getOrNull()!!
+
+                    // Filter blocked posts
+                    val currentUser = _currentUser.value
+                    if (currentUser != null) {
+                        val blockResult = blockRepository.getBlockedUsers(currentUser.firebaseUid)
+                        if (blockResult.isSuccess) {
+                            val blockedUsers = blockResult.getOrNull() ?: emptyList()
+                            val blockedUids = blockedUsers.map { it.blockedUid }
+                            allPosts = allPosts.filter { !blockedUids.contains(it.firebaseUid) }
+                        }
+                    }
+
+                    Log.d("HomeViewModel", "✅ Got ${allPosts.size} total posts from server for $category")
+
+                    // Filter by category
+                    filterPostsByCategory(category)
+
+                    // Reload like/favorite statuses
+                    if (currentUser != null) {
+                        loadLikeAndFavoriteStatuses(allPosts, currentUser)
+                    }
+                } else {
+                    Log.e("HomeViewModel", "❌ Failed to refresh: ${result.exceptionOrNull()?.message}")
+                    // If network fails, try to show cached data
+                    filterPostsByCategory(category)
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error in forceRefreshAndFilter: ${e.message}")
+                // If error occurs, try to show cached data
+                filterPostsByCategory(category)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+
+
     private suspend fun filterBlockedPosts(posts: List<ApiPost>): List<ApiPost> {
         val currentUser = _currentUser.value ?: return posts
         val result = blockRepository.getBlockedUsers(currentUser.firebaseUid)
@@ -150,19 +355,107 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         return posts
     }
 
+    // Helper function to load like/favorite statuses
+    private suspend fun loadLikeAndFavoriteStatuses(posts: List<ApiPost>, currentUser: ApiUser) {
+        val likeMap = mutableMapOf<String, Boolean>()
+        val favMap = mutableMapOf<String, Boolean>()
+        val followMap = mutableMapOf<String, Boolean>()
+
+        for (post in posts) {
+            try {
+                val likeResult = postRepository.checkLikeStatus(post.postId, currentUser.firebaseUid)
+                likeMap[post.postId] = likeResult.getOrNull()?.isLiked ?: likeResult.getOrNull()?.liked ?: false
+            } catch (e: Exception) {
+                likeMap[post.postId] = false
+            }
+
+            try {
+                val favResult = favoriteRepository.checkFavorite(post.postId, currentUser.firebaseUid)
+                favMap[post.postId] = favResult.getOrNull() ?: false
+            } catch (e: Exception) {
+                favMap[post.postId] = false
+            }
+
+            if (post.firebaseUid != currentUser.firebaseUid) {
+                try {
+                    val followResult = followRepository.checkFollowStatus(currentUser.firebaseUid, post.firebaseUid)
+                    followMap[post.firebaseUid] = followResult.getOrNull() ?: false
+                } catch (e: Exception) {
+                    followMap[post.firebaseUid] = false
+                }
+            }
+        }
+
+        _likeStatus.value = likeMap
+        _favoriteStatus.value = favMap
+        _followStatus.value = followMap
+    }
+
+    fun updatePostInFeed(updatedPost: ApiPost) {
+        val currentPosts = _posts.value?.toMutableList() ?: return
+        val index = currentPosts.indexOfFirst { it.postId == updatedPost.postId }
+
+        if (index >= 0) {
+            currentPosts[index] = updatedPost
+            _posts.value = currentPosts
+            Log.d("HomeViewModel", "✅ Updated single post in feed: ${updatedPost.postId} with count: ${updatedPost.likesCount}")
+        }
+    }
+
     fun toggleLike(post: ApiPost, currentStatus: Boolean) {
         viewModelScope.launch {
             val currentUser = _currentUser.value ?: return@launch
+
+            // Optimistic update
+            val newLikeStatus = !currentStatus
+            val currentMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
+            currentMap[post.postId] = newLikeStatus
+            _likeStatus.value = currentMap
+
+            // Update the specific post in the list WITHOUT triggering a full refresh
+            val currentPosts = _posts.value?.toMutableList() ?: return@launch
+            val index = currentPosts.indexOfFirst { it.postId == post.postId }
+            if (index >= 0) {
+                val updatedPost = if (newLikeStatus) {
+                    currentPosts[index].copy(likesCount = currentPosts[index].likesCount + 1)
+                } else {
+                    currentPosts[index].copy(likesCount = max(0, currentPosts[index].likesCount - 1))
+                }
+                currentPosts[index] = updatedPost
+                _posts.value = currentPosts  // This triggers observer
+            }
+
+            // API call
             val result = postRepository.likePost(post.postId, currentUser.firebaseUid)
 
             if (result.isSuccess) {
-                val currentMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
-                currentMap[post.postId] = !currentStatus
-                _likeStatus.value = currentMap
-                loadPosts(true)
+                val response = result.getOrNull()!!
+                val serverLiked = response.isLiked ?: response.liked ?: newLikeStatus
+                val serverCount = response.likesCount
+
+                // Update with server values - again without full refresh
+                val finalMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
+                finalMap[post.postId] = serverLiked
+                _likeStatus.value = finalMap
+
+                val finalPosts = _posts.value?.toMutableList() ?: return@launch
+                val finalIndex = finalPosts.indexOfFirst { it.postId == post.postId }
+                if (finalIndex >= 0) {
+                    finalPosts[finalIndex] = finalPosts[finalIndex].copy(likesCount = serverCount)
+                    _posts.value = finalPosts
+                }
             } else {
-                _error.value = result.exceptionOrNull()?.message ?: "Failed to like post"
-                Toast.makeText(getApplication(), "Failed to like post", Toast.LENGTH_SHORT).show()
+                // Revert on failure
+                val revertMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
+                revertMap[post.postId] = currentStatus
+                _likeStatus.value = revertMap
+
+                val revertPosts = _posts.value?.toMutableList() ?: return@launch
+                val revertIndex = revertPosts.indexOfFirst { it.postId == post.postId }
+                if (revertIndex >= 0) {
+                    revertPosts[revertIndex] = post
+                    _posts.value = revertPosts
+                }
             }
         }
     }
@@ -188,8 +481,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 viewModelScope.launch {
                     FavoritesManager.notifyFavoriteChanged(post.postId)
                 }
-
-                loadPosts(true)
             } else {
                 _error.value = result.exceptionOrNull()?.message ?: "Failed to update favorite"
                 Toast.makeText(getApplication(), "Failed to update favorite", Toast.LENGTH_SHORT).show()
@@ -227,26 +518,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         return _followStatus.value?.get(targetUserId) ?: false
     }
 
-    fun addComment(postId: String, text: String) {
-        viewModelScope.launch {
-            val currentUser = _currentUser.value ?: return@launch
-            val result = commentRepository.createComment(
-                postId = postId,
-                firebaseUid = currentUser.firebaseUid,
-                userName = currentUser.username,
-                text = text
-            )
-
-            if (result.isSuccess) {
-                loadPosts(true)
-                Toast.makeText(getApplication(), "Comment added", Toast.LENGTH_SHORT).show()
-            } else {
-                _error.value = result.exceptionOrNull()?.message ?: "Failed to add comment"
-                Toast.makeText(getApplication(), "Failed to add comment", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     fun deletePost(postId: String) {
         viewModelScope.launch {
             val currentUser = _currentUser.value ?: return@launch
@@ -275,6 +546,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private val _hiddenPostIds = MutableLiveData<Set<String>>(emptySet())
+    val hiddenPostIds: LiveData<Set<String>> = _hiddenPostIds
+
+    fun loadHiddenPosts(userUid: String) {
+        viewModelScope.launch {
+            try {
+                val hideRepository = HidePostRepository()
+                val result = hideRepository.getHiddenPosts(userUid)
+                if (result.isSuccess) {
+                    val hiddenPosts = result.getOrNull() ?: emptyList()
+                    val hiddenIds = hiddenPosts.map { it.postId }.toSet()
+                    _hiddenPostIds.value = hiddenIds
+                    Log.d("HomeViewModel", "Loaded ${hiddenIds.size} hidden post IDs")
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error loading hidden posts: ${e.message}")
+            }
+        }
+    }
+
     fun getUserById(userId: String, onResult: (ApiUser?) -> Unit) {
         viewModelScope.launch {
             val result = userRepository.getUserByUid(userId)
@@ -284,5 +575,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearError() {
         _error.value = null
+    }
+
+    fun debugPrintPosts() {
+        viewModelScope.launch {
+            Log.d("VM_DEBUG", "=== POSTS IN VIEWMODEL ===")
+            _posts.value?.forEachIndexed { index, post ->
+                Log.d("VM_DEBUG", "[$index] ${post.postId}: petType=${post.petType}, likesCount=${post.likesCount}")
+            }
+            Log.d("VM_DEBUG", "=== END POSTS ===")
+
+            Log.d("VM_DEBUG", "=== LIKE STATUS MAP ===")
+            _likeStatus.value?.forEach { (postId, status) ->
+                Log.d("VM_DEBUG", "$postId: $status")
+            }
+            Log.d("VM_DEBUG", "=== END LIKE STATUS ===")
+        }
     }
 }

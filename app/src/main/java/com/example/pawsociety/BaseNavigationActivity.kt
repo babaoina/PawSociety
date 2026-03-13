@@ -2,15 +2,19 @@ package com.example.pawsociety
 
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.PorterDuff
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 
 abstract class BaseNavigationActivity : AppCompatActivity() {
+
+    protected lateinit var bottomNavigation: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,40 +23,34 @@ abstract class BaseNavigationActivity : AppCompatActivity() {
     override fun setContentView(layoutResID: Int) {
         super.setContentView(layoutResID)
 
-        // Set default colors to gray
         try {
-            val bottomNav = findViewById<LinearLayout>(R.id.bottom_navigation)
-            bottomNav?.setBackgroundColor(Color.WHITE)
-
-            val navHomeIcon = findViewById<ImageView>(R.id.nav_home_icon)
-            val navHomeText = findViewById<TextView>(R.id.nav_home_text)
-            val navInboxIcon = findViewById<ImageView>(R.id.nav_inbox_icon)
-            val navInboxText = findViewById<TextView>(R.id.nav_inbox_text)
-            val navFindIcon = findViewById<ImageView>(R.id.nav_find_icon)
-            val navFindText = findViewById<TextView>(R.id.nav_find_text)
-            val navProfileIcon = findViewById<ImageView>(R.id.nav_profile_icon)
-            val navProfileText = findViewById<TextView>(R.id.nav_profile_text)
-
-            // Set all to gray
-            val grayColor = "#666666"
-            navHomeIcon?.setColorFilter(Color.parseColor(grayColor))
-            navHomeText?.setTextColor(Color.parseColor(grayColor))
-            navInboxIcon?.setColorFilter(Color.parseColor(grayColor))
-            navInboxText?.setTextColor(Color.parseColor(grayColor))
-            navFindIcon?.setColorFilter(Color.parseColor(grayColor))
-            navFindText?.setTextColor(Color.parseColor(grayColor))
-            navProfileIcon?.setColorFilter(Color.parseColor(grayColor))
-            navProfileText?.setTextColor(Color.parseColor(grayColor))
-
+            bottomNavigation = findViewById(R.id.bottom_navigation)
+            setupBottomNavigationInsets()
+            setupNavigationBar()
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
 
-        setupNavigationBar()
+    private fun setupBottomNavigationInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNavigation) { view, insets ->
+            val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+
+            view.updatePadding(
+                bottom = navBarInsets.bottom
+            )
+
+            insets
+        }
+
+        bottomNavigation.requestApplyInsets()
     }
 
     private fun setupNavigationBar() {
         try {
+            // Set default colors to gray
+            resetAllTabs()
+
             // Set click listeners for all navigation buttons
             findViewById<View>(R.id.nav_home)?.setOnClickListener {
                 if (this !is HomeActivity) {
@@ -134,5 +132,8 @@ abstract class BaseNavigationActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.nav_find_text)?.setTextColor(Color.parseColor(defaultColor))
         findViewById<ImageView>(R.id.nav_profile_icon)?.setColorFilter(Color.parseColor(defaultColor))
         findViewById<TextView>(R.id.nav_profile_text)?.setTextColor(Color.parseColor(defaultColor))
+
+        // Optional: Reset paw icon color if you ever add tint to it
+        findViewById<ImageView>(R.id.nav_paw_icon)?.setColorFilter(null) // Remove any tint
     }
 }
