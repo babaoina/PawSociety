@@ -15,6 +15,9 @@ interface PawSocietyApi {
         @Query("skip") skip: Int = 0
     ): Response<ApiListResponse<ApiUser>>
 
+    @GET("admin/settings")
+    suspend fun getSettings(): Response<SettingsResponse>
+
     @POST("chat/accept-request/{chatId}")
     suspend fun acceptMessageRequest(
         @Path("chatId") chatId: String,

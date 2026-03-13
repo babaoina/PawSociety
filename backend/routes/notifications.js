@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Settings = require('../models/Settings'); // ← ADD THIS LINE
 const { v4: uuidv4 } = require('uuid');
 const admin = require('firebase-admin');
 
@@ -19,11 +20,55 @@ if (!admin.apps.length) {
   }
 }
 
+// ===== ADD THIS HELPER FUNCTION =====
+async function shouldSendNotification(userId, type, fromUserId) {
+  try {
+    const settings = await Settings.getSettings();
+    
+    // Check if push notifications are enabled globally
+    if (!settings.notifications.pushEnabled) {
+      console.log('🔕 Push notifications disabled globally');
+      return false;
+    }
+    
+    // Check if this notification type is enabled
+    if (!settings.notifications.notificationTypes.includes(type)) {
+      console.log(`🔕 Notification type "${type}" is disabled`);
+      return false;
+    }
+    
+    // Check quiet hours
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const quietStart = settings.notifications.quietStart;
+    const quietEnd = settings.notifications.quietEnd;
+    
+    if (quietStart < quietEnd) {
+      // Same day range (e.g., 22:00 to 08:00)
+      if (currentTime >= quietStart || currentTime < quietEnd) {
+        console.log('🔕 Quiet hours - notification suppressed');
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error checking notification settings:', error);
+    return true; // Default to sending if settings can't be loaded
+  }
+}
+
 /**
  * Function to send push notification to a user
  */
 async function sendPushNotification(userId, title, body, type, postId = null, fromUserId = null) {
   try {
+    // ===== ADD THIS CHECK =====
+    const shouldSend = await shouldSendNotification(userId, type, fromUserId);
+    if (!shouldSend) {
+      return;
+    }
+    
     // Check if Firebase Admin is initialized
     if (!admin.apps.length) {
       return;
@@ -102,6 +147,34 @@ async function sendPushNotification(userId, title, body, type, postId = null, fr
   }
 }
 
+// ===== ADD THIS NEW ROUTE for admin notification count =====
+router.get('/admin/count', async (req, res) => {
+  try {
+    // Get token from header
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token' });
+    }
+    
+    // Verify token (simplified - you might want to use your adminAuth middleware)
+    const Report = require('../models/Report');
+    
+    const reportCount = await Report.countDocuments({ status: 'pending' });
+    const newUsersToday = await User.countDocuments({
+      createdAt: { $gte: new Date().setHours(0,0,0,0) }
+    });
+    
+    const totalCount = reportCount + (newUsersToday > 0 ? 1 : 0);
+    
+    res.json({ count: totalCount });
+  } catch (error) {
+    console.error('Error getting notification count:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ... (KEEP ALL YOUR EXISTING ROUTES BELOW - don't change them) ...
+
 /**
  * GET /api/notifications/:userId
  * Get all notifications for a user
@@ -157,7 +230,6 @@ router.get('/:userId/unread-count', async (req, res) => {
 /**
  * POST /api/notifications
  * Create a new notification
- * Body: { userId, fromUserId, fromUserName, fromUserImage, type, postId, message }
  */
 router.post('/', async (req, res) => {
   try {

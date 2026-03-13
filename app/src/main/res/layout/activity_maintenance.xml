@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="30dp"
+    android:background="#FDF8F4">
+
+    <!-- Using system icon instead of custom drawable -->
+    <ImageView
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@android:drawable/ic_dialog_alert"
+        android:layout_marginBottom="30dp"
+        android:tint="#7A4F2B"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Under Maintenance"
+        android:textSize="28sp"
+        android:textColor="#7A4F2B"
+        android:textStyle="bold"
+        android:layout_marginBottom="15dp"/>
+
+    <TextView
+        android:id="@+id/tv_maintenance_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PawSociety is under maintenance. We'll be back soon! 🐾"
+        android:textSize="16sp"
+        android:textColor="#666"
+        android:gravity="center"
+        android:layout_marginBottom="40dp"/>
+
+    <Button
+        android:id="@+id/btn_retry"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Retry"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/button_oval_brown"
+        android:layout_marginBottom="15dp"/>
+
+    <Button
+        android:id="@+id/btn_contact_support"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Contact Support"
+        android:textColor="#7A4F2B"
+        android:background="@drawable/button_oval_white_border"/>
+
+</LinearLayout>

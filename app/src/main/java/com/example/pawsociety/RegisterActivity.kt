@@ -19,6 +19,7 @@ import com.example.pawsociety.data.repository.AuthRepository
 import com.example.pawsociety.util.FirebaseAuthHelper
 import com.example.pawsociety.util.SessionManager
 import kotlinx.coroutines.launch
+import com.example.pawsociety.data.repository.SettingsRepository
 
 class RegisterActivity : AppCompatActivity() {
 
@@ -51,6 +52,17 @@ class RegisterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
+
+        // Add this after sessionManager initialization
+        lifecycleScope.launch {
+            val settingsRepo = SettingsRepository()
+            val isRegistrationAllowed = settingsRepo.isRegistrationAllowed()
+
+            if (!isRegistrationAllowed) {
+                Toast.makeText(this@RegisterActivity, "Registration is currently disabled", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
 
         sessionManager = SessionManager(this)
 

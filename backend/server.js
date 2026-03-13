@@ -20,6 +20,7 @@ const highlightRoutes = require('./routes/highlights');
 const followRoutes = require('./routes/follow');
 const blockRoutes = require('./routes/blocks');
 const reportRoutes = require('./routes/reports');
+const settingsRoutes = require('./routes/settings'); // ✅ ADDED
 
 const app = express();
 const server = http.createServer(app);
@@ -127,9 +128,16 @@ app.use((req, res, next) => {
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pawsociety';
 
+// After MongoDB connects, ensure settings exist
+const Settings = require('./models/Settings');
+
 mongoose.connect(MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅ Connected to MongoDB:', MONGODB_URI);
+    
+    // ✅ Initialize settings if they don't exist
+    await Settings.getSettings();
+    console.log('✅ Settings initialized');
   })
   .catch((error) => {
     console.error('❌ MongoDB connection error:', error);
@@ -149,6 +157,7 @@ app.use('/api/users', highlightRoutes);
 app.use('/api/follow', followRoutes);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/admin/settings', settingsRoutes); // ✅ ADDED
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -218,6 +227,8 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('   - POST /api/posts/unhide');
   console.log('   - GET /api/posts/hidden');
   console.log('   - GET /api/posts/hidden/count');
+  console.log('   - GET /api/admin/settings'); // ✅ New route
+  console.log('   - PUT /api/admin/settings/:section'); // ✅ New route
 });
 
 module.exports = app;
