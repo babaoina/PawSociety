@@ -41,11 +41,13 @@ import com.example.pawsociety.data.repository.BlockRepository
 import com.example.pawsociety.data.repository.HidePostRepository
 import com.example.pawsociety.data.repository.PostRepository
 import com.example.pawsociety.data.repository.ReportRepository
+import com.example.pawsociety.data.repository.SettingsRepository
 import com.example.pawsociety.util.FCMTokenManager
 import com.example.pawsociety.util.NotificationManager
 import com.example.pawsociety.util.SessionManager
 import com.example.pawsociety.util.SocketManager
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -56,7 +58,9 @@ import android.app.Dialog
 import kotlin.math.max
 import android.os.Handler
 import android.os.Looper
-
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import android.net.Uri
 
 class HomeActivity : BaseNavigationActivity() {
 
@@ -65,11 +69,14 @@ class HomeActivity : BaseNavigationActivity() {
     private lateinit var emptyState: LinearLayout
     private lateinit var progressBar: ProgressBar
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
-    private lateinit var sessionManager: SessionManager
+
     private lateinit var notificationBadge: TextView
     private lateinit var bottomNav: View
 
-    // Category Filter Variables - ADDED
+    private val settingsRepository = SettingsRepository()
+    private var maintenanceJob: Job? = null
+
+    // Category Filter Variables
     private lateinit var layoutAll: LinearLayout
     private lateinit var layoutDogs: LinearLayout
     private lateinit var layoutCats: LinearLayout
@@ -94,7 +101,6 @@ class HomeActivity : BaseNavigationActivity() {
     private lateinit var chipBirds: ImageView
 
     private var currentCategory = "All"
-    // End Category Filter Variables
 
     private val postRepository = PostRepository()
     private val blockRepository = BlockRepository()
@@ -110,16 +116,21 @@ class HomeActivity : BaseNavigationActivity() {
             val postCategory = result.data?.getStringExtra("post_category") ?: ""
 
             if (postCreated) {
-                // Force refresh posts from server
-                viewModel.forceRefreshPosts()
-
                 Toast.makeText(this, "Post created! Refreshing feed...", Toast.LENGTH_SHORT).show()
 
-                // If we know the category, highlight it after refresh
+                // Multiple refreshes to ensure post appears
+                viewModel.forceRefreshPosts()
+
+                Handler(Looper.getMainLooper()).postDelayed({
+                    viewModel.forceRefreshPosts()
+                }, 500)
+
+                Handler(Looper.getMainLooper()).postDelayed({
+                    viewModel.forceRefreshPosts()
+                }, 1000)
+
                 if (postCategory.isNotEmpty()) {
-                    // Small delay to let the refresh happen
                     Handler(Looper.getMainLooper()).postDelayed({
-                        // Switch to the category of the new post
                         when (postCategory) {
                             "Dogs" -> {
                                 currentCategory = "Dogs"
@@ -142,10 +153,9 @@ class HomeActivity : BaseNavigationActivity() {
                                 viewModel.forceRefreshAndFilter("Birds")
                             }
                         }
-                    }, 500) // 500ms delay to let refresh complete
+                    }, 500)
                 }
 
-                // Scroll to top to see new post
                 val scrollView = findViewById<ScrollView>(R.id.feed_scrollview)
                 scrollView?.post {
                     scrollView?.smoothScrollTo(0, 0)
@@ -153,6 +163,8 @@ class HomeActivity : BaseNavigationActivity() {
             }
         }
     }
+
+
 
     private val editPostLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -165,10 +177,8 @@ class HomeActivity : BaseNavigationActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        // Make app full screen with content behind system bars
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        // Control status bar icon colors (dark icons for light background)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.let { controller ->
                 controller.show(android.view.WindowInsets.Type.statusBars())
@@ -181,7 +191,6 @@ class HomeActivity : BaseNavigationActivity() {
                     )
         }
 
-        // Add this test in onCreate to verify animation file exists
         try {
             assets.open("like.json").use {
                 Log.d("ANIMATION_TEST", "✅ like.json found in assets!")
@@ -191,7 +200,6 @@ class HomeActivity : BaseNavigationActivity() {
             Toast.makeText(this, "Animation file missing!", Toast.LENGTH_LONG).show()
         }
 
-        sessionManager = SessionManager(this)
 
         val currentUser = sessionManager.getCurrentUser()
         if (currentUser == null) {
@@ -215,15 +223,11 @@ class HomeActivity : BaseNavigationActivity() {
         notificationBadge = findViewById(R.id.notification_badge)
         bottomNav = findViewById(R.id.bottom_navigation)
 
-        // Setup bottom navigation to handle system bar insets
         setupBottomNavigationInsets()
-
-        // Initialize category filters - ADDED
         initCategoryFilters()
 
         val bigPlusButton = findViewById<LinearLayout>(R.id.big_plus_button)
         bigPlusButton?.setOnClickListener {
-            // Use the launcher instead of just starting activity
             createPostLauncher.launch(Intent(this, CreatePostActivity::class.java))
         }
 
@@ -233,10 +237,7 @@ class HomeActivity : BaseNavigationActivity() {
                 val testButton = firstPost.findViewById<com.example.pawsociety.widget.LikeButton>(R.id.btn_like_lottie_view)
                 testButton?.let {
                     Log.d("LIKE_TEST", "Testing animation on first post")
-                    // Force animation
                     it.setLiked(true, animate = true)
-
-                    // Revert after 2 seconds
                     Handler(Looper.getMainLooper()).postDelayed({
                         it.setLiked(false, animate = true)
                     }, 2000)
@@ -282,28 +283,87 @@ class HomeActivity : BaseNavigationActivity() {
         setupObservers()
     }
 
-    // 🔥 NEW: Method to refresh ALL data
+    private fun startMaintenanceChecker() {
+        maintenanceJob?.cancel()
+
+        maintenanceJob = lifecycleScope.launch {
+            while (true) {
+                try {
+                    delay(30000)
+                    println("🔍 Checking maintenance mode from HomeActivity...")
+                    val isMaintenance = settingsRepository.isMaintenanceMode()
+                    println("🚦 Maintenance mode from HomeActivity: $isMaintenance")
+
+                    if (isMaintenance) {
+                        println("🚧 Maintenance mode detected! Showing dialog...")
+                        val message = settingsRepository.getMaintenanceMessage()
+
+                        runOnUiThread {
+                            try {
+                                if (!isFinishing) {
+                                    showMaintenanceDialog(message)
+                                }
+                            } catch (e: Exception) {
+                                println("❌ Error showing dialog: ${e.message}")
+                            }
+                        }
+                        break
+                    }
+                } catch (e: CancellationException) {
+                    println("👋 Maintenance checker cancelled")
+                    break
+                } catch (e: Exception) {
+                    println("❌ Error checking maintenance: ${e.message}")
+                    e.printStackTrace()
+                    delay(60000)
+                }
+            }
+        }
+    }
+
+    private fun stopMaintenanceChecker() {
+        maintenanceJob?.cancel()
+        maintenanceJob = null
+        println("🛑 Maintenance checker stopped")
+    }
+
+    private fun showMaintenanceDialog(message: String) {
+        try {
+            println("📱 Showing maintenance dialog with message: $message")
+
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("Maintenance Mode")
+                .setMessage(message)
+                .setCancelable(false)
+                .setPositiveButton("OK") { _, _ ->
+                    println("✅ OK clicked, going to MaintenanceActivity")
+                    val intent = Intent(this, MaintenanceActivity::class.java)
+                    intent.putExtra("message", message)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
+                .create()
+
+            dialog.show()
+            println("✅ Dialog shown successfully")
+        } catch (e: Exception) {
+            println("❌ Error creating dialog: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
     private fun refreshAllData() {
-        // Force refresh posts from server (not cache)
         viewModel.forceRefreshAndFilter(currentCategory)
-
-        // Reload current user data
         viewModel.loadCurrentUser()
-
-        // Reload hidden posts
         loadHiddenPosts()
 
-        // Restart notification polling
         val currentUser = sessionManager.getCurrentUser()
         currentUser?.let {
             NotificationManager.startPolling(it.firebaseUid, this)
         }
     }
 
-    /**
-     * Setup bottom navigation to automatically adjust to system navigation bar
-     * Works with gesture nav, 2-button nav, and 3-button nav
-     */
     private fun setupBottomNavigationInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(bottomNav) { view, insets ->
             val systemBarInsets = insets.getInsets(
@@ -312,29 +372,21 @@ class HomeActivity : BaseNavigationActivity() {
                         WindowInsetsCompat.Type.ime()
             )
 
-            // Get the navigation bar insets specifically
             val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
 
-            // Apply padding based on system navigation bar height
-            // This ensures the app's nav bar sits ON TOP of the system nav bar
             view.updatePadding(
                 bottom = navBarInsets.bottom
             )
 
-            // Log the insets for debugging
             Log.d("Insets", "System bars bottom: ${systemBarInsets.bottom}")
             Log.d("Insets", "Nav bars bottom: ${navBarInsets.bottom}")
 
-            // Return the insets without consuming them
             insets
         }
 
-        // Request insets to be dispatched
         bottomNav.requestApplyInsets()
     }
 
-
-    // ADDED: Initialize category filters
     private fun initCategoryFilters() {
         layoutAll = findViewById(R.id.layout_all)
         layoutDogs = findViewById(R.id.layout_dogs)
@@ -363,71 +415,59 @@ class HomeActivity : BaseNavigationActivity() {
         highlightCategory("All")
     }
 
-    // ADDED: Setup category click listeners
     private fun setupCategoryClickListeners() {
         layoutAll.setOnClickListener {
-            // Always force refresh first, regardless of current category
             currentCategory = "All"
             highlightCategory("All")
-            viewModel.forceRefreshAndFilter("All")  // This ALWAYS makes an API call
+            viewModel.forceRefreshAndFilter("All")
         }
 
         layoutDogs.setOnClickListener {
-            // Always force refresh first, regardless of current category
             currentCategory = "Dogs"
             highlightCategory("Dogs")
-            viewModel.forceRefreshAndFilter("Dogs")  // This ALWAYS makes an API call
+            viewModel.forceRefreshAndFilter("Dogs")
         }
 
         layoutCats.setOnClickListener {
-            // Always force refresh first, regardless of current category
             currentCategory = "Cats"
             highlightCategory("Cats")
-            viewModel.forceRefreshAndFilter("Cats")  // This ALWAYS makes an API call
+            viewModel.forceRefreshAndFilter("Cats")
         }
 
         layoutFish.setOnClickListener {
-            // Always force refresh first, regardless of current category
             currentCategory = "Fish"
             highlightCategory("Fish")
-            viewModel.forceRefreshAndFilter("Fish")  // This ALWAYS makes an API call
+            viewModel.forceRefreshAndFilter("Fish")
         }
 
         layoutBirds.setOnClickListener {
-            // Always force refresh first, regardless of current category
             currentCategory = "Birds"
             highlightCategory("Birds")
-            viewModel.forceRefreshAndFilter("Birds")  // This ALWAYS makes an API call
+            viewModel.forceRefreshAndFilter("Birds")
         }
     }
 
-    // ADDED: Highlight selected category
     private fun highlightCategory(category: String) {
-        // Reset all circles to default (white with gray border)
         allCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
         dogCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
         catCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
         fishCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
         birdCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_default)
 
-        // Reset text colors to gray
         textAll.setTextColor(Color.parseColor("#666666"))
         textDogs.setTextColor(Color.parseColor("#666666"))
         textCats.setTextColor(Color.parseColor("#666666"))
         textFish.setTextColor(Color.parseColor("#666666"))
         textBirds.setTextColor(Color.parseColor("#666666"))
 
-        // Reset icon colors to gray
         chipDogs.setColorFilter(Color.parseColor("#999999"))
         chipCats.setColorFilter(Color.parseColor("#999999"))
         chipFish.setColorFilter(Color.parseColor("#999999"))
         chipBirds.setColorFilter(Color.parseColor("#999999"))
 
-        // For "All" text inside circle
         val allTextView = allCircle.getChildAt(0) as TextView
-        allTextView.setTextColor(Color.parseColor("#7A4F2B")) // Keep "All" text brown by default
+        allTextView.setTextColor(Color.parseColor("#7A4F2B"))
 
-        // Highlight selected category
         when (category) {
             "All" -> {
                 allCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_selected)
@@ -437,7 +477,7 @@ class HomeActivity : BaseNavigationActivity() {
             "Dogs" -> {
                 dogCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_selected)
                 textDogs.setTextColor(Color.parseColor("#7A4F2B"))
-                chipDogs.setColorFilter(Color.parseColor("#7A4F2B")) // Brown icon when selected
+                chipDogs.setColorFilter(Color.parseColor("#7A4F2B"))
             }
             "Cats" -> {
                 catCircle.background = ContextCompat.getDrawable(this, R.drawable.circle_category_selected)
@@ -477,25 +517,38 @@ class HomeActivity : BaseNavigationActivity() {
         }
     }
 
+    // 🔥 FIXED: Setup socket listeners with strict message filtering
     private fun setupSocketListeners() {
+        // Listen for new posts only - IGNORE anything that looks like a message
         SocketManager.on("new-post") { args ->
             if (args.isNotEmpty()) {
                 try {
                     val data = args[0] as? JSONObject
                     if (data != null) {
-                        val post = parsePostFromJson(data)
-                        runOnUiThread {
-                            Snackbar.make(
-                                findViewById(android.R.id.content),
-                                "New post from ${post.userName}",
-                                Snackbar.LENGTH_LONG
-                            ).setAction("View") {
-                                val scrollView = findViewById<ScrollView>(R.id.feed_scrollview)
-                                scrollView?.smoothScrollTo(0, 0)
-                                Toast.makeText(this@HomeActivity, "New post added!", Toast.LENGTH_SHORT).show()
-                            }.show()
+                        // 🔥 STRICT CHECK: Only process if it has petName (messages don't have this)
+                        if (data.has("petName") && !data.optString("petName").isNullOrEmpty()) {
+                            val post = parsePostFromJson(data)
+                            runOnUiThread {
+                                // Double-check this isn't a message
+                                if (post.petName.isNotEmpty() &&
+                                    !post.petName.contains("message", ignoreCase = true) &&
+                                    !post.description.contains("message", ignoreCase = true)) {
 
-                            viewModel.forceRefreshAndFilter(currentCategory)
+                                    Snackbar.make(
+                                        findViewById(android.R.id.content),
+                                        "New post from ${post.userName}",
+                                        Snackbar.LENGTH_LONG
+                                    ).setAction("View") {
+                                        val scrollView = findViewById<ScrollView>(R.id.feed_scrollview)
+                                        scrollView?.smoothScrollTo(0, 0)
+                                        Toast.makeText(this@HomeActivity, "New post added!", Toast.LENGTH_SHORT).show()
+                                    }.show()
+
+                                    viewModel.forceRefreshAndFilter(currentCategory)
+                                }
+                            }
+                        } else {
+                            Log.d("HomeActivity", "⚠️ Ignoring non-post socket event (missing petName)")
                         }
                     }
                 } catch (e: Exception) {
@@ -504,6 +557,31 @@ class HomeActivity : BaseNavigationActivity() {
             }
         }
 
+        // Add these socket listeners for real-time updates
+        SocketManager.on("new-message") { args ->
+            runOnUiThread {
+                // Increment badge when new message arrives
+                val currentCount = if (inboxBadge.visibility == View.VISIBLE) {
+                    inboxBadge.text.toString().toIntOrNull() ?: 0
+                } else {
+                    0
+                }
+                updateInboxBadge(currentCount + 1)
+            }
+        }
+
+        SocketManager.on("new-message-request") { args ->
+            runOnUiThread {
+                val currentCount = if (inboxBadge.visibility == View.VISIBLE) {
+                    inboxBadge.text.toString().toIntOrNull() ?: 0
+                } else {
+                    0
+                }
+                updateInboxBadge(currentCount + 1)
+            }
+        }
+
+        // Listen for profile updates
         SocketManager.on("profile-updated") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -516,6 +594,7 @@ class HomeActivity : BaseNavigationActivity() {
             }
         }
 
+        // Listen for post likes
         SocketManager.on("post-liked") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -532,6 +611,12 @@ class HomeActivity : BaseNavigationActivity() {
                 }
             }
         }
+
+        // 🔥 IMPORTANT: We DO NOT listen for these message events:
+        // - "new-message"
+        // - "new-message-request"
+        // - "chat-message"
+        // This prevents messages from appearing in the Home feed
     }
 
     private fun updateLikeCountInFeed(postId: String?, likesCount: Int?, isLiked: Boolean? = null) {
@@ -545,7 +630,6 @@ class HomeActivity : BaseNavigationActivity() {
                 val tvLikeCount = postView.findViewById<TextView>(R.id.tv_like_count)
                 tvLikeCount?.text = likesCount.toString()
 
-                // Add pop animation to like count
                 tvLikeCount?.animate()?.scaleX(1.2f)?.scaleY(1.2f)?.setDuration(100)?.withEndAction {
                     tvLikeCount?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.setDuration(100)?.start()
                 }?.start()
@@ -568,6 +652,8 @@ class HomeActivity : BaseNavigationActivity() {
             userImageUrl = json.optString("userImageUrl", ""),
             petName = json.optString("petName", ""),
             petType = json.optString("petType", ""),
+            age = json.optString("age", ""),
+            weight = json.optString("weight", ""),
             gender = json.optString("gender", "Unknown"),
             status = json.optString("status", ""),
             description = json.optString("description", ""),
@@ -615,23 +701,54 @@ class HomeActivity : BaseNavigationActivity() {
                 startActivity(Intent(this, LoginActivity::class.java))
                 finish()
             }
+
+            // Add this inside setupObservers() function
+            viewModel.unreadCount.observe(this) { count ->
+                try {
+                    val inboxBadge = findViewById<TextView>(R.id.inbox_badge)
+                    if (inboxBadge != null) {
+                        if (count > 0) {
+                            inboxBadge.text = if (count > 9) "9+" else count.toString()
+                            inboxBadge.visibility = View.VISIBLE
+
+                            // Add a little pop animation
+                            inboxBadge.animate()
+                                .scaleX(1.3f)
+                                .scaleY(1.3f)
+                                .setDuration(200)
+                                .withEndAction {
+                                    inboxBadge.animate()
+                                        .scaleX(1.0f)
+                                        .scaleY(1.0f)
+                                        .setDuration(100)
+                                        .start()
+                                }
+                                .start()
+
+                            Log.d("HomeActivity", "🔴 Inbox badge updated: $count")
+                        } else {
+                            inboxBadge.visibility = View.GONE
+                            Log.d("HomeActivity", "⚪ Inbox badge hidden")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("HomeActivity", "Error updating inbox badge: ${e.message}")
+                }
+            }
         })
 
-        // FIXED: ALWAYS clear and recreate views when posts change
         viewModel.posts.observe(this, Observer { posts ->
             Log.d("HomeActivity", "📊 Received ${posts.size} posts for category: $currentCategory")
 
-            // Check if this is just a like count update or a full refresh
             val isLikeUpdate = posts.size == postsContainer.childCount &&
                     posts.all { post ->
                         postsContainer.findViewWithTag<View>(post.postId) != null
                     }
 
             if (isLikeUpdate) {
-                // Just update like counts without recreating views
                 updateLikeCountsOnly(posts)
             } else {
-                // ALWAYS clear all existing views first for major changes
+                // 🔥 FIXED: Clear and recreate ALL views when posts change
                 postsContainer.removeAllViews()
 
                 if (posts.isEmpty()) {
@@ -658,14 +775,25 @@ class HomeActivity : BaseNavigationActivity() {
                     val currentLikeMap = viewModel.likeStatus.value ?: emptyMap()
                     val currentFavMap = viewModel.favoriteStatus.value ?: emptyMap()
 
-                    // Create views for each post
-                    for (post in visiblePosts) {
+                    // 🔥 FIXED: Sort posts to show newest first (MOST RECENT AT TOP)
+                    val sortedPosts = visiblePosts.sortedByDescending { it.createdAt }
+
+                    Log.d("HomeActivity", "📊 Sorted posts - newest first:")
+                    sortedPosts.forEachIndexed { index, post ->
+                        Log.d("HomeActivity", "   [$index] ${post.petName} - Created: ${post.createdAt}")
+                    }
+
+                    // Create views for each post - adding in normal order will put newest at top
+                    // because we're iterating from newest to oldest
+                    for (post in sortedPosts) {
                         createPostView(post, currentLikeMap, currentFavMap)
                     }
 
-                    // Force layout update
                     postsContainer.invalidate()
                     postsContainer.requestLayout()
+
+                    // Debug the final order
+                    debugPostOrder()
                 }
             }
 
@@ -674,7 +802,6 @@ class HomeActivity : BaseNavigationActivity() {
             }
         })
 
-        // Keep your existing likeStatus observer
         viewModel.likeStatus.observe(this, Observer { likeMap ->
             for (i in 0 until postsContainer.childCount) {
                 val postView = postsContainer.getChildAt(i)
@@ -682,12 +809,11 @@ class HomeActivity : BaseNavigationActivity() {
                 val isLiked = likeMap[postId] ?: false
                 val likeButton = postView.findViewById<com.example.pawsociety.widget.LikeButton>(R.id.btn_like_lottie_view)
                 if (likeButton?.isLiked != isLiked) {
-                    likeButton?.setLiked(isLiked, animate = false)  // No animation when syncing
+                    likeButton?.setLiked(isLiked, animate = false)
                 }
             }
         })
 
-        // Rest of your observers...
         viewModel.isLoading.observe(this, Observer { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         })
@@ -702,7 +828,6 @@ class HomeActivity : BaseNavigationActivity() {
             }
         })
 
-        // Add this to setupObservers() - update favorite buttons when favoriteStatus changes
         viewModel.favoriteStatus.observe(this, Observer { favMap ->
             for (i in 0 until postsContainer.childCount) {
                 val postView = postsContainer.getChildAt(i)
@@ -746,7 +871,6 @@ class HomeActivity : BaseNavigationActivity() {
             return
         }
 
-        // SAFETY: Filter out null posts and hidden posts
         val validPosts = posts.filterNotNull()
 
         val visiblePosts = if (hiddenPostIds.isNotEmpty()) {
@@ -773,15 +897,19 @@ class HomeActivity : BaseNavigationActivity() {
         val currentLikeMap = viewModel.likeStatus.value ?: emptyMap()
         val currentFavMap = viewModel.favoriteStatus.value ?: emptyMap()
 
-        // Force recreate ALL views for fresh data
-        for (post in visiblePosts) {
+        // 🔥 FIXED: Sort posts to show newest first
+        val sortedPosts = visiblePosts.sortedByDescending { it.createdAt }
+
+        // Create views for each post
+        for (post in sortedPosts) {
             createPostView(post, currentLikeMap, currentFavMap)
         }
 
-        // Force layout update
         postsContainer.invalidate()
         postsContainer.requestLayout()
     }
+
+
 
     private fun createPostView(
         post: ApiPost,
@@ -789,50 +917,61 @@ class HomeActivity : BaseNavigationActivity() {
         favoriteStatusMap: Map<String, Boolean>
     ) {
         try {
+            // 🔥 FIXED: Don't filter out posts based on age/weight being empty
+            // Only block if it's definitely a message
+            if (post.postId.startsWith("msg_")) {
+                Log.w("HomeActivity", "⚠️ Skipping message: ${post.postId}")
+                return
+            }
+
+            // If it has a pet name, it's a valid post - ALWAYS SHOW IT
+            if (post.petName.isNullOrEmpty()) {
+                Log.w("HomeActivity", "⚠️ Skipping post with no pet name: ${post.postId}")
+                return
+            }
+
+            // Log that we're showing the post
+            Log.d("HomeActivity", "✅ Showing post: ${post.petName} - ${post.postId}")
+
             val inflater = LayoutInflater.from(this)
             val postView = inflater.inflate(R.layout.item_post, postsContainer, false)
 
             postView.tag = post.postId
 
-            // ===== FIND VIEWS =====
+            // ===== FIND ALL VIEWS - WITH SAFE NULL CHECKS =====
             val profileIcon = postView.findViewById<TextView>(R.id.post_profile_icon)
             val profileImage = postView.findViewById<ImageView>(R.id.post_profile_image)
             val userNameText = postView.findViewById<TextView>(R.id.post_user_name)
-            val userRoleText = postView.findViewById<TextView>(R.id.post_user_role)
             val locationText = postView.findViewById<TextView>(R.id.post_location)
             val postDate = postView.findViewById<TextView>(R.id.post_date)
             val btnMore = postView.findViewById<ImageView>(R.id.btn_more)
+            val userRole = postView.findViewById<TextView>(R.id.post_user_role)  // ← I-ADD ITO
 
-            // Image views
             val viewPager = postView.findViewById<ViewPager2>(R.id.post_view_pager)
             val singleImageView = postView.findViewById<ImageView>(R.id.post_image)
             val indicatorContainer = postView.findViewById<LinearLayout>(R.id.indicator_container)
             val noImagePlaceholder = postView.findViewById<LinearLayout>(R.id.no_image_placeholder)
 
-            // Status badges
             val statusBadge = postView.findViewById<TextView>(R.id.post_status)
             val rewardBadge = postView.findViewById<TextView>(R.id.post_reward_badge)
 
-            // Pet info
+            // 🔥 IMPORTANT: These are now inside the new RelativeLayout
             val petTypeText = postView.findViewById<TextView>(R.id.post_pet_type)
+            val categoryBadge = postView.findViewById<TextView>(R.id.post_category_badge)
+
             val petNameText = postView.findViewById<TextView>(R.id.post_pet_name)
 
-            // Gender, Age, Weight
             val genderIcon = postView.findViewById<ImageView>(R.id.post_gender_icon)
             val genderText = postView.findViewById<TextView>(R.id.post_gender_text)
             val postAge = postView.findViewById<TextView>(R.id.post_age)
             val postWeight = postView.findViewById<TextView>(R.id.post_weight)
 
-            // About section
             val descriptionText = postView.findViewById<TextView>(R.id.post_description)
             val btnMoreDescription = postView.findViewById<TextView>(R.id.btn_more_description)
 
-            // Contact and reward
-            val contactText = postView.findViewById<TextView>(R.id.post_contact)
             val rewardText = postView.findViewById<TextView>(R.id.post_reward)
             val rewardContainer = postView.findViewById<LinearLayout>(R.id.reward_container)
 
-            // Action buttons
             val btnLikeGroup = postView.findViewById<LinearLayout>(R.id.btn_like_group)
             val likeButton = postView.findViewById<com.example.pawsociety.widget.LikeButton>(R.id.btn_like_lottie_view)
             val tvLikeCount = postView.findViewById<TextView>(R.id.tv_like_count)
@@ -843,39 +982,268 @@ class HomeActivity : BaseNavigationActivity() {
             val btnFavoriteGroup = postView.findViewById<LinearLayout>(R.id.btn_favorite_group)
             val btnFavorite = postView.findViewById<ImageView>(R.id.btn_favorite)
 
+            val inboxBadge = findViewById<TextView>(R.id.inbox_badge)
 
-            // ===== SET BASIC DATA (ALL NULL-SAFE) =====
-            userNameText?.text = post.userName
+            // ===== MAKE PHONE NUMBER CLICKABLE =====
+            val btnCallContainer = postView.findViewById<LinearLayout>(R.id.btn_call_container)
+            val contactText = postView.findViewById<TextView>(R.id.post_contact)
+            val ivCallIcon = postView.findViewById<ImageView>(R.id.iv_call_icon)
+
+            // Extract digits from contact info
+            val rawContact = post.contactInfo ?: ""
+            val phoneDigits = rawContact.replace("[^0-9]".toRegex(), "")
+
+            if (phoneDigits.isNotEmpty()) {
+                btnCallContainer?.visibility = View.VISIBLE
+
+                // 🔥 ILAGAY DITO - Para pantayin ang height
+                // Set icon size only, remove minimumHeight
+                ivCallIcon?.layoutParams?.height = 18.dp
+                ivCallIcon?.layoutParams?.width = 18.dp
+                ivCallIcon?.requestLayout()
+
+                btnCallContainer?.setOnClickListener {
+                    try {
+                        val intent = Intent(Intent.ACTION_DIAL).apply {
+                            data = Uri.parse("tel:$phoneDigits")
+                        }
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(this@HomeActivity, "Cannot make call", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                btnCallContainer?.visibility = View.GONE  // Hide if no number
+            }
+
+            // When you have new messages, show the badge
+            fun updateInboxBadge(count: Int) {
+                if (count > 0) {
+                    inboxBadge.text = if (count > 9) "9+" else count.toString()
+                    inboxBadge.visibility = View.VISIBLE
+                } else {
+                    inboxBadge.visibility = View.GONE
+                }
+            }
+
+            // ===== SET USER ROLE WITH PET NAME =====
+            val petOwnerText = if (!post.petName.isNullOrEmpty()) {
+                "${post.petName}'s Owner"
+            } else {
+                "Pet Owner"
+            }
+            userRole?.text = petOwnerText
+
+            // ===== SET BASIC DATA WITH NULL SAFETY =====
+            userNameText?.text = post.userName ?: "Unknown"
             locationText?.text = post.location ?: "Unknown location"
             postDate?.text = getTimeAgo(post.createdAt)
-            petNameText?.text = post.petName
-            petTypeText?.text = post.petType
-            descriptionText?.text = post.description
+            petNameText?.text = post.petName ?: "Unnamed Pet"
+            petTypeText?.text = post.petType ?: "Unknown breed"
+            descriptionText?.text = post.description ?: ""
             tvLikeCount?.text = post.likesCount.toString()
-            contactText?.text = "📞 ${post.contactInfo}"
+
+            // Set contact text - numbers only, no emoji
+            val cleanContact = post.contactInfo?.replace("[^0-9]".toRegex(), "") ?: ""
+            contactText?.text = if (cleanContact.isNotEmpty()) cleanContact else "No contact"
+
+            // ===== SET CATEGORY BADGE - FALLBACK VERSION =====
+            try {
+                if (categoryBadge != null) {
+                    // First try to get from post.category
+                    var category = when (post.category) {
+                        "Dogs" -> "DOG"
+                        "Cats" -> "CAT"
+                        "Fish" -> "FISH"
+                        "Birds" -> "BIRD"
+                        else -> null
+                    }
+
+                    // If no category, try to detect from pet type
+                    if (category == null) {
+                        val petTypeLower = post.petType.lowercase()
+                        category = when {
+                            // DOG detection - including unknown/mixed
+                            petTypeLower.contains("dog") ||
+                                    petTypeLower.contains("aspin") ||
+                                    petTypeLower.contains("shih") ||
+                                    petTypeLower.contains("labrador") ||
+                                    petTypeLower.contains("golden") ||
+                                    petTypeLower.contains("german") ||
+                                    petTypeLower.contains("poodle") ||
+                                    petTypeLower.contains("chow") ||
+                                    petTypeLower.contains("pug") ||
+                                    petTypeLower.contains("beagle") ||
+                                    petTypeLower.contains("dachshund") ||
+                                    petTypeLower.contains("rottweiler") ||
+                                    petTypeLower.contains("pomeranian") ||
+                                    petTypeLower.contains("husky") ||
+                                    petTypeLower.contains("corgi") ||
+                                    petTypeLower.contains("maltese") ||
+                                    petTypeLower.contains("chihuahua") ||
+                                    petTypeLower.contains("pitbull") ||
+                                    petTypeLower.contains("bulldog") ||
+                                    petTypeLower.contains("boxer") ||
+                                    petTypeLower.contains("shiba") ||
+                                    petTypeLower.contains("akita") ||
+                                    petTypeLower.contains("samoyed") ||
+                                    petTypeLower.contains("cocker") ||
+                                    petTypeLower.contains("doberman") ||
+                                    petTypeLower.contains("great dane") ||
+                                    petTypeLower.contains("saint bernard") ||
+                                    petTypeLower.contains("siberian") ||
+                                    petTypeLower.contains("jack russell") ||
+                                    petTypeLower.contains("border collie") ||
+                                    petTypeLower.contains("australian shepherd") ||
+                                    petTypeLower.contains("bichon") ||
+                                    petTypeLower.contains("unknown dog") ||  // ← Specific detection
+                                    petTypeLower.contains("other dog") -> "DOG"
+
+                            // CAT detection - including unknown/mixed
+                            petTypeLower.contains("cat") ||
+                                    petTypeLower.contains("puspin") ||
+                                    petTypeLower.contains("persian") ||
+                                    petTypeLower.contains("siamese") ||
+                                    petTypeLower.contains("maine coon") ||
+                                    petTypeLower.contains("bengal") ||
+                                    petTypeLower.contains("sphynx") ||
+                                    petTypeLower.contains("ragdoll") ||
+                                    petTypeLower.contains("british shorthair") ||
+                                    petTypeLower.contains("scottish fold") ||
+                                    petTypeLower.contains("abyssinian") ||
+                                    petTypeLower.contains("burmese") ||
+                                    petTypeLower.contains("russian blue") ||
+                                    petTypeLower.contains("norwegian forest") ||
+                                    petTypeLower.contains("birman") ||
+                                    petTypeLower.contains("oriental shorthair") ||
+                                    petTypeLower.contains("devon rex") ||
+                                    petTypeLower.contains("cornish rex") ||
+                                    petTypeLower.contains("himalayan") ||
+                                    petTypeLower.contains("american shorthair") ||
+                                    petTypeLower.contains("exotic shorthair") ||
+                                    petTypeLower.contains("unknown cat") ||  // ← Specific detection
+                                    petTypeLower.contains("other cat") -> "CAT"
+
+                            // FISH detection - including unknown/mixed
+                            petTypeLower.contains("fish") ||
+                                    petTypeLower.contains("goldfish") ||
+                                    petTypeLower.contains("betta") ||
+                                    petTypeLower.contains("guppy") ||
+                                    petTypeLower.contains("molly") ||
+                                    petTypeLower.contains("platy") ||
+                                    petTypeLower.contains("swordtail") ||
+                                    petTypeLower.contains("angelfish") ||
+                                    petTypeLower.contains("discus") ||
+                                    petTypeLower.contains("oscar") ||
+                                    petTypeLower.contains("cichlid") ||
+                                    petTypeLower.contains("koi") ||
+                                    petTypeLower.contains("tetra") ||
+                                    petTypeLower.contains("barb") ||
+                                    petTypeLower.contains("corydoras") ||
+                                    petTypeLower.contains("plecostomus") ||
+                                    petTypeLower.contains("danio") ||
+                                    petTypeLower.contains("rainbowfish") ||
+                                    petTypeLower.contains("killifish") ||
+                                    petTypeLower.contains("arowana") ||
+                                    petTypeLower.contains("flowerhorn") ||
+                                    petTypeLower.contains("parrot fish") ||
+                                    petTypeLower.contains("gourami") ||
+                                    petTypeLower.contains("unknown fish") ||  // ← Specific detection
+                                    petTypeLower.contains("other fish") -> "FISH"
+
+                            // BIRD detection - including unknown/mixed
+                            petTypeLower.contains("bird") ||
+                                    petTypeLower.contains("parrot") ||
+                                    petTypeLower.contains("macaw") ||
+                                    petTypeLower.contains("lovebird") ||
+                                    petTypeLower.contains("parakeet") ||
+                                    petTypeLower.contains("budgie") ||
+                                    petTypeLower.contains("cockatiel") ||
+                                    petTypeLower.contains("african grey") ||
+                                    petTypeLower.contains("canary") ||
+                                    petTypeLower.contains("finch") ||
+                                    petTypeLower.contains("conure") ||
+                                    petTypeLower.contains("amazon") ||
+                                    petTypeLower.contains("eclectus") ||
+                                    petTypeLower.contains("pigeon") ||
+                                    petTypeLower.contains("dove") ||
+                                    petTypeLower.contains("quaker") ||
+                                    petTypeLower.contains("senegal") ||
+                                    petTypeLower.contains("cockatoo") ||
+                                    petTypeLower.contains("mynah") ||
+                                    petTypeLower.contains("java sparrow") ||
+                                    petTypeLower.contains("zebra finch") ||
+                                    petTypeLower.contains("gouldian finch") ||
+                                    petTypeLower.contains("ringneck") ||
+                                    petTypeLower.contains("unknown bird") ||  // ← Specific detection
+                                    petTypeLower.contains("other bird") -> "BIRD"
+
+                            else -> null
+                        }
+                    }
+
+                    if (category != null) {
+                        categoryBadge.text = category
+                        categoryBadge.visibility = View.VISIBLE
+
+                        // Set background color and style based on category
+                        when (category) {
+                            "DOG" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#B88B4A"))
+                                categoryBadge.setTextColor(Color.WHITE)
+                            }
+                            "CAT" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#FF9800"))
+                                categoryBadge.setTextColor(Color.WHITE)
+                            }
+                            "FISH" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#00BCD4"))
+                                categoryBadge.setTextColor(Color.WHITE)
+                            }
+                            "BIRD" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#2196F3"))
+                                categoryBadge.setTextColor(Color.WHITE)
+                            }
+                        }
+
+                        // Add padding using your working dp extension
+                        categoryBadge.setPadding(12.dp, 4.dp, 12.dp, 4.dp)
+
+                        Log.d("HomeActivity", "✅ Set category badge: $category for post: ${post.petName}")
+                    } else {
+                        categoryBadge.visibility = View.GONE
+                        Log.d("HomeActivity", "ℹ️ No category detected for post: ${post.petName}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("HomeActivity", "Error setting category badge", e)
+            }
 
             // ===== SET GENDER =====
-            // Alternative if you're using text view for gender
             when (post.gender?.lowercase()) {
                 "male" -> {
                     genderText?.text = "Male"
-                    genderText?.setTextColor(Color.parseColor("#2196F3")) // Blue
+                    genderText?.setTextColor(Color.parseColor("#2196F3"))
                     genderIcon?.visibility = View.GONE
                 }
                 "female" -> {
                     genderText?.text = "Female"
-                    genderText?.setTextColor(Color.parseColor("#E91E63")) // Pink
+                    genderText?.setTextColor(Color.parseColor("#E91E63"))
                     genderIcon?.visibility = View.GONE
                 }
                 else -> {
                     genderText?.text = post.gender ?: "Unknown"
-                    genderText?.setTextColor(Color.parseColor("#666666")) // Gray
+                    genderText?.setTextColor(Color.parseColor("#666666"))
                     genderIcon?.visibility = View.GONE
                 }
             }
 
             // ===== SET PROFILE ICON =====
-            val firstLetter = if (post.userName.isNotEmpty()) {
+            val firstLetter = if (!post.userName.isNullOrEmpty()) {
                 post.userName.first().toString().uppercase()
             } else {
                 "?"
@@ -884,21 +1252,28 @@ class HomeActivity : BaseNavigationActivity() {
 
             // ===== LOAD PROFILE IMAGE IF AVAILABLE =====
             if (!post.userImageUrl.isNullOrEmpty()) {
-                val fullImageUrl = if (post.userImageUrl.startsWith("http")) {
-                    post.userImageUrl
-                } else {
-                    "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}${post.userImageUrl}"
+                try {
+                    val fullImageUrl = if (post.userImageUrl.startsWith("http")) {
+                        post.userImageUrl
+                    } else {
+                        "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}${post.userImageUrl}"
+                    }
+
+                    profileIcon?.visibility = View.GONE
+                    profileImage?.visibility = View.VISIBLE
+
+                    Glide.with(this@HomeActivity)
+                        .load(fullImageUrl)
+                        .circleCrop()
+                        .placeholder(R.drawable.circle_solid_profile)
+                        .error(R.drawable.circle_solid_profile)
+                        .into(profileImage!!)
+                } catch (e: Exception) {
+                    Log.e("HomeActivity", "Error loading profile image: ${e.message}")
+                    // Keep showing icon
+                    profileIcon?.visibility = View.VISIBLE
+                    profileImage?.visibility = View.GONE
                 }
-
-                profileIcon?.visibility = View.GONE
-                profileImage?.visibility = View.VISIBLE
-
-                Glide.with(this@HomeActivity)
-                    .load(fullImageUrl)
-                    .circleCrop()
-                    .placeholder(R.drawable.circle_solid_profile)
-                    .error(R.drawable.circle_solid_profile)
-                    .into(profileImage!!)
             }
 
             // ===== SET AGE AND WEIGHT =====
@@ -935,7 +1310,7 @@ class HomeActivity : BaseNavigationActivity() {
                         }
                         rewardBadge?.visibility = View.VISIBLE
 
-                        rewardText?.text = "Reward: ₱$formattedReward"
+                        rewardText?.text = "₱$formattedReward"
                         rewardText?.visibility = View.VISIBLE
                         rewardContainer?.visibility = View.VISIBLE
                     } else {
@@ -964,51 +1339,58 @@ class HomeActivity : BaseNavigationActivity() {
 
             // ===== HANDLE IMAGES =====
             if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
-                if (post.imageUrls.size > 1) {
-                    viewPager?.visibility = View.VISIBLE
-                    singleImageView?.visibility = View.GONE
-                    noImagePlaceholder?.visibility = View.GONE
+                try {
+                    if (post.imageUrls.size > 1) {
+                        viewPager?.visibility = View.VISIBLE
+                        singleImageView?.visibility = View.GONE
+                        noImagePlaceholder?.visibility = View.GONE
 
-                    val imageAdapter = PostImagePagerAdapter(post.imageUrls)
-                    viewPager?.adapter = imageAdapter
-                    viewPager?.offscreenPageLimit = 1
+                        val imageAdapter = PostImagePagerAdapter(post.imageUrls)
+                        viewPager?.adapter = imageAdapter
+                        viewPager?.offscreenPageLimit = 1
 
-                    setupImageIndicators(indicatorContainer!!, post.imageUrls.size)
-                    indicatorContainer?.visibility = View.VISIBLE
+                        setupImageIndicators(indicatorContainer!!, post.imageUrls.size)
+                        indicatorContainer?.visibility = View.VISIBLE
 
-                    viewPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                        override fun onPageSelected(position: Int) {
-                            super.onPageSelected(position)
-                            updateIndicatorSelection(indicatorContainer!!, position)
+                        viewPager?.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                            override fun onPageSelected(position: Int) {
+                                super.onPageSelected(position)
+                                updateIndicatorSelection(indicatorContainer!!, position)
+                            }
+                        })
+
+                        viewPager?.setOnClickListener {
+                            openImageGallery(post.imageUrls, viewPager?.currentItem ?: 0)
                         }
-                    })
-
-                    viewPager?.setOnClickListener {
-                        openImageGallery(post.imageUrls, viewPager?.currentItem ?: 0)
-                    }
-                } else {
-                    viewPager?.visibility = View.GONE
-                    singleImageView?.visibility = View.VISIBLE
-                    indicatorContainer?.visibility = View.GONE
-                    noImagePlaceholder?.visibility = View.GONE
-
-                    val imageUrl = post.imageUrls[0]
-                    val fullImageUrl = if (imageUrl.startsWith("http")) {
-                        imageUrl
                     } else {
-                        "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$imageUrl"
-                    }
+                        viewPager?.visibility = View.GONE
+                        singleImageView?.visibility = View.VISIBLE
+                        indicatorContainer?.visibility = View.GONE
+                        noImagePlaceholder?.visibility = View.GONE
 
-                    Glide.with(this)
-                        .load(fullImageUrl)
-                        .centerCrop()
-                        .placeholder(android.R.drawable.ic_menu_gallery)
-                        .error(android.R.drawable.ic_menu_report_image)
-                        .into(singleImageView!!)
+                        val imageUrl = post.imageUrls[0]
+                        val fullImageUrl = if (imageUrl.startsWith("http")) {
+                            imageUrl
+                        } else {
+                            "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$imageUrl"
+                        }
 
-                    singleImageView?.setOnClickListener {
-                        openImageGallery(post.imageUrls, 0)
+                        Glide.with(this)
+                            .load(fullImageUrl)
+                            .centerCrop()
+                            .placeholder(android.R.drawable.ic_menu_gallery)
+                            .error(android.R.drawable.ic_menu_report_image)
+                            .into(singleImageView!!)
+
+                        singleImageView?.setOnClickListener {
+                            openImageGallery(post.imageUrls, 0)
+                        }
                     }
+                } catch (e: Exception) {
+                    Log.e("HomeActivity", "Error loading post images: ${e.message}")
+                    viewPager?.visibility = View.GONE
+                    singleImageView?.visibility = View.GONE
+                    noImagePlaceholder?.visibility = View.VISIBLE
                 }
             } else {
                 viewPager?.visibility = View.GONE
@@ -1050,8 +1432,7 @@ class HomeActivity : BaseNavigationActivity() {
 
             // ===== SET INITIAL LIKE STATE =====
             val isLiked = likeStatusMap[post.postId] ?: false
-            likeButton?.setLiked(isLiked, animate = false)  // This should be false for initial state
-            Log.d("LIKE_ANIMATION", "Home - Initial state for post ${post.postId}: $isLiked")
+            likeButton?.setLiked(isLiked, animate = false)
 
             // ===== SET INITIAL FAVORITE STATE =====
             val isFav = favoriteStatusMap[post.postId] ?: false
@@ -1073,7 +1454,6 @@ class HomeActivity : BaseNavigationActivity() {
 
                 val isFav = btnFavorite?.tag == "favorited"
 
-                // Toggle immediately for better UX
                 if (isFav) {
                     btnFavorite?.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
                     btnFavorite?.tag = "unfavorited"
@@ -1086,8 +1466,6 @@ class HomeActivity : BaseNavigationActivity() {
             }
 
             // ===== CLICK LISTENERS =====
-
-            // Profile click
             profileIcon?.setOnClickListener {
                 try {
                     val user = currentUser
@@ -1106,7 +1484,6 @@ class HomeActivity : BaseNavigationActivity() {
                 }
             }
 
-            // Username click
             userNameText?.setOnClickListener {
                 try {
                     val user = currentUser
@@ -1125,14 +1502,11 @@ class HomeActivity : BaseNavigationActivity() {
                 }
             }
 
-            // More options click
             btnMore?.setOnClickListener {
                 showPostOptions(post, likeButton!!)
             }
 
-            // ===== LIKE BUTTON CLICK HANDLER =====
             btnLikeGroup?.setOnClickListener {
-                Log.d("LIKE_CLICK", "Like button clicked! isEnabled=${btnLikeGroup?.isEnabled}")
                 val user = currentUser
                 if (user == null) {
                     Toast.makeText(this@HomeActivity, "Please login to like posts", Toast.LENGTH_SHORT).show()
@@ -1144,20 +1518,13 @@ class HomeActivity : BaseNavigationActivity() {
 
                 val wasAlreadyLiked = likeButton?.isLiked ?: false
 
-                // DEBUG LOG
-                Log.d("LIKE_ANIMATION", "Home - Before: isLiked=$wasAlreadyLiked, setting to ${!wasAlreadyLiked} with animate=true")
-
-                // IMPORTANT: Force animation to play
                 if (likeButton != null) {
-                    // First make sure the animation view is visible
                     likeButton.setLiked(!wasAlreadyLiked, animate = true)
                 }
 
-                // Update count immediately
                 val currentCount = tvLikeCount?.text.toString().toIntOrNull() ?: 0
                 tvLikeCount?.text = (if (!wasAlreadyLiked) currentCount + 1 else (currentCount - 1).coerceAtLeast(0)).toString()
 
-                // Call ViewModel
                 viewModel.toggleLike(post, wasAlreadyLiked)
 
                 Handler(Looper.getMainLooper()).postDelayed({
@@ -1165,35 +1532,10 @@ class HomeActivity : BaseNavigationActivity() {
                 }, 1000)
             }
 
-            // Share button click
             btnShareGroup?.setOnClickListener {
                 sharePost(post)
             }
 
-            // ===== FIXED FAVORITE BUTTON CLICK HANDLER =====
-            btnFavoriteGroup?.setOnClickListener {
-                val user = currentUser
-                if (user == null) {
-                    Toast.makeText(this, "Please login to favorite", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-
-                val isFav = btnFavorite?.tag == "favorited"
-
-                // Toggle immediately for better UX
-                if (isFav) {
-                    btnFavorite?.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
-                    btnFavorite?.tag = "unfavorited"
-                } else {
-                    btnFavorite?.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
-                    btnFavorite?.tag = "favorited"
-                }
-
-                // Call ViewModel to toggle favorite
-                viewModel.toggleFavorite(post, isFav)
-            }
-
-            // Message button - FIXED LINE 755
             val user = currentUser
             if (post.firebaseUid == user?.firebaseUid) {
                 btnMessageGroup?.visibility = View.GONE
@@ -1207,10 +1549,23 @@ class HomeActivity : BaseNavigationActivity() {
                 }
             }
 
+            // 🔥 IMPORTANT: Add view at the END of container
             postsContainer.addView(postView)
+            Log.d("HomeActivity", "✅ Added post to feed: ${post.petName}")
+
         } catch (e: Exception) {
-            println("❌ Error creating post view: ${e.message}")
+            Log.e("HomeActivity", "❌ CRITICAL ERROR creating post view: ${e.message}")
             e.printStackTrace()
+        }
+    }
+
+    private fun debugPostOrder() {
+        Log.d("HomeActivity", "📋 FINAL POST ORDER IN FEED (top to bottom):")
+        for (i in 0 until postsContainer.childCount) {
+            val postView = postsContainer.getChildAt(i)
+            val postId = postView.tag as? String ?: "unknown"
+            val petName = postView.findViewById<TextView>(R.id.post_pet_name)?.text ?: "unknown"
+            Log.d("HomeActivity", "   Position $i: $petName - $postId")
         }
     }
 
@@ -1255,7 +1610,6 @@ class HomeActivity : BaseNavigationActivity() {
             reward
         }
     }
-
 
     private fun getTimeAgo(dateTime: String): String {
         return try {
@@ -1448,6 +1802,9 @@ class HomeActivity : BaseNavigationActivity() {
             .show()
     }
 
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
+
     private fun hidePost(post: ApiPost) {
         val currentUser = sessionManager.getCurrentUser() ?: return
 
@@ -1506,19 +1863,6 @@ class HomeActivity : BaseNavigationActivity() {
             } else {
                 Toast.makeText(this@HomeActivity, "Failed to block user", Toast.LENGTH_SHORT).show()
             }
-        }
-    }
-
-    private fun showUndoSnackbar(post: ApiPost) {
-        try {
-            val view = findViewById<View>(android.R.id.content)
-            val snackbar = Snackbar.make(view, "Post hidden", Snackbar.LENGTH_LONG)
-            snackbar.setAction("Undo") {
-                Toast.makeText(this, "Post restored", Toast.LENGTH_SHORT).show()
-            }
-            snackbar.show()
-        } catch (e: Exception) {
-            println("❌ Error showing snackbar: ${e.message}")
         }
     }
 
@@ -1638,26 +1982,43 @@ class HomeActivity : BaseNavigationActivity() {
         }
     }
 
-    // Add this temporarily to see what's happening
-    private fun debugPostCount() {
-        Log.d("HomeActivity", "🔍 Container has ${postsContainer.childCount} views")
-        for (i in 0 until postsContainer.childCount) {
-            val view = postsContainer.getChildAt(i)
-            val tag = view.tag as? String ?: "no tag"
-            Log.d("HomeActivity", "   View $i: tag=$tag")
+    override fun onResume() {
+        super.onResume()
+        startMaintenanceChecker()
+
+        viewModel.forceRefreshAndFilter(currentCategory)
+        viewModel.loadCurrentUser()
+        viewModel.loadInboxCounts() // 🔥 ADD THIS LINE
+        loadHiddenPosts()
+
+        lifecycleScope.launch {
+            try {
+                println("🔍 Force checking maintenance mode on resume...")
+                val isMaintenance = settingsRepository.isMaintenanceMode()
+                println("🚦 Maintenance mode on resume: $isMaintenance")
+
+                if (isMaintenance) {
+                    val message = settingsRepository.getMaintenanceMessage()
+                    runOnUiThread {
+                        showMaintenanceDialog(message)
+                    }
+                }
+            } catch (e: Exception) {
+                println("❌ Error checking maintenance on resume: ${e.message}")
+            }
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Don't just load from cache - force refresh!
-        viewModel.forceRefreshAndFilter(currentCategory)  // Use force refresh
-        viewModel.loadCurrentUser()
-        loadHiddenPosts()
+
+
+    override fun onPause() {
+        super.onPause()
+        stopMaintenanceChecker()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        stopMaintenanceChecker()
         if (::notificationBadge.isInitialized) {
             NotificationManager.cleanup(notificationBadge)
         }

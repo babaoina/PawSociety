@@ -132,7 +132,6 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    // FIXED: Changed from private to public
     fun loadUserPosts(userId: String?) {
         println("📊 loadUserPosts called with userId: $userId")
 

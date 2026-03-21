@@ -23,8 +23,8 @@ class ReportRepository {
             println("📝 Creating report from $reporterUid for reason: $reason")
 
             val request = ReportRequest(
-                reporterUid = reporterUid,
-                reportedUid = reportedUid,
+                reporterUid = reporterUid,  // This should be Firebase UID
+                reportedUid = reportedUid,   // This should be Firebase UID of reported user
                 postId = postId,
                 commentId = commentId,
                 reason = reason,

@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawSociety - User Accounts 👤</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #fef7e8;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #7A4F2B;
+        }
+
+        .logo span {
+            font-weight: 400;
+            color: #B88B4A;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .admin-name .name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 13px;
+        }
+
+        .admin-name .role {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: #7A4F2B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            width: 160px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .dropdown-item:hover {
+            background: #fef3e8;
+            color: #7A4F2B;
+        }
+
+        .container {
+            display: flex;
+            padding-top: 60px;
+            min-height: 100vh;
+            justify-content: center;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #5a3a1f;
+            position: fixed;
+            left: 0;
+            top: 60px;
+            height: calc(100vh - 60px);
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 10px 20px;
+            margin: 4px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e8d9cc;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .menu-item:hover {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-item.active {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-icon {
+            font-size: 16px;
+            width: 22px;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-wrapper {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .page-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #5a3a1f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-header h2 i {
+            color: #7A4F2B;
+            font-size: 22px;
+        }
+
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            color: #7A4F2B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .search-section {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            border: 1px solid #f0e4d4;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input-wrapper {
+            flex: 2;
+            position: relative;
+            min-width: 200px;
+        }
+
+        .search-input-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #B88B4A;
+            font-size: 14px;
+        }
+
+        .search-input-wrapper input {
+            width: 100%;
+            padding: 10px 14px 10px 40px;
+            border: 1px solid #eef2f6;
+            border-radius: 40px;
+            font-size: 13px;
+            background: #fef7e8;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-select {
+            padding: 9px 16px;
+            border: 1px solid #eef2f6;
+            border-radius: 40px;
+            font-size: 12px;
+            color: #7A4F2B;
+            background: white;
+            cursor: pointer;
+        }
+
+        .clear-btn {
+            background: #fef3e8;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            color: #7A4F2B;
+            cursor: pointer;
+        }
+
+        .results-count {
+            margin: 16px 0 12px;
+            font-size: 13px;
+            color: #7A4F2B;
+        }
+
+        .results-count span {
+            font-weight: 700;
+        }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .user-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #f0e4d4;
+            transition: all 0.2s;
+        }
+
+        .user-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(90,58,31,0.08);
+        }
+
+        .user-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 16px;
+        }
+
+        .user-avatar-large {
+            width: 60px;
+            height: 60px;
+            background: #7A4F2B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .user-info h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #5a3a1f;
+        }
+
+        .user-info .user-email {
+            font-size: 12px;
+            color: #7c6b5a;
+            margin: 4px 0;
+        }
+
+        .user-role {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            background: #fef3e8;
+            color: #7A4F2B;
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 16px;
+            padding: 12px 0;
+            border-top: 1px solid #f0e4d4;
+            border-bottom: 1px solid #f0e4d4;
+            margin: 12px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #5a3a1f;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #9c856c;
+        }
+
+        .report-badge {
+            background: #fff7ed;
+            color: #f97316;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-view-posts {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .btn-suspend {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-activate {
+            background: #22c55e;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close-btn {
+            background: #7A4F2B;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            padding: 16px;
+            color: #9c856c;
+            font-size: 11px;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+                display: flex;
+                overflow-x: auto;
+                padding: 10px;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .container {
+                flex-direction: column;
+            }
+            .users-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>PawSociety <span>🐾 Admin</span></h1>
+        </div>
+        <div class="header-right">
+            <div class="admin-profile" id="adminProfile">
+                <div class="admin-name">
+                    <div class="name" id="adminName">Admin User</div>
+                    <div class="role" id="adminRole">Super Admin</div>
+                </div>
+                <div class="avatar" id="avatarBtn">🐶</div>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="dropdown-item" onclick="window.location.href='settings.html'">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                    <div class="dropdown-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="menu-item" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-chart-line menu-icon"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='posts.html'">
+                <i class="fas fa-paw menu-icon"></i>
+                <span>Posts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='users.html'">
+                <i class="fas fa-user menu-icon"></i>
+                <span>Users</span>
+            </div>
+            <div class="menu-item active">
+                <i class="fas fa-users menu-icon"></i>
+                <span>Accounts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='reports.html'">
+                <i class="fas fa-chart-bar menu-icon"></i>
+                <span>Reports</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='settings.html'">
+                <i class="fas fa-cog menu-icon"></i>
+                <span>Settings</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="content-wrapper">
+                <div class="page-header">
+                    <h2>
+                        <i class="fas fa-users"></i>
+                        User Accounts
+                    </h2>
+                    <div class="stat-badge">
+                        <i class="fas fa-paw"></i> <span id="totalUsers">0</span> Total Users
+                    </div>
+                </div>
+
+                <div class="search-section">
+                    <div class="search-row">
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Search users by name, email, or username..." id="searchInput">
+                        </div>
+                        <div class="filter-group">
+                            <select class="filter-select" id="roleFilter">
+                                <option value="">All Roles</option>
+                                <option value="admin">Admin</option>
+                                <option value="user">User</option>
+                                <option value="moderator">Moderator</option>
+                            </select>
+                            <select class="filter-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Suspended">Suspended</option>
+                            </select>
+                            <button class="clear-btn" onclick="clearFilters()"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="results-count">
+                        <i class="fas fa-paw"></i> <span id="resultCount">0</span> users found
+                    </div>
+                </div>
+
+                <div class="users-grid" id="usersGrid">
+                    <div style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading users...</div>
+                </div>
+
+                <div class="footer">
+                    <p>© 2025 PawSociety. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="userPostsModal">
+        <div class="modal-content">
+            <h3><i class="fas fa-paw"></i> User's Posts</h3>
+            <div id="modalUserInfo"></div>
+            <div id="userPostsGrid"></div>
+            <button class="close-btn" onclick="closeModal('userPostsModal')">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="reportsModal">
+        <div class="modal-content">
+            <h3><i class="fas fa-flag"></i> Reports for <span id="reportedUserName"></span></h3>
+            <div id="reportsList"></div>
+            <button class="close-btn" onclick="closeModal('reportsModal')">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const avatarBtn = document.getElementById('avatarBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        let allUsers = [];
+
+        avatarBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
+        document.addEventListener('click', (e) => { if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) dropdownMenu.classList.remove('show'); });
+
+        function logout() { if(confirm('Logout?')) { localStorage.removeItem('adminToken'); localStorage.removeItem('adminUser'); window.location.href='index.html'; } }
+
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', () => { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadUsers, 300); });
+        document.getElementById('roleFilter').addEventListener('change', loadUsers);
+        document.getElementById('statusFilter').addEventListener('change', loadUsers);
+
+        function clearFilters() { document.getElementById('searchInput').value=''; document.getElementById('roleFilter').value=''; document.getElementById('statusFilter').value=''; loadUsers(); }
+
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) { window.location.href='index.html'; return; }
+                const searchTerm = document.getElementById('searchInput').value;
+                const roleFilter = document.getElementById('roleFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                let url = '/api/admin/users?';
+                if(searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+                if(roleFilter) url += `role=${roleFilter}&`;
+                if(statusFilter) url += `status=${statusFilter}`;
+                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                if(!response.ok) throw new Error('Failed');
+                allUsers = await response.json();
+                const nonAdminUsers = allUsers.filter(u => u.role !== 'admin');
+                document.getElementById('totalUsers').textContent = nonAdminUsers.length;
+                document.getElementById('resultCount').textContent = nonAdminUsers.length;
+                displayUsers(nonAdminUsers);
+            } catch(error) { showToast('Failed to load users', 'error'); }
+        }
+
+        function displayUsers(users) {
+            const grid = document.getElementById('usersGrid');
+            if(users.length===0) { grid.innerHTML='<div style="text-align:center;padding:60px;"><i class="fas fa-users" style="font-size:40px;color:#B88B4A;"></i><h3 style="color:#7A4F2B;">No users found</h3></div>'; return; }
+            grid.innerHTML = users.map(user => {
+                const initials = (user.name || user.username || 'U').charAt(0).toUpperCase();
+                return `
+                <div class="user-card">
+                    <div class="user-header"><div class="user-avatar-large">${initials}</div><div class="user-info"><h3>${user.name || user.username}</h3><div class="user-email"><i class="fas fa-envelope"></i> ${user.email || 'No email'}</div><span class="user-role">${user.role || 'user'}</span></div></div>
+                    <div class="user-stats"><div class="stat-item"><div class="stat-value">${user.posts || 0}</div><div class="stat-label">Posts</div></div><div class="stat-item"><div class="stat-value">0</div><div class="stat-label">Followers</div></div><div class="stat-item"><div class="stat-value">0</div><div class="stat-label">Following</div></div></div>
+                    <div class="report-badge" onclick="viewUserReports('${user.firebaseUid || user.id}', '${user.name || user.username}')"><i class="fas fa-flag"></i> ${user.reportCount || 0} Reports</div>
+                    <div class="user-actions"><button class="action-btn btn-view-posts" onclick="viewUserPosts('${user.firebaseUid || user.id}', '${user.name || user.username}')"><i class="fas fa-paw"></i> View Posts</button>
+                    ${user.status === 'Active' ? `<button class="action-btn btn-suspend" onclick="updateUserStatus('${user.id}', 'Suspended')"><i class="fas fa-ban"></i> Suspend</button>` : `<button class="action-btn btn-activate" onclick="updateUserStatus('${user.id}', 'Active')"><i class="fas fa-check"></i> Activate</button>`}</div>
+                </div>`;
+            }).join('');
+        }
+
+        async function viewUserPosts(userId, userName) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                document.getElementById('modalUserInfo').innerHTML = `<div style="display:flex; gap:15px;"><div class="user-avatar-large">${userName.charAt(0)}</div><div><h4>${userName}</h4><p>Loading posts...</p></div></div>`;
+                document.getElementById('userPostsGrid').innerHTML = '<div style="text-align:center;"><i class="fas fa-spinner fa-spin"></i></div>';
+                openModal('userPostsModal');
+                const response = await fetch(`/api/admin/users/${userId}/posts`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if(!response.ok) throw new Error('Failed');
+                const posts = await response.json();
+                document.getElementById('modalUserInfo').innerHTML = `<div style="display:flex; gap:15px;"><div class="user-avatar-large">${userName.charAt(0)}</div><div><h4>${userName}</h4><p>${posts.length} posts found</p></div></div>`;
+                if(posts.length===0) document.getElementById('userPostsGrid').innerHTML = '<div style="text-align:center;padding:40px;">No posts yet</div>';
+                else document.getElementById('userPostsGrid').innerHTML = posts.map(p => `<div style="background:#fef3e8; padding:12px; border-radius:12px; margin-bottom:10px;"><strong>${p.petName}</strong> - ${p.status}<br><small>${p.location || 'No location'}</small></div>`).join('');
+            } catch(error) { showToast('Failed to load posts', 'error'); }
+        }
+
+        async function viewUserReports(userId, userName) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/users/${userId}/reports`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if(!response.ok) throw new Error('Failed');
+                const reports = await response.json();
+                document.getElementById('reportedUserName').textContent = userName;
+                document.getElementById('reportsList').innerHTML = reports.length ? reports.map(r => `<div style="background:#fef3e8; padding:12px; border-radius:12px; margin-bottom:10px;"><strong>${r.reason}</strong><br><small>${new Date(r.createdAt).toLocaleDateString()}</small><br>Reported by: ${r.reporterName || 'Unknown'}</div>`).join('') : '<p>No reports</p>';
+                openModal('reportsModal');
+            } catch(error) { showToast('Failed to load reports', 'error'); }
+        }
+
+        async function updateUserStatus(id, status) {
+            if(!confirm(`Are you sure you want to ${status.toLowerCase()} this user?`)) return;
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status }) });
+                if(!response.ok) throw new Error('Failed');
+                showToast(`User ${status.toLowerCase()} successfully`, 'success');
+                loadUsers();
+            } catch(error) { showToast('Failed to update user', 'error'); }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function showToast(msg, type) { let c=document.getElementById('toast-container'); if(!c){c=document.createElement('div');c.id='toast-container';document.body.appendChild(c);} const t=document.createElement('div'); t.style.cssText=`background:${type==='success'?'#22c55e':'#ef4444'};color:white;padding:10px 16px;border-radius:8px;margin-bottom:8px;animation:slideIn 0.3s ease;`; t.textContent=msg; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
+        document.addEventListener('DOMContentLoaded', loadUsers);
+        setInterval(loadUsers, 30000);
+    </script>
+</body>
+</html>

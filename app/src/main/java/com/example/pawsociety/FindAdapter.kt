@@ -11,7 +11,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DecodeFormat
-import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.request.RequestOptions
 import com.example.pawsociety.api.ApiPost
 
@@ -25,6 +24,8 @@ class FindAdapter(
         val postImage: ImageView = itemView.findViewById(R.id.post_image)
         val petName: TextView = itemView.findViewById(R.id.pet_name)
         val statusBadge: TextView = itemView.findViewById(R.id.status_badge)
+        // 🔥 ADD THIS - Category badge view
+        val categoryBadge: TextView = itemView.findViewById(R.id.category_badge)
 
         init {
             // Force square container
@@ -76,6 +77,171 @@ class FindAdapter(
                 }
             }
 
+            // ===== SET CATEGORY BADGE =====
+            try {
+                var category = when (post.category) {
+                    "Dogs" -> "DOG"
+                    "Cats" -> "CAT"
+                    "Fish" -> "FISH"
+                    "Birds" -> "BIRD"
+                    else -> null
+                }
+
+                // If no category, try to detect from pet type
+                if (category == null) {
+                    val petTypeLower = post.petType.lowercase()
+                    category = when {
+                        // DOG detection
+                        petTypeLower.contains("dog") ||
+                                petTypeLower.contains("aspin") ||
+                                petTypeLower.contains("shih") ||
+                                petTypeLower.contains("labrador") ||
+                                petTypeLower.contains("golden") ||
+                                petTypeLower.contains("german") ||
+                                petTypeLower.contains("poodle") ||
+                                petTypeLower.contains("chow") ||
+                                petTypeLower.contains("pug") ||
+                                petTypeLower.contains("beagle") ||
+                                petTypeLower.contains("dachshund") ||
+                                petTypeLower.contains("rottweiler") ||
+                                petTypeLower.contains("pomeranian") ||
+                                petTypeLower.contains("husky") ||
+                                petTypeLower.contains("corgi") ||
+                                petTypeLower.contains("maltese") ||
+                                petTypeLower.contains("chihuahua") ||
+                                petTypeLower.contains("pitbull") ||
+                                petTypeLower.contains("bulldog") ||
+                                petTypeLower.contains("boxer") ||
+                                petTypeLower.contains("shiba") ||
+                                petTypeLower.contains("akita") ||
+                                petTypeLower.contains("samoyed") ||
+                                petTypeLower.contains("cocker") ||
+                                petTypeLower.contains("doberman") ||
+                                petTypeLower.contains("great dane") ||
+                                petTypeLower.contains("saint bernard") ||
+                                petTypeLower.contains("siberian") ||
+                                petTypeLower.contains("jack russell") ||
+                                petTypeLower.contains("border collie") ||
+                                petTypeLower.contains("australian shepherd") ||
+                                petTypeLower.contains("bichon") ||
+                                petTypeLower.contains("unknown dog") ||
+                                petTypeLower.contains("other dog") -> "DOG"
+
+                        // CAT detection
+                        petTypeLower.contains("cat") ||
+                                petTypeLower.contains("puspin") ||
+                                petTypeLower.contains("persian") ||
+                                petTypeLower.contains("siamese") ||
+                                petTypeLower.contains("maine coon") ||
+                                petTypeLower.contains("bengal") ||
+                                petTypeLower.contains("sphynx") ||
+                                petTypeLower.contains("ragdoll") ||
+                                petTypeLower.contains("british shorthair") ||
+                                petTypeLower.contains("scottish fold") ||
+                                petTypeLower.contains("abyssinian") ||
+                                petTypeLower.contains("burmese") ||
+                                petTypeLower.contains("russian blue") ||
+                                petTypeLower.contains("norwegian forest") ||
+                                petTypeLower.contains("birman") ||
+                                petTypeLower.contains("oriental shorthair") ||
+                                petTypeLower.contains("devon rex") ||
+                                petTypeLower.contains("cornish rex") ||
+                                petTypeLower.contains("himalayan") ||
+                                petTypeLower.contains("american shorthair") ||
+                                petTypeLower.contains("exotic shorthair") ||
+                                petTypeLower.contains("unknown cat") ||
+                                petTypeLower.contains("other cat") -> "CAT"
+
+                        // FISH detection
+                        petTypeLower.contains("fish") ||
+                                petTypeLower.contains("goldfish") ||
+                                petTypeLower.contains("betta") ||
+                                petTypeLower.contains("guppy") ||
+                                petTypeLower.contains("molly") ||
+                                petTypeLower.contains("platy") ||
+                                petTypeLower.contains("swordtail") ||
+                                petTypeLower.contains("angelfish") ||
+                                petTypeLower.contains("discus") ||
+                                petTypeLower.contains("oscar") ||
+                                petTypeLower.contains("cichlid") ||
+                                petTypeLower.contains("koi") ||
+                                petTypeLower.contains("tetra") ||
+                                petTypeLower.contains("barb") ||
+                                petTypeLower.contains("corydoras") ||
+                                petTypeLower.contains("plecostomus") ||
+                                petTypeLower.contains("danio") ||
+                                petTypeLower.contains("rainbowfish") ||
+                                petTypeLower.contains("killifish") ||
+                                petTypeLower.contains("arowana") ||
+                                petTypeLower.contains("flowerhorn") ||
+                                petTypeLower.contains("parrot fish") ||
+                                petTypeLower.contains("gourami") ||
+                                petTypeLower.contains("unknown fish") ||
+                                petTypeLower.contains("other fish") -> "FISH"
+
+                        // BIRD detection
+                        petTypeLower.contains("bird") ||
+                                petTypeLower.contains("parrot") ||
+                                petTypeLower.contains("macaw") ||
+                                petTypeLower.contains("lovebird") ||
+                                petTypeLower.contains("parakeet") ||
+                                petTypeLower.contains("budgie") ||
+                                petTypeLower.contains("cockatiel") ||
+                                petTypeLower.contains("african grey") ||
+                                petTypeLower.contains("canary") ||
+                                petTypeLower.contains("finch") ||
+                                petTypeLower.contains("conure") ||
+                                petTypeLower.contains("amazon") ||
+                                petTypeLower.contains("eclectus") ||
+                                petTypeLower.contains("pigeon") ||
+                                petTypeLower.contains("dove") ||
+                                petTypeLower.contains("quaker") ||
+                                petTypeLower.contains("senegal") ||
+                                petTypeLower.contains("cockatoo") ||
+                                petTypeLower.contains("mynah") ||
+                                petTypeLower.contains("java sparrow") ||
+                                petTypeLower.contains("zebra finch") ||
+                                petTypeLower.contains("gouldian finch") ||
+                                petTypeLower.contains("ringneck") ||
+                                petTypeLower.contains("unknown bird") ||
+                                petTypeLower.contains("other bird") -> "BIRD"
+
+                        else -> null
+                    }
+                }
+
+                if (category != null) {
+                    holder.categoryBadge.text = category
+                    holder.categoryBadge.visibility = View.VISIBLE
+
+                    // Set background color based on category
+                    when (category) {
+                        "DOG" -> {
+                            holder.categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            holder.categoryBadge.background.setTint(Color.parseColor("#B88B4A"))
+                        }
+                        "CAT" -> {
+                            holder.categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            holder.categoryBadge.background.setTint(Color.parseColor("#FF9800"))
+                        }
+                        "FISH" -> {
+                            holder.categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            holder.categoryBadge.background.setTint(Color.parseColor("#00BCD4"))
+                        }
+                        "BIRD" -> {
+                            holder.categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            holder.categoryBadge.background.setTint(Color.parseColor("#2196F3"))
+                        }
+                    }
+                    holder.categoryBadge.setTextColor(Color.WHITE)
+                    holder.categoryBadge.setPadding(8.dp, 2.dp, 8.dp, 2.dp)
+                } else {
+                    holder.categoryBadge.visibility = View.GONE
+                }
+            } catch (e: Exception) {
+                holder.categoryBadge.visibility = View.GONE
+            }
+
             // Load image - HIGH QUALITY
             if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
                 val imageUrl = post.imageUrls[0]
@@ -95,10 +261,10 @@ class FindAdapter(
                             .centerCrop()
                             .placeholder(android.R.drawable.ic_menu_gallery)
                             .error(android.R.drawable.ic_menu_report_image)
-                            .override(800, 800)  // Higher resolution
-                            .format(DecodeFormat.PREFER_ARGB_8888)  // Best quality
-                            .skipMemoryCache(false)  // Use memory cache
-                            .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL) // Cache both
+                            .override(800, 800)
+                            .format(DecodeFormat.PREFER_ARGB_8888)
+                            .skipMemoryCache(false)
+                            .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
                     )
                     .into(holder.postImage)
             } else {
@@ -120,3 +286,7 @@ class FindAdapter(
 
     override fun getItemCount() = posts.size
 }
+
+// Add this extension function at the bottom
+private val Int.dp: Int
+    get() = (this * android.content.res.Resources.getSystem().displayMetrics.density).toInt()

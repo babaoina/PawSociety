@@ -25,6 +25,7 @@ import com.example.pawsociety.data.repository.UserRepository
 import com.example.pawsociety.util.SessionManager
 import com.example.pawsociety.util.SocketManager
 import kotlinx.coroutines.launch
+import com.example.pawsociety.util.InboxBadgeManager
 
 class InboxActivity : BaseNavigationActivity() {
 
@@ -36,7 +37,7 @@ class InboxActivity : BaseNavigationActivity() {
     private lateinit var tvEmptyText: TextView
     private lateinit var tvUsername: TextView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
-    private lateinit var sessionManager: SessionManager
+
     private lateinit var tabMessages: RelativeLayout
     private lateinit var tabRequests: RelativeLayout
     private lateinit var tabIndicator: View
@@ -57,12 +58,25 @@ class InboxActivity : BaseNavigationActivity() {
     private val friendsList = mutableListOf<ApiUser>()
 
     private var currentTab = "messages" // "messages" or "requests"
+    private var isInForeground = false
+
+    // 🔥 ADDED: Auto-refresh variables
+    private var refreshHandler = Handler(Looper.getMainLooper())
+    private var refreshRunnable: Runnable? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_inbox)
 
-        sessionManager = SessionManager(this)
+        // 🔥 ADD THIS LINE - Register badge for this activity
+        try {
+            inboxBadge = findViewById(R.id.inbox_badge)
+            InboxBadgeManager.registerBadge(inboxBadge)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
 
         currentUser = sessionManager.getCurrentUser()
         if (currentUser == null) {
@@ -77,12 +91,66 @@ class InboxActivity : BaseNavigationActivity() {
         initializeViews()
         setupClickListeners()
         setupOnlineStatusListener()
+        setupSocketListeners()
         loadConversations()
 
         // Join user room for online status
         SocketManager.connect()
         currentUser?.let { user ->
             SocketManager.joinUserRoom(user.firebaseUid)
+        }
+    }
+
+    // 🔥 Socket listeners for real-time updates
+    private fun setupSocketListeners() {
+        // Listen for new messages
+        SocketManager.on("new-message") { args ->
+            if (isInForeground) {
+                runOnUiThread {
+                    println("📨 New message received, refreshing inbox...")
+                    loadConversations()
+                }
+            }
+        }
+
+        // Listen for message requests
+        SocketManager.on("new-message-request") { args ->
+            if (isInForeground) {
+                runOnUiThread {
+                    println("📨 New message request received, refreshing inbox...")
+                    loadConversations()
+                }
+            }
+        }
+
+        // Listen for message sent confirmation
+        SocketManager.on("message-sent") { args ->
+            if (isInForeground) {
+                runOnUiThread {
+                    println("📨 Message sent confirmed, refreshing inbox...")
+                    loadConversations()
+                }
+            }
+        }
+
+        // Listen for request acceptance
+        SocketManager.on("request-accepted") { args ->
+            if (isInForeground) {
+                runOnUiThread {
+                    println("✅ Request accepted, refreshing inbox...")
+                    loadConversations()
+                }
+            }
+        }
+
+        // Listen for chat cleared
+        SocketManager.on("chat-cleared") { args ->
+            if (isInForeground) {
+                runOnUiThread {
+                    println("🗑️ Chat cleared, refreshing inbox...")
+                    loadConversations()
+                }
+            }
         }
     }
 
@@ -94,10 +162,8 @@ class InboxActivity : BaseNavigationActivity() {
         tvUsername = findViewById(R.id.tv_username)
         swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout)
 
-        // FIX: These are RelativeLayout, not TextView
-        tabMessages = findViewById(R.id.tab_messages)  // Remove "as TextView"
-        tabRequests = findViewById(R.id.tab_requests)  // Remove "as TextView"
-
+        tabMessages = findViewById(R.id.tab_messages)
+        tabRequests = findViewById(R.id.tab_requests)
         tabIndicator = findViewById(R.id.tab_indicator)
         tvRequestsBadge = findViewById(R.id.tv_requests_badge)
         friendsContainer = findViewById(R.id.friends_container)
@@ -109,7 +175,6 @@ class InboxActivity : BaseNavigationActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         requestsRecyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Setup SwipeRefreshLayout
         swipeRefreshLayout.setColorSchemeColors(
             android.graphics.Color.parseColor("#7A4F2B"),
             android.graphics.Color.parseColor("#FF6B35"),
@@ -119,25 +184,21 @@ class InboxActivity : BaseNavigationActivity() {
             loadConversations()
         }
 
-        // Set initial tab
         updateTabSelection()
     }
 
     private fun setupClickListeners() {
-        // Search bar click - opens search activity
         val searchContainer = findViewById<LinearLayout>(R.id.search_container)
         searchContainer.setOnClickListener {
             val intent = Intent(this, SearchUsersActivity::class.java)
             startActivity(intent)
         }
 
-        // New Message Button
         findViewById<ImageButton>(R.id.btn_new_message).setOnClickListener {
             val intent = Intent(this, SearchUsersActivity::class.java)
             startActivity(intent)
         }
 
-        // Tab clicks
         tabMessages.setOnClickListener {
             if (currentTab != "messages") {
                 currentTab = "messages"
@@ -161,30 +222,25 @@ class InboxActivity : BaseNavigationActivity() {
         lifecycleScope.launch {
             try {
                 val currentUserUid = currentUser?.firebaseUid ?: return@launch
-
-                // Get people YOU are following
                 val followingResult = followRepository.getFollowing(currentUserUid)
 
                 if (followingResult.isSuccess) {
                     val following = followingResult.getOrNull() ?: emptyList()
-
-                    // For each person you follow, check if they follow you back
                     val mutualFriends = mutableListOf<ApiUser>()
 
                     for (user in following) {
                         val checkResult = followRepository.checkFollowStatus(user.firebaseUid, currentUserUid)
                         if (checkResult.isSuccess && checkResult.getOrNull() == true) {
-                            // They follow you back - add to mutual friends
                             mutualFriends.add(user)
                         }
                     }
 
                     friendsList.clear()
-                    friendsList.addAll(mutualFriends.take(10)) // Show first 10 mutual friends
+                    friendsList.addAll(mutualFriends.take(10))
 
                     if (friendsList.isNotEmpty()) {
                         tvMutualFriends.visibility = View.VISIBLE
-                        tvMutualFriends.text = "Your friends" // Or "Mutual friends"
+                        tvMutualFriends.text = "Your friends"
                         friendsCarousel.visibility = View.VISIBLE
                         populateFriendsCarousel()
                     } else {
@@ -210,7 +266,6 @@ class InboxActivity : BaseNavigationActivity() {
 
             friendName.text = friend.username
 
-            // Load profile picture
             if (!friend.profileImageUrl.isNullOrEmpty()) {
                 val fullImageUrl = if (friend.profileImageUrl.startsWith("http")) {
                     friend.profileImageUrl
@@ -351,13 +406,11 @@ class InboxActivity : BaseNavigationActivity() {
                 if (result.isSuccess) {
                     val response = result.getOrNull()!!
 
-                    // Handle the new response structure
                     messagesList = response.messages ?: emptyList()
                     requestsList = response.requests ?: emptyList()
 
                     println("✅ Loaded ${messagesList.size} messages and ${requestsList.size} requests")
 
-                    // Update requests badge
                     updateRequestsBadge(requestsList.size)
 
                     if (messagesList.isEmpty() && requestsList.isEmpty()) {
@@ -387,7 +440,6 @@ class InboxActivity : BaseNavigationActivity() {
     private suspend fun loadUsersForConversations() {
         usersMap.clear()
 
-        // Load users for messages
         for (conv in messagesList) {
             val otherUserId = conv.participants.find { it != currentUser?.firebaseUid } ?: continue
             if (!usersMap.containsKey(otherUserId)) {
@@ -398,7 +450,6 @@ class InboxActivity : BaseNavigationActivity() {
             }
         }
 
-        // Load users for requests
         for (conv in requestsList) {
             val otherUserId = conv.participants.find { it != currentUser?.firebaseUid } ?: continue
             if (!usersMap.containsKey(otherUserId)) {
@@ -418,7 +469,6 @@ class InboxActivity : BaseNavigationActivity() {
     }
 
     private fun updateAdapters() {
-        // Messages adapter
         inboxAdapter = InboxAdapter(
             conversations = messagesList,
             usersMap = usersMap,
@@ -441,14 +491,12 @@ class InboxActivity : BaseNavigationActivity() {
         )
         recyclerView.adapter = inboxAdapter
 
-        // Requests adapter
         requestsAdapter = InboxAdapter(
             conversations = requestsList,
             usersMap = usersMap,
             currentUserId = currentUser?.firebaseUid ?: "",
             isRequestTab = true,
             onUserClick = { user ->
-                // For requests, clicking opens the user profile instead of chat
                 openUserProfile(user)
             },
             onAcceptRequest = { conversation ->
@@ -478,7 +526,7 @@ class InboxActivity : BaseNavigationActivity() {
 
                 if (result.isSuccess) {
                     Toast.makeText(this@InboxActivity, "Message request accepted", Toast.LENGTH_SHORT).show()
-                    loadConversations() // Refresh the list
+                    loadConversations()
                 } else {
                     Toast.makeText(this@InboxActivity, "Failed to accept request", Toast.LENGTH_SHORT).show()
                 }
@@ -509,7 +557,7 @@ class InboxActivity : BaseNavigationActivity() {
 
                 if (result.isSuccess) {
                     Toast.makeText(this@InboxActivity, "Message request rejected", Toast.LENGTH_SHORT).show()
-                    loadConversations() // Refresh the list
+                    loadConversations()
                 } else {
                     Toast.makeText(this@InboxActivity, "Failed to reject request", Toast.LENGTH_SHORT).show()
                 }
@@ -611,7 +659,6 @@ class InboxActivity : BaseNavigationActivity() {
                     val response = result.getOrNull()!!
                     val allMessages = response.messages ?: emptyList()
 
-                    // Find existing conversation with this user
                     val existingConversation = allMessages.find { conv ->
                         conv.participants.contains(user.firebaseUid)
                     }
@@ -661,20 +708,55 @@ class InboxActivity : BaseNavigationActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK) {
-            // Refresh conversations when returning from chat
             Handler(Looper.getMainLooper()).postDelayed({
                 loadConversations()
             }, 500)
         }
     }
 
+    // 🔥 AUTO-REFRESH FUNCTIONS
+    private fun startAutoRefresh() {
+        stopAutoRefresh()
+        refreshRunnable = Runnable {
+            if (isInForeground) {
+                loadConversations()
+                refreshHandler.postDelayed(refreshRunnable!!, 2000) // Refresh every 2 seconds
+            }
+        }
+        refreshHandler.postDelayed(refreshRunnable!!, 2000)
+        println("🔄 Auto-refresh started")
+    }
+
+    private fun stopAutoRefresh() {
+        refreshRunnable?.let { refreshHandler.removeCallbacks(it) }
+        refreshRunnable = null
+        println("🔄 Auto-refresh stopped")
+    }
+
+    // 🔥 UPDATED LIFECYCLE METHODS
     override fun onResume() {
         super.onResume()
+        isInForeground = true
         loadConversations()
+        startAutoRefresh()
+        // Clear badge when viewing inbox
+        updateInboxBadge(0)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        isInForeground = false
+        stopAutoRefresh()  // Stop auto-refresh when activity pauses
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Don't disconnect completely, other activities might need socket
+        stopAutoRefresh()  // Clean up
+        // Remove socket listeners
+        SocketManager.off("new-message")
+        SocketManager.off("new-message-request")
+        SocketManager.off("message-sent")
+        SocketManager.off("request-accepted")
+        SocketManager.off("chat-cleared")
     }
 }

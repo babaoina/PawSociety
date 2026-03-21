@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <!-- 10.0.2.2 is the alias for your computer's localhost in the emulator -->
-        <domain includeSubdomains="true">10.0.2.2</domain>
-        <!-- If you use a physical device, add your computer's IP here too -->
-        <domain includeSubdomains="true">192.168.254.105</domain>
-    </domain-config>
-
-    <base-config cleartextTrafficPermitted="false">
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.254.100</domain>
+    </domain-config>
 </network-security-config>

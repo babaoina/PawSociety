@@ -27,6 +27,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val userRepository = UserRepository()
     private val followRepository = FollowRepository()
     private val blockRepository = BlockRepository()
+    private val chatRepository = ChatRepository()
 
     private val _posts = MutableLiveData<List<ApiPost>>()
     val posts: LiveData<List<ApiPost>> = _posts
@@ -52,6 +53,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _followStatus = MutableLiveData<Map<String, Boolean>>()
     val followStatus: LiveData<Map<String, Boolean>> = _followStatus
 
+    // 🔥 ADD THIS - Unread count for inbox badge
+    private val _unreadCount = MutableLiveData<Int>()
+    val unreadCount: LiveData<Int> = _unreadCount
+
     private var sessionManager: SessionManager? = null
 
     // Category Filter Variables
@@ -64,6 +69,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // Store all posts (unfiltered)
     private var allPosts = listOf<ApiPost>()
 
+    // 🔥 ADD THIS - Singleton instance for global access
+    companion object {
+        private var instance: HomeViewModel? = null
+
+        fun refreshInboxCount() {
+            instance?.loadInboxCounts()
+        }
+    }
+
     init {
         _isLoading.value = false
         _isOffline.value = false
@@ -71,18 +85,70 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _favoriteStatus.value = emptyMap()
         _followStatus.value = emptyMap()
         _currentCategory.value = "All"
+        _unreadCount.value = 0
+
+        instance = this
 
         viewModelScope.launch {
             try {
                 val result = offlinePostRepository.loadPosts(false)
                 if (result.isSuccess) {
                     allPosts = result.getOrNull() ?: emptyList()
+                    // 🔥 FIXED: Only filter out messages, NOT based on age/weight
+                    allPosts = filterOutMessages(allPosts)
                     filterPostsByCategory(_currentCategory.value ?: "All")
                     Log.d("HomeViewModel", "Initial posts loaded: ${allPosts.size}")
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error loading posts", e)
             }
+        }
+    }
+
+    // 🔥 ADD THIS - Load inbox unread count
+    fun loadInboxCounts() {
+        viewModelScope.launch {
+            try {
+                val currentUser = _currentUser.value ?: return@launch
+                val result = chatRepository.getConversations(currentUser.firebaseUid)
+
+                if (result.isSuccess) {
+                    val response = result.getOrNull()!!
+                    val messagesUnread = response.messages?.sumOf { it.unreadCount } ?: 0
+                    val requestsCount = response.requests?.size ?: 0
+                    val totalUnread = messagesUnread + requestsCount
+
+                    _unreadCount.value = totalUnread
+                    Log.d("HomeViewModel", "📊 Inbox unread count: $totalUnread")
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error loading inbox counts", e)
+            }
+        }
+    }
+
+    // 🔥 FIXED: Only filter out obvious messages, NEVER filter based on age/weight
+    private fun filterOutMessages(posts: List<ApiPost>): List<ApiPost> {
+        return posts.filter { post ->
+            // ✅ ALWAYS keep posts that have petName (all real posts have this)
+            if (post.petName != null && post.petName.isNotEmpty()) {
+                Log.d("HomeViewModel", "✅ Keeping post: ${post.petName} - ${post.postId}")
+                return@filter true
+            }
+
+            // ❌ Only filter out if it's DEFINITELY a message
+            val isDefinitelyMessage = post.postId.startsWith("msg_") ||
+                    post.petName.equals("message", ignoreCase = true) ||
+                    (post.description?.startsWith("New message") == true)
+
+            if (isDefinitelyMessage) {
+                Log.w("HomeViewModel", "🚫 Filtered out message: ${post.postId}")
+                return@filter false
+            }
+
+            // Default to keeping it - DO NOT filter based on age/weight
+            Log.d("HomeViewModel", "✅ Keeping post by default: ${post.postId}")
+            true
         }
     }
 
@@ -136,7 +202,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         forceRefreshAndFilter(category)
         Log.d("HomeViewModel", "Loading posts for category: $category")
 
-        // If we have posts, filter them, otherwise load from server
         if (allPosts.isNotEmpty()) {
             filterPostsByCategory(category)
         } else {
@@ -144,11 +209,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // UPDATED: Use PetData for filtering
     private fun filterPostsByCategory(category: String) {
         Log.d("HomeViewModel", "🔍 FILTERING ${allPosts.size} posts for category: $category")
 
-        // Log all posts for debugging
         allPosts.forEachIndexed { index, post ->
             Log.d("HomeViewModel", "   Post $index: petType='${post.petType}'")
         }
@@ -207,9 +270,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val category = _currentCategory.value ?: "All"
 
-                // If forceRefresh is true, bypass cache and get from network
                 val result = if (forceRefresh) {
-                    // Directly from network, not cache
                     postRepository.getPosts(limit = 100)
                 } else {
                     offlinePostRepository.loadPosts(false)
@@ -219,10 +280,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     // IMPORTANT: Update allPosts FIRST
                     allPosts = result.getOrNull()!!
 
+                    Log.d("HomeViewModel", "📥 Received ${allPosts.size} posts from repository")
+
+                    // Log raw posts before filtering
+                    allPosts.forEachIndexed { index, post ->
+                        Log.d("HomeViewModel", "   RAW $index: ID=${post.postId}, Name=${post.petName}, Type=${post.petType}")
+                    }
+
+                    // 🔥 FIXED: Only filter out messages, NOT based on age/weight
+                    allPosts = filterOutMessages(allPosts)
+
                     // Filter blocked posts
                     allPosts = filterBlockedPosts(allPosts)
 
-                    Log.d("HomeViewModel", "✅ allPosts updated: ${allPosts.size} total posts")
+                    Log.d("HomeViewModel", "✅ allPosts updated: ${allPosts.size} total posts after filtering")
 
                     // THEN apply current category filter
                     filterPostsByCategory(_currentCategory.value ?: "All")
@@ -247,20 +318,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // UPDATED: Force refresh posts from server and update allPosts
+    // UPDATED: Force refresh posts from server and filter messages only
     fun forceRefreshPosts() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 Log.d("HomeViewModel", "🔄 Force refreshing all posts from server")
 
-                // Directly from network, bypass cache
                 val result = postRepository.getPosts(limit = 100)
 
                 if (result.isSuccess) {
                     allPosts = result.getOrNull()!!
 
-                    // Filter blocked posts
+                    Log.d("HomeViewModel", "📥 Force refresh received ${allPosts.size} posts")
+
+                    // 🔥 FIXED: Only filter out messages, NOT based on age/weight
+                    allPosts = filterOutMessages(allPosts)
+
                     val currentUser = _currentUser.value
                     if (currentUser != null) {
                         val blockResult = blockRepository.getBlockedUsers(currentUser.firebaseUid)
@@ -273,10 +347,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
                     Log.d("HomeViewModel", "✅ Force refreshed: ${allPosts.size} posts from server")
 
-                    // Apply current category filter
                     filterPostsByCategory(_currentCategory.value ?: "All")
 
-                    // Reload like/favorite statuses
                     if (currentUser != null) {
                         loadLikeAndFavoriteStatuses(allPosts, currentUser)
                     }
@@ -291,8 +363,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // UPDATED: Force refresh and then filter by category
-    // Force refresh and then filter by category - ALWAYS fetches fresh data
+    // Force refresh and then filter by category
     fun forceRefreshAndFilter(category: String) {
         _currentCategory.value = category
 
@@ -301,13 +372,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 Log.d("HomeViewModel", "🔄 FORCE REFRESHING for category: $category")
 
-                // ALWAYS fetch from network, NEVER use cache
                 val result = postRepository.getPosts(limit = 100)
 
                 if (result.isSuccess) {
                     allPosts = result.getOrNull()!!
 
-                    // Filter blocked posts
+                    Log.d("HomeViewModel", "📥 Got ${allPosts.size} posts from server")
+
+                    // 🔥 FIXED: Only filter out messages, NOT based on age/weight
+                    allPosts = filterOutMessages(allPosts)
+
                     val currentUser = _currentUser.value
                     if (currentUser != null) {
                         val blockResult = blockRepository.getBlockedUsers(currentUser.firebaseUid)
@@ -320,29 +394,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
                     Log.d("HomeViewModel", "✅ Got ${allPosts.size} total posts from server for $category")
 
-                    // Filter by category
                     filterPostsByCategory(category)
 
-                    // Reload like/favorite statuses
                     if (currentUser != null) {
                         loadLikeAndFavoriteStatuses(allPosts, currentUser)
                     }
                 } else {
                     Log.e("HomeViewModel", "❌ Failed to refresh: ${result.exceptionOrNull()?.message}")
-                    // If network fails, try to show cached data
                     filterPostsByCategory(category)
                 }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error in forceRefreshAndFilter: ${e.message}")
-                // If error occurs, try to show cached data
                 filterPostsByCategory(category)
             } finally {
                 _isLoading.value = false
             }
         }
     }
-
-
 
     private suspend fun filterBlockedPosts(posts: List<ApiPost>): List<ApiPost> {
         val currentUser = _currentUser.value ?: return posts
@@ -406,13 +474,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val currentUser = _currentUser.value ?: return@launch
 
-            // Optimistic update
             val newLikeStatus = !currentStatus
             val currentMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
             currentMap[post.postId] = newLikeStatus
             _likeStatus.value = currentMap
 
-            // Update the specific post in the list WITHOUT triggering a full refresh
             val currentPosts = _posts.value?.toMutableList() ?: return@launch
             val index = currentPosts.indexOfFirst { it.postId == post.postId }
             if (index >= 0) {
@@ -422,10 +488,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     currentPosts[index].copy(likesCount = max(0, currentPosts[index].likesCount - 1))
                 }
                 currentPosts[index] = updatedPost
-                _posts.value = currentPosts  // This triggers observer
+                _posts.value = currentPosts
             }
 
-            // API call
             val result = postRepository.likePost(post.postId, currentUser.firebaseUid)
 
             if (result.isSuccess) {
@@ -433,7 +498,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 val serverLiked = response.isLiked ?: response.liked ?: newLikeStatus
                 val serverCount = response.likesCount
 
-                // Update with server values - again without full refresh
                 val finalMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
                 finalMap[post.postId] = serverLiked
                 _likeStatus.value = finalMap
@@ -445,7 +509,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     _posts.value = finalPosts
                 }
             } else {
-                // Revert on failure
                 val revertMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
                 revertMap[post.postId] = currentStatus
                 _likeStatus.value = revertMap

@@ -39,11 +39,12 @@ import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.pawsociety.util.InboxBadgeManager
 
 class ProfileActivity : BaseNavigationActivity() {
 
     private lateinit var viewModel: ProfileViewModel
-    private lateinit var sessionManager: SessionManager
+
     private val uploadRepository = UploadRepository()
     private var currentUser: ApiUser? = null
     private var selectedProfileImageUri: Uri? = null
@@ -160,12 +161,18 @@ class ProfileActivity : BaseNavigationActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_profile)
+
+        // 🔥 ADD THIS LINE - Register badge for this activity
+        try {
+            inboxBadge = findViewById(R.id.inbox_badge)
+            InboxBadgeManager.registerBadge(inboxBadge)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         try {
             println("📱 ProfileActivity - Starting...")
-            setContentView(R.layout.activity_profile)
-
-            sessionManager = SessionManager(this)
 
             currentUser = sessionManager.getCurrentUser()
 
@@ -633,7 +640,7 @@ class ProfileActivity : BaseNavigationActivity() {
                 tvLocationBio?.visibility = View.GONE
             }
 
-            println("✅ Bio updated - Full Name: ${user.fullName}, Username: @${user.username}")
+            println("✅ Bio updated - Full Name: ${user.fullName}, Username: @${user.username}, Email: ${user.email}")
 
             val tvPostCount = findViewById<TextView>(R.id.tv_post_count)
             tvPostCount?.text = viewModel.userPosts.value?.size.toString() ?: "0"
@@ -1060,6 +1067,107 @@ class ProfileActivity : BaseNavigationActivity() {
                     val postView = layoutInflater.inflate(R.layout.item_profile_post, squareContainer, false)
                     val postContent = postView.findViewById<TextView>(R.id.post_content)
                     val postImage = postView.findViewById<ImageView>(R.id.post_image)
+
+                    // 🔥 Category badge
+                    val categoryBadge = postView.findViewById<TextView>(R.id.category_badge)
+
+                    // 🔥 Status badge (NEW)
+                    val statusBadge = postView.findViewById<TextView>(R.id.status_badge)
+
+                    // ===== DETECT CATEGORY FOR BADGE =====
+                    var category = when (post.category) {
+                        "Dogs" -> "DOG"
+                        "Cats" -> "CAT"
+                        "Fish" -> "FISH"
+                        "Birds" -> "BIRD"
+                        else -> null
+                    }
+
+                    if (category == null && post.petType != null) {
+                        val petTypeLower = post.petType.lowercase(Locale.getDefault())
+                        category = when {
+                            petTypeLower.contains("dog") ||
+                                    petTypeLower.contains("aspin") ||
+                                    petTypeLower.contains("labrador") ||
+                                    petTypeLower.contains("golden") ||
+                                    petTypeLower.contains("poodle") ||
+                                    petTypeLower.contains("chihuahua") -> "DOG"
+
+                            petTypeLower.contains("cat") ||
+                                    petTypeLower.contains("puspin") ||
+                                    petTypeLower.contains("persian") ||
+                                    petTypeLower.contains("siamese") ||
+                                    petTypeLower.contains("bengal") -> "CAT"
+
+                            petTypeLower.contains("fish") ||
+                                    petTypeLower.contains("goldfish") ||
+                                    petTypeLower.contains("betta") ||
+                                    petTypeLower.contains("guppy") ||
+                                    petTypeLower.contains("koi") -> "FISH"
+
+                            petTypeLower.contains("bird") ||
+                                    petTypeLower.contains("parrot") ||
+                                    petTypeLower.contains("lovebird") ||
+                                    petTypeLower.contains("macaw") ||
+                                    petTypeLower.contains("cockatiel") -> "BIRD"
+
+                            else -> null
+                        }
+                    }
+
+                    // Set category badge if detected
+                    if (category != null && categoryBadge != null) {
+                        categoryBadge.text = category
+                        categoryBadge.visibility = View.VISIBLE
+
+                        when (category) {
+                            "DOG" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#B88B4A"))
+                            }
+                            "CAT" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#FF9800"))
+                            }
+                            "FISH" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#00BCD4"))
+                            }
+                            "BIRD" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#2196F3"))
+                            }
+                        }
+                        categoryBadge.setTextColor(Color.WHITE)
+                    }
+
+                    // ===== SET STATUS BADGE =====
+                    if (statusBadge != null) {
+                        when (post.status.lowercase(Locale.getDefault())) {
+                            "lost" -> {
+                                statusBadge.text = "LOST"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#F44336"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            "found" -> {
+                                statusBadge.text = "FOUND"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#4CAF50"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            "adoption" -> {
+                                statusBadge.text = "ADOPTION"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#2196F3"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            else -> {
+                                statusBadge.visibility = View.GONE
+                            }
+                        }
+                        statusBadge.setTextColor(Color.WHITE)
+                    }
 
                     if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
                         val imageUrl = post.imageUrls[0]

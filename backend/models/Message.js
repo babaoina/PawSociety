@@ -34,6 +34,15 @@ const messageSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // 🔥 ADDED - Missing status field!
+  status: {
+    type: String,
+    enum: ['pending', 'delivered', 'read'],
+    default: 'delivered'
+  },
+  deliveredAt: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -46,8 +55,7 @@ const messageSchema = new mongoose.Schema({
 messageSchema.index({ chatId: 1, createdAt: -1 });
 messageSchema.index({ senderUid: 1, createdAt: -1 });
 messageSchema.index({ receiverUid: 1, createdAt: -1 });
-messageSchema.index({ receiverUid: 1, isRead: 1, chatId: 1 }); // ADD THIS
-
-
+messageSchema.index({ receiverUid: 1, isRead: 1, chatId: 1 });
+messageSchema.index({ chatId: 1, status: 1 }); // 🔥 ADDED for querying requests
 
 module.exports = mongoose.model('Message', messageSchema);

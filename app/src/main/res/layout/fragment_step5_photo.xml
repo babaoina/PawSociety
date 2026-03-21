@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Profile photo"
+            android:textColor="#333333"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Description -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Upload your profile photo\nThis helps others recognize you in the community"
+            android:textColor="#999999"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:lineSpacingExtra="2dp"
+            android:layout_marginBottom="40dp" />
+
+        <!-- Profile Photo Circle - FIXED: Circle container with image inside -->
+        <FrameLayout
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- Circle Background -->
+            <ImageView
+                android:id="@+id/iv_circle_background"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/circle_white_border" />
+
+            <!-- Profile Image (fits inside circle) -->
+            <ImageView
+                android:id="@+id/iv_profile_photo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+            <!-- Plus Icon (visible when no image) -->
+            <TextView
+                android:id="@+id/tv_add_photo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="+"
+                android:textSize="48sp"
+                android:textColor="#7A4F2B"
+                android:gravity="center"
+                android:visibility="visible"
+                android:clickable="true"
+                android:focusable="true" />
+        </FrameLayout>
+
+        <!-- Hint -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tap to add photo"
+            android:textColor="#999999"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Finish Button -->
+        <Button
+            android:id="@+id/btn_finish"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Finish"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/button_rounded_brown"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Skip Link -->
+        <TextView
+            android:id="@+id/btn_skip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Skip for now"
+            android:textColor="#999999"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+    </LinearLayout>
+</ScrollView>

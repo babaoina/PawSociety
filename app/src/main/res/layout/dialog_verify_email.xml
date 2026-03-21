@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="320dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/dialog_rounded"
+    android:padding="24dp">
+
+    <!-- Email Icon -->
+    <ImageView
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/ic_email"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:tint="#7A4F2B" />
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Verify your email"
+        android:textColor="#333333"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Email Display -->
+    <TextView
+        android:id="@+id/tv_email"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#666666"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Status -->
+    <TextView
+        android:id="@+id/tv_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Waiting for verification...\nPlease check your email and click the verification link."
+        android:textColor="#FF9800"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Resend Button -->
+    <Button
+        android:id="@+id/btn_resend"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Resend email"
+        android:textColor="#7A4F2B"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:background="@drawable/button_rounded_white_border" />
+
+</LinearLayout>

@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawSociety - User Management 👥</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #fef7e8;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #7A4F2B;
+        }
+
+        .logo span {
+            font-weight: 400;
+            color: #B88B4A;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .admin-name .name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 13px;
+        }
+
+        .admin-name .role {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: #7A4F2B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            width: 160px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .dropdown-item:hover {
+            background: #fef3e8;
+            color: #7A4F2B;
+        }
+
+        .container {
+            display: flex;
+            padding-top: 60px;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #5a3a1f;
+            position: fixed;
+            left: 0;
+            top: 60px;
+            height: calc(100vh - 60px);
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 10px 20px;
+            margin: 4px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e8d9cc;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .menu-item:hover {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-item.active {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-icon {
+            font-size: 16px;
+            width: 22px;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 24px 32px;
+        }
+
+        .content-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #5a3a1f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-header h2 i {
+            color: #7A4F2B;
+            font-size: 22px;
+        }
+
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            color: #7A4F2B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .search-section {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            border: 1px solid #f0e4d4;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input-wrapper {
+            flex: 2;
+            position: relative;
+            min-width: 200px;
+        }
+
+        .search-input-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #B88B4A;
+            font-size: 14px;
+        }
+
+        .search-input-wrapper input {
+            width: 100%;
+            padding: 10px 14px 10px 40px;
+            border: 1px solid #eef2f6;
+            border-radius: 40px;
+            font-size: 13px;
+            background: #fef7e8;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-select {
+            padding: 9px 16px;
+            border: 1px solid #eef2f6;
+            border-radius: 40px;
+            font-size: 12px;
+            color: #7A4F2B;
+            background: white;
+            cursor: pointer;
+        }
+
+        .clear-btn {
+            background: #fef3e8;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            color: #7A4F2B;
+            cursor: pointer;
+        }
+
+        .results-count {
+            margin: 16px 0 12px;
+            font-size: 13px;
+            color: #7A4F2B;
+        }
+
+        .results-count span {
+            font-weight: 700;
+        }
+
+        .users-table {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #f0e4d4;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th {
+            background: #fef3e8;
+            color: #5a3a1f;
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0e4d4;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: #7A4F2B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .user-status {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-active {
+            background: #f0fdf4;
+            color: #22c55e;
+        }
+
+        .status-suspended {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .report-badge {
+            background: #fff7ed;
+            color: #f97316;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .report-badge:hover {
+            background: #ffedd5;
+            transform: scale(0.98);
+        }
+
+        .action-icons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-icons i {
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .action-icons i:hover {
+            transform: scale(1.1);
+        }
+
+        .fa-edit { color: #7A4F2B; }
+        .fa-ban { color: #ef4444; }
+        .fa-check-circle { color: #22c55e; }
+        .fa-trash { color: #ef4444; }
+
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            padding: 16px;
+            color: #9c856c;
+            font-size: 11px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 28px;
+            border-radius: 24px;
+            max-width: 550px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-content.warning {
+            border-top: 4px solid #f97316;
+        }
+
+        .modal-content.danger {
+            border-top: 4px solid #ef4444;
+        }
+
+        .modal-content h3 {
+            color: #5a3a1f;
+            margin-bottom: 20px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #5a3a1f;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #eef2f6;
+            border-radius: 12px;
+            font-size: 13px;
+            background: #fef7e8;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-primary {
+            background: #7A4F2B;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 2;
+        }
+
+        .btn-secondary {
+            background: #eef2f6;
+            color: #475569;
+            border: none;
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 2;
+        }
+
+        .warning-note {
+            background: #fff7ed;
+            border-left: 3px solid #f97316;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .report-item {
+            background: #fef3e8;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .report-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .status-pending { background: #f97316; color: white; }
+        .status-reviewed { background: #22c55e; color: white; }
+        .status-dismissed { background: #94a3b8; color: white; }
+
+        #toast-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                height: auto;
+                display: flex;
+                overflow-x: auto;
+                padding: 10px;
+                margin-bottom: 0;
+            }
+            .sidebar .menu-item {
+                white-space: nowrap;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+            .container {
+                flex-direction: column;
+            }
+            .search-row {
+                flex-direction: column;
+            }
+            .search-input-wrapper, .filter-group {
+                width: 100%;
+            }
+            .users-table {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>PawSociety <span>🐾 Admin</span></h1>
+        </div>
+        <div class="header-right">
+            <div class="admin-profile" id="adminProfile">
+                <div class="admin-name">
+                    <div class="name" id="adminName">Admin User</div>
+                    <div class="role" id="adminRole">Super Admin</div>
+                </div>
+                <div class="avatar" id="avatarBtn">🐶</div>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="dropdown-item" onclick="window.location.href='settings.html'">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                    <div class="dropdown-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="menu-item" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-chart-line menu-icon"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='posts.html'">
+                <i class="fas fa-paw menu-icon"></i>
+                <span>Posts</span>
+            </div>
+            <div class="menu-item active">
+                <i class="fas fa-user menu-icon"></i>
+                <span>Users</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='accounts.html'">
+                <i class="fas fa-users menu-icon"></i>
+                <span>Accounts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='reports.html'">
+                <i class="fas fa-chart-bar menu-icon"></i>
+                <span>Reports</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='settings.html'">
+                <i class="fas fa-cog menu-icon"></i>
+                <span>Settings</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="content-wrapper">
+                <div class="page-header">
+                    <h2>
+                        <i class="fas fa-users"></i>
+                        User Management
+                    </h2>
+                    <div class="stat-badge">
+                        <i class="fas fa-paw"></i> <span id="totalUsers">0</span> Total Users
+                    </div>
+                </div>
+
+                <div class="search-section">
+                    <div class="search-row">
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Search by name or email..." id="searchInput">
+                        </div>
+                        <div class="filter-group">
+                            <select class="filter-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Suspended">Suspended</option>
+                            </select>
+                            <button class="clear-btn" onclick="clearFilters()"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="results-count">
+                        <i class="fas fa-paw"></i> <span id="resultCount">0</span> users found
+                    </div>
+                </div>
+
+                <div class="users-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Reports</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="6" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="footer">
+                    <p>© 2025 PawSociety. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal (No Role) -->
+    <div class="modal" id="editUserModal">
+        <div class="modal-content">
+            <h3><i class="fas fa-edit"></i> Edit User</h3>
+            <div class="form-group"><label>Name</label><input type="text" id="editName"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="editEmail"></div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="saveUserEdit()">Save Changes</button>
+                <button class="btn-secondary" onclick="closeModal('editUserModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suspend User Modal -->
+    <div class="modal" id="suspendModal">
+        <div class="modal-content warning">
+            <h3><i class="fas fa-ban"></i> Suspend User</h3>
+            <div class="warning-note"><strong>⚠️ Warning:</strong> This user will no longer be able to access their account. All their posts will be hidden.</div>
+            <div class="form-group"><label>Reason (Optional)</label><textarea id="suspendReason" rows="2" placeholder="Reason for suspension..."></textarea></div>
+            <div class="modal-buttons">
+                <button class="btn-danger" onclick="confirmSuspend()">Suspend User</button>
+                <button class="btn-secondary" onclick="closeModal('suspendModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activate User Modal -->
+    <div class="modal" id="activateModal">
+        <div class="modal-content">
+            <h3><i class="fas fa-check-circle"></i> Activate User</h3>
+            <div class="warning-note">This will restore full access to the user account.</div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="confirmActivate()">Activate User</button>
+                <button class="btn-secondary" onclick="closeModal('activateModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div class="modal" id="deleteUserModal">
+        <div class="modal-content danger">
+            <h3><i class="fas fa-trash"></i> Delete User</h3>
+            <div class="warning-note"><strong>⚠️ DANGER:</strong> This action cannot be undone. All user data, posts, and activity will be permanently deleted.</div>
+            <div class="form-group"><label>Type "DELETE" to confirm</label><input type="text" id="deleteConfirm" placeholder="DELETE"></div>
+            <div class="modal-buttons">
+                <button class="btn-danger" onclick="confirmDeleteUser()">Permanently Delete</button>
+                <button class="btn-secondary" onclick="closeModal('deleteUserModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Modal -->
+    <div class="modal" id="reportsModal">
+        <div class="modal-content">
+            <h3><i class="fas fa-flag"></i> User Reports</h3>
+            <div id="reportsModalContent"></div>
+            <button class="btn-primary" onclick="closeModal('reportsModal')" style="margin-top: 16px;">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const avatarBtn = document.getElementById('avatarBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        let allUsers = [], currentUserId = null;
+        const BACKEND_URL = window.location.origin;
+
+        avatarBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
+        document.addEventListener('click', (e) => { if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) dropdownMenu.classList.remove('show'); });
+        
+        function logout() { if(confirm('Logout?')) { localStorage.removeItem('adminToken'); localStorage.removeItem('adminUser'); window.location.href='index.html'; } }
+
+        let searchTimeout;
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        
+        searchInput.addEventListener('input', () => { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadUsersData, 300); });
+        statusFilter.addEventListener('change', loadUsersData);
+        
+        function clearFilters() { searchInput.value = ''; statusFilter.value = ''; loadUsersData(); }
+
+        async function loadUsersData() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) { window.location.href='index.html'; return; }
+                
+                const searchTerm = searchInput.value;
+                const status = statusFilter.value;
+                let url = '/api/admin/users?';
+                if(searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+                if(status) url += `status=${status}`;
+                
+                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                if(!response.ok) throw new Error('Failed to load users');
+                allUsers = await response.json();
+                
+                // Filter out admins from display
+                const nonAdminUsers = allUsers.filter(u => u.role !== 'admin');
+                document.getElementById('totalUsers').textContent = nonAdminUsers.length;
+                document.getElementById('resultCount').textContent = nonAdminUsers.length;
+                displayUsers(nonAdminUsers);
+            } catch(error) { showToast('Failed to load users', 'error'); }
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            if(users.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;">No users found</td></tr>'; 
+                return; 
+            }
+            
+            tbody.innerHTML = users.map(user => {
+                const avatarLetter = (user.name || user.username || 'U').charAt(0).toUpperCase();
+                const statusClass = user.status === 'Active' ? 'status-active' : 'status-suspended';
+                const reportCount = user.reportCount || 0;
+                
+                return `
+                <tr>
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">${avatarLetter}</div>
+                            <span>${escapeHtml(user.name || user.username)}</span>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(user.email || 'No email')}</td>
+                    <td>
+                        <span class="report-badge" onclick="viewUserReports('${user.firebaseUid || user.id}', '${escapeHtml(user.name || user.username)}')">
+                            <i class="fas fa-flag"></i> ${reportCount} report${reportCount !== 1 ? 's' : ''}
+                        </span>
+                    </td>
+                    <td><span class="user-status ${statusClass}">${user.status || 'Active'}</span></td>
+                    <td>${user.joined ? new Date(user.joined).toLocaleDateString() : 'N/A'}</td>
+                    <td class="action-icons">
+                        <i class="fas fa-edit" title="Edit" onclick="openEditUserModal('${user.id}', '${escapeHtml(user.name || user.username)}', '${escapeHtml(user.email || '')}', '${user.status || 'Active'}')"></i>
+                        ${user.status === 'Active' ? 
+                            `<i class="fas fa-ban" title="Suspend" onclick="openSuspendModal('${user.id}')"></i>` : 
+                            `<i class="fas fa-check-circle" title="Activate" onclick="openActivateModal('${user.id}')"></i>`
+                        }
+                        <i class="fas fa-trash" title="Delete" onclick="openDeleteUserModal('${user.id}')"></i>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // Edit User Functions (No Role)
+        function openEditUserModal(id, name, email, status) {
+            currentUserId = id;
+            document.getElementById('editName').value = name;
+            document.getElementById('editEmail').value = email;
+            openModal('editUserModal');
+        }
+        
+        async function saveUserEdit() {
+            const name = document.getElementById('editName').value;
+            const email = document.getElementById('editEmail').value;
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/users/${currentUserId}`, {
+                    method: 'PUT', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ name, email })
+                });
+                if(!response.ok) throw new Error('Failed');
+                showToast('User updated successfully', 'success');
+                closeModal('editUserModal');
+                loadUsersData();
+            } catch(error) { showToast('Failed to update user', 'error'); }
+        }
+
+        // Suspend Functions
+        let suspendUserId = null;
+        function openSuspendModal(id) { suspendUserId = id; openModal('suspendModal'); }
+        
+        async function confirmSuspend() {
+            const reason = document.getElementById('suspendReason').value;
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/users/${suspendUserId}`, {
+                    method: 'PUT', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status: 'Suspended' })
+                });
+                if(!response.ok) throw new Error('Failed');
+                
+                // Send notification to user
+                if(reason) {
+                    await fetch(`${BACKEND_URL}/api/notifications`, {
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ 
+                            userId: suspendUserId, 
+                            fromUserId: 'system', 
+                            fromUserName: 'PawSociety Admin', 
+                            type: 'warning', 
+                            message: `Your account has been suspended. Reason: ${reason}` 
+                        })
+                    });
+                }
+                showToast('User suspended successfully', 'success');
+                closeModal('suspendModal');
+                loadUsersData();
+            } catch(error) { showToast('Failed to suspend user', 'error'); }
+        }
+
+        // Activate Functions
+        let activateUserId = null;
+        function openActivateModal(id) { activateUserId = id; openModal('activateModal'); }
+        
+        async function confirmActivate() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/users/${activateUserId}`, {
+                    method: 'PUT', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status: 'Active' })
+                });
+                if(!response.ok) throw new Error('Failed');
+                
+                // Send notification to user
+                await fetch(`${BACKEND_URL}/api/notifications`, {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ 
+                        userId: activateUserId, 
+                        fromUserId: 'system', 
+                        fromUserName: 'PawSociety Admin', 
+                        type: 'account_update', 
+                        message: `Your account has been activated. You can now use the app again.` 
+                    })
+                });
+                showToast('User activated successfully', 'success');
+                closeModal('activateModal');
+                loadUsersData();
+            } catch(error) { showToast('Failed to activate user', 'error'); }
+        }
+
+        // Delete User Functions
+        let deleteUserId = null;
+        function openDeleteUserModal(id) { deleteUserId = id; document.getElementById('deleteConfirm').value = ''; openModal('deleteUserModal'); }
+        
+        async function confirmDeleteUser() {
+            const confirm = document.getElementById('deleteConfirm').value;
+            if(confirm !== 'DELETE') { showToast('Type "DELETE" to confirm', 'error'); return; }
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/users/${deleteUserId}`, { 
+                    method: 'DELETE', 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
+                if(!response.ok) throw new Error('Failed');
+                showToast('User deleted permanently', 'success');
+                closeModal('deleteUserModal');
+                loadUsersData();
+            } catch(error) { showToast('Failed to delete user', 'error'); }
+        }
+
+        // View User Reports (Detailed Modal)
+        async function viewUserReports(userId, userName) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/users/${userId}/reports`, { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
+                if(!response.ok) throw new Error('Failed');
+                const reports = await response.json();
+                
+                let html = `
+                    <div style="max-height: 60vh; overflow-y: auto;">
+                        <div style="margin-bottom: 16px;">
+                            <strong>User:</strong> ${escapeHtml(userName)}
+                        </div>
+                `;
+                
+                if(reports.length === 0) {
+                    html += `<div style="text-align: center; padding: 40px; color: #9c856c;">
+                        <i class="fas fa-check-circle" style="font-size: 40px; margin-bottom: 16px;"></i>
+                        <p>No reports found for this user</p>
+                    </div>`;
+                } else {
+                    html += `<div style="margin-bottom: 16px;"><strong>Total Reports:</strong> ${reports.length}</div>`;
+                    
+                    reports.forEach((report, index) => {
+                        const reportDate = new Date(report.createdAt).toLocaleString();
+                        let statusColor = '#f97316';
+                        let statusText = 'PENDING';
+                        if (report.status === 'reviewed') { statusColor = '#22c55e'; statusText = 'REVIEWED'; }
+                        if (report.status === 'dismissed') { statusColor = '#94a3b8'; statusText = 'DISMISSED'; }
+                        
+                        html += `
+                            <div class="report-item">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="font-weight: bold;">Report #${index + 1}</span>
+                                    <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px;">${statusText}</span>
+                                </div>
+                                <div><strong>📝 Reason:</strong> ${escapeHtml(report.reason)}</div>
+                                ${report.description ? `<div><strong>📄 Description:</strong> ${escapeHtml(report.description)}</div>` : ''}
+                                <div><strong>👤 Reporter:</strong> ${escapeHtml(report.reporterName || report.reporterUid || 'Unknown')}</div>
+                                <div><strong>📅 Date:</strong> ${reportDate}</div>
+                                ${report.postId ? `<div><strong>📌 Post ID:</strong> ${escapeHtml(report.postId)}</div>` : ''}
+                                ${report.status === 'pending' ? `
+                                    <div style="display: flex; gap: 10px; margin-top: 12px;">
+                                        <button onclick="updateReportStatus('${report.reportId}', 'reviewed', '${userId}', '${escapeHtml(userName)}')" 
+                                                style="flex:1; background:#22c55e; color:white; border:none; padding:6px; border-radius:8px; cursor:pointer;">
+                                            ✅ Mark Reviewed
+                                        </button>
+                                        <button onclick="updateReportStatus('${report.reportId}', 'dismissed', '${userId}', '${escapeHtml(userName)}')" 
+                                                style="flex:1; background:#94a3b8; color:white; border:none; padding:6px; border-radius:8px; cursor:pointer;">
+                                            ❌ Dismiss
+                                        </button>
+                                    </div>
+                                ` : `
+                                    <div style="margin-top: 8px; padding: 6px; background: #f0f0f0; border-radius: 6px; text-align: center; color: #666;">
+                                        ✅ This report has been ${report.status}
+                                    </div>
+                                `}
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += `</div>`;
+                document.getElementById('reportsModalContent').innerHTML = html;
+                openModal('reportsModal');
+                
+            } catch(error) { 
+                showToast('Failed to load reports', 'error'); 
+            }
+        }
+
+        async function updateReportStatus(reportId, status, userId, userName) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/reports/${reportId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status })
+                });
+                if (!response.ok) throw new Error('Failed');
+                
+                showToast(`Report marked as ${status}. Reporter notified.`, 'success');
+                viewUserReports(userId, userName);
+                loadUsersData();
+                
+            } catch (error) {
+                console.error('Failed:', error);
+                showToast('Failed to update report', 'error');
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        
+        function showToast(msg, type) { 
+            let c = document.getElementById('toast-container'); 
+            if(!c){c=document.createElement('div');c.id='toast-container';document.body.appendChild(c);} 
+            const t = document.createElement('div'); 
+            t.style.cssText = `background:${type==='success'?'#22c55e':'#ef4444'};color:white;padding:12px 20px;border-radius:50px;margin-bottom:8px;animation:slideIn 0.25s ease;font-size:13px;font-weight:500;box-shadow:0 6px 14px rgba(0,0,0,0.1);display:flex;align-items:center;gap:8px;`; 
+            t.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-exclamation-triangle'}"></i> ${msg}`; 
+            c.appendChild(t); 
+            setTimeout(()=>t.remove(),3200); 
+        }
+
+        document.addEventListener('DOMContentLoaded', loadUsersData);
+        setInterval(loadUsersData, 30000);
+    </script>
+</body>
+</html>

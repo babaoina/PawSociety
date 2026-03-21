@@ -39,6 +39,16 @@
                 android:textColor="#000000"
                 android:textSize="20sp"
                 android:textStyle="bold" />
+
+            <!-- 🔥 ADD THIS 3-DOTS MENU BUTTON -->
+            <ImageView
+                android:id="@+id/btn_menu"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/menu"
+                android:tint="#000000"
+                android:contentDescription="Menu"
+                android:visibility="gone" />
         </LinearLayout>
 
         <!-- Progress Bar -->
@@ -446,40 +456,5 @@
                 </FrameLayout>
             </LinearLayout>
         </ScrollView>
-
-        <!-- Bottom Navigation -->
-        <include
-            layout="@layout/bottom_nav_unified"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
     </LinearLayout>
-
-    <!-- ADD THIS: Floating Paw Button that overlaps everything -->
-    <FrameLayout
-        android:id="@+id/floating_paw_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:clipChildren="false"
-        android:clipToPadding="false">
-
-        <FrameLayout
-            android:id="@+id/nav_paw_post"
-            android:layout_width="70dp"
-            android:layout_height="70dp"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="28dp"
-            android:background="@drawable/circle_paw_background"
-            android:elevation="10dp"
-            android:clickable="true"
-            android:focusable="true">
-
-            <ImageView
-                android:id="@+id/nav_paw_icon"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@drawable/paw"
-                android:layout_gravity="center" />
-        </FrameLayout>
-    </FrameLayout>
 </FrameLayout>

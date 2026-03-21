@@ -75,7 +75,7 @@ class NotificationsActivity : AppCompatActivity() {
                     Toast.makeText(this, "Opening post...", Toast.LENGTH_SHORT).show()
                     // TODO: Navigate to post
                 }
-                "follow" -> {
+                "follow", "message", "message_request" -> {  // 🔥 ADDED message types
                     // Navigate to user profile
                     val intent = Intent(this, UserProfileActivity::class.java)
                     intent.putExtra("userId", notification.fromUserId)
@@ -130,7 +130,6 @@ class NotificationsActivity : AppCompatActivity() {
 }
 
 // Updated Notification Adapter with Instagram style
-// Updated Notification Adapter with Instagram style
 class NotificationsAdapter(
     private val notifications: List<ApiNotification>,
     private val onItemClick: (ApiNotification) -> Unit
@@ -153,7 +152,7 @@ class NotificationsAdapter(
     override fun onBindViewHolder(holder: NotificationViewHolder, position: Int) {
         val notif = notifications[position]
 
-        // Set message with bold username (you can use Html.fromHtml if needed)
+        // 🔥 FIXED: Show username for message notifications
         val messageText = when (notif.type) {
             "like" -> "${notif.fromUserName} liked your post"
             "comment" -> {
@@ -164,6 +163,7 @@ class NotificationsAdapter(
                 }
             }
             "follow" -> "${notif.fromUserName} started following you"
+            "message", "message_request" -> "${notif.fromUserName}: ${notif.message}"  // 🔥 ADDED
             else -> notif.message
         }
         holder.message.text = messageText
@@ -171,7 +171,7 @@ class NotificationsAdapter(
         // Set time
         holder.time.text = getTimeAgo(notif.createdAt)
 
-        // Set action image based on type
+        // 🔥 FIXED: Set action image based on type (including messages)
         when (notif.type) {
             "like" -> {
                 holder.actionImage.setImageResource(R.drawable.ic_heart_filled)
@@ -183,6 +183,10 @@ class NotificationsAdapter(
             }
             "follow" -> {
                 holder.actionImage.setImageResource(R.drawable.add)
+                holder.actionImage.visibility = View.VISIBLE
+            }
+            "message", "message_request" -> {  // 🔥 ADDED
+                holder.actionImage.setImageResource(R.drawable.message)
                 holder.actionImage.visibility = View.VISIBLE
             }
             else -> holder.actionImage.visibility = View.GONE
@@ -227,6 +231,7 @@ class NotificationsAdapter(
                 "like" -> "#FF6B35"
                 "comment" -> "#4CAF50"
                 "follow" -> "#2196F3"
+                "message", "message_request" -> "#7A4F2B"  // 🔥 ADDED
                 else -> "#7A4F2B"
             }
             holder.userIcon.setBackgroundColor(Color.parseColor(color))

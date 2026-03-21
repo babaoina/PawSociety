@@ -18,8 +18,20 @@ interface PawSocietyApi {
     @GET("admin/settings")
     suspend fun getSettings(): Response<SettingsResponse>
 
+    // Add this line to your existing PawSocietyApi.kt
+    @GET("settings")
+    suspend fun getPublicSettings(): Response<SettingsResponse>
+
     @POST("chat/accept-request/{chatId}")
     suspend fun acceptMessageRequest(
+        @Path("chatId") chatId: String,
+        @Body request: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+
+    // In PawSocietyApi.kt, add this line with the other chat endpoints
+
+    @POST("chat/conversation/{chatId}/restore")
+    suspend fun restoreConversation(
         @Path("chatId") chatId: String,
         @Body request: Map<String, String>
     ): Response<ApiResponse<Unit>>

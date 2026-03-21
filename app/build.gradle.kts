@@ -66,6 +66,9 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.10.1")
 
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+
     // Compose
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation(platform("androidx.compose:compose-bom:2024.10.01"))
@@ -118,4 +121,9 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+
+    // Google Sign In
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+// Firebase Auth with Google
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
 }

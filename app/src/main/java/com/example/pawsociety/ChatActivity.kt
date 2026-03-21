@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 // DataStore imports
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -50,6 +51,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var tvUsername: TextView
     private lateinit var tvUserStatus: TextView
     private lateinit var typingIndicator: TextView
+    private lateinit var onlineIndicator: View
     private lateinit var headerProfileImage: ImageView
     private lateinit var headerProfileIcon: TextView
     private lateinit var btnChatSettings: ImageView
@@ -74,9 +76,19 @@ class ChatActivity : AppCompatActivity() {
     private var typingTimeout: Runnable? = null
     private var isTyping = false
 
-    // Mute feature
+    private var isReceiverOnline = false
+    private var lastSeenTime: Date? = null
+    private val statusHandler = Handler(Looper.getMainLooper())
+    private var statusRunnable: Runnable? = null
+
     private var isMuted = false
     private var muteCheckJob: Job? = null
+
+    private var isInForeground = false
+
+    // 🔥 ADDED: Auto-refresh variables
+    private var refreshHandler = Handler(Looper.getMainLooper())
+    private var refreshRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,6 +125,7 @@ class ChatActivity : AppCompatActivity() {
         setupRecyclerView()
         setupClickListeners()
         checkIfBlocked()
+        setupOnlineStatusListener()
 
         // Connect to socket and load messages
         setupSocket()
@@ -122,15 +135,110 @@ class ChatActivity : AppCompatActivity() {
         loadMuteStatus()
     }
 
+    private fun initializeViews() {
+        recyclerView = findViewById(R.id.chat_recycler_view)
+        messageInput = findViewById(R.id.message_input)
+        sendButton = findViewById(R.id.btn_send)
+        tvUsername = findViewById(R.id.tv_chat_username)
+        tvUserStatus = findViewById(R.id.tv_user_status)
+        typingIndicator = findViewById(R.id.typing_indicator)
+        onlineIndicator = findViewById(R.id.online_indicator)
+        headerProfileImage = findViewById(R.id.header_profile_image)
+        headerProfileIcon = findViewById(R.id.header_profile_icon)
+        btnChatSettings = findViewById(R.id.btn_chat_settings)
+
+        tvUsername.text = receiverUsername
+        tvUserStatus.text = "Active now"
+        onlineIndicator.visibility = View.GONE
+        typingIndicator.visibility = View.GONE
+
+        findViewById<ImageView>(R.id.btn_back).setOnClickListener {
+            finish()
+        }
+
+        messageInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (currentChatId.isNotEmpty()) {
+                    val typing = s?.isNotEmpty() == true
+                    if (typing != isTyping) {
+                        isTyping = typing
+                        SocketManager.sendTypingStatus(currentChatId, currentUserUid, isTyping)
+                    }
+
+                    typingTimeout?.let { typingHandler.removeCallbacks(it) }
+                    if (isTyping) {
+                        typingTimeout = Runnable {
+                            isTyping = false
+                            SocketManager.sendTypingStatus(currentChatId, currentUserUid, false)
+                        }
+                        typingHandler.postDelayed(typingTimeout!!, 3000)
+                    }
+                }
+            }
+        })
+    }
+
+    private fun setupOnlineStatusListener() {
+        SocketManager.addOnlineStatusListener { userId, isOnline ->
+            if (userId == receiverUid) {
+                runOnUiThread {
+                    isReceiverOnline = isOnline
+                    updateOnlineStatus()
+                }
+            }
+        }
+    }
+
+    private fun updateOnlineStatus() {
+        if (isReceiverOnline) {
+            onlineIndicator.visibility = View.VISIBLE
+            tvUserStatus.text = "Active now"
+            tvUserStatus.setTextColor(Color.parseColor("#4CAF50"))
+            statusRunnable?.let { statusHandler.removeCallbacks(it) }
+        } else {
+            onlineIndicator.visibility = View.GONE
+            if (lastSeenTime != null) {
+                updateLastSeenText()
+                statusRunnable = object : Runnable {
+                    override fun run() {
+                        updateLastSeenText()
+                        statusHandler.postDelayed(this, 60000)
+                    }
+                }
+                statusHandler.post(statusRunnable!!)
+            } else {
+                tvUserStatus.text = "Offline"
+                tvUserStatus.setTextColor(Color.parseColor("#999999"))
+            }
+        }
+    }
+
+    private fun updateLastSeenText() {
+        val now = Date()
+        val diff = now.time - (lastSeenTime?.time ?: now.time)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+        val hours = TimeUnit.MILLISECONDS.toHours(diff)
+        val days = TimeUnit.MILLISECONDS.toDays(diff)
+
+        tvUserStatus.text = when {
+            minutes < 1 -> "Active just now"
+            minutes < 60 -> "Active $minutes min ago"
+            hours < 24 -> "Active $hours hr ago"
+            days == 1L -> "Active yesterday"
+            else -> "Active ${days} days ago"
+        }
+        tvUserStatus.setTextColor(Color.parseColor("#999999"))
+    }
+
     private fun checkIfBlocked() {
         lifecycleScope.launch {
             val currentUser = sessionManager.getCurrentUser() ?: return@launch
 
-            // Check if current user blocked the receiver
             val blockedByMeResult = blockRepository.checkBlockStatus(currentUser.firebaseUid, receiverUid)
             val blockedByMe = blockedByMeResult.isSuccess && blockedByMeResult.getOrNull() == true
 
-            // Check if receiver blocked current user
             val blockedMeResult = blockRepository.checkBlockStatus(receiverUid, currentUser.firebaseUid)
             val blockedMe = blockedMeResult.isSuccess && blockedMeResult.getOrNull() == true
 
@@ -145,52 +253,6 @@ class ChatActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    private fun initializeViews() {
-        recyclerView = findViewById(R.id.chat_recycler_view)
-        messageInput = findViewById(R.id.message_input)
-        sendButton = findViewById(R.id.btn_send)
-        tvUsername = findViewById(R.id.tv_chat_username)
-        tvUserStatus = findViewById(R.id.tv_user_status)
-        typingIndicator = findViewById(R.id.typing_indicator)
-        headerProfileImage = findViewById(R.id.header_profile_image)
-        headerProfileIcon = findViewById(R.id.header_profile_icon)
-        btnChatSettings = findViewById(R.id.btn_chat_settings)
-
-        tvUsername.text = receiverUsername
-        tvUserStatus.text = "Active now"
-        typingIndicator.visibility = View.GONE
-
-        // Set up back button
-        findViewById<ImageView>(R.id.btn_back).setOnClickListener {
-            finish()
-        }
-
-        // Set up typing detection
-        messageInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (currentChatId.isNotEmpty()) {
-                    val typing = s?.isNotEmpty() == true
-                    if (typing != isTyping) {
-                        isTyping = typing
-                        SocketManager.sendTypingStatus(currentChatId, currentUserUid, isTyping)
-                    }
-
-                    // Reset timeout
-                    typingTimeout?.let { typingHandler.removeCallbacks(it) }
-                    if (isTyping) {
-                        typingTimeout = Runnable {
-                            isTyping = false
-                            SocketManager.sendTypingStatus(currentChatId, currentUserUid, false)
-                        }
-                        typingHandler.postDelayed(typingTimeout!!, 3000)
-                    }
-                }
-            }
-        })
     }
 
     private fun loadReceiverUser() {
@@ -250,12 +312,10 @@ class ChatActivity : AppCompatActivity() {
             sendMessage()
         }
 
-        // Username click - go to profile
         tvUsername.setOnClickListener {
             openUserProfile()
         }
 
-        // Profile image click - go to profile
         headerProfileImage.setOnClickListener {
             openUserProfile()
         }
@@ -264,7 +324,6 @@ class ChatActivity : AppCompatActivity() {
             openUserProfile()
         }
 
-        // Chat settings button
         btnChatSettings.setOnClickListener {
             showChatSettingsDialog()
         }
@@ -285,7 +344,6 @@ class ChatActivity : AppCompatActivity() {
         try {
             val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_chat_settings, null)
 
-            // Initialize views - FIX: Use findViewById correctly
             val switchMute = dialogView.findViewById<Switch>(R.id.switch_mute)
             val profileIcon = dialogView.findViewById<TextView>(R.id.dialog_profile_icon)
             val username = dialogView.findViewById<TextView>(R.id.dialog_username)
@@ -296,11 +354,9 @@ class ChatActivity : AppCompatActivity() {
             val optionReport = dialogView.findViewById<LinearLayout>(R.id.option_report)
             val optionClearChat = dialogView.findViewById<LinearLayout>(R.id.option_clear_chat)
 
-            // Set user info
             username.text = receiverUsername
             profileIcon.text = receiverUsername.firstOrNull()?.uppercase() ?: "?"
 
-            // Load the mute state
             lifecycleScope.launch {
                 val muteKey = booleanPreferencesKey("mute_$receiverUid")
                 val prefs = dataStore.data.first()
@@ -325,12 +381,10 @@ class ChatActivity : AppCompatActivity() {
                 openUserProfile()
             }
 
-            // Entire row click toggles the switch
             optionMute.setOnClickListener {
                 switchMute.isChecked = !switchMute.isChecked
             }
 
-            // Mute switch listener
             switchMute.setOnCheckedChangeListener { _, isChecked ->
                 if (isChecked != isMuted) {
                     toggleMuteWithSwitch(isChecked)
@@ -458,6 +512,17 @@ class ChatActivity : AppCompatActivity() {
             SocketManager.joinUserRoom(currentUserUid)
         }
 
+        // Listen for online status
+        SocketManager.addOnlineStatusListener { userId, isOnline ->
+            if (userId == receiverUid) {
+                runOnUiThread {
+                    isReceiverOnline = isOnline
+                    updateOnlineStatus()
+                }
+            }
+        }
+
+        // 🔥 IMPROVED: Real-time message receiving with immediate UI update
         SocketManager.on("new-message") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -465,16 +530,27 @@ class ChatActivity : AppCompatActivity() {
                     if (data != null) {
                         val message = parseMessageFromJson(data)
 
-                        // Check mute status before showing notification
-                        if (isMuted && message.receiverUid == currentUserUid) {
-                            Log.d(tag, "📵 Message received but user is muted - no notification")
-                            // Still add to chat list but don't show notification
-                        }
+                        // Only show if this message belongs to this chat
+                        if (message.chatId == currentChatId ||
+                            (message.senderUid == receiverUid && message.receiverUid == currentUserUid)) {
 
-                        runOnUiThread {
-                            addNewMessage(message)
-                            if (message.receiverUid == currentUserUid) {
-                                markMessagesAsRead()
+                            runOnUiThread {
+                                // Check if message already exists
+                                val exists = messageList.any { it.messageId == message.messageId }
+                                if (!exists) {
+                                    messageList.add(message)
+                                    messageList.sortBy { it.createdAt }
+                                    messageAdapter.notifyDataSetChanged()
+                                    recyclerView.scrollToPosition(messageList.size - 1)
+
+                                    // Mark as read if it's for current user
+                                    if (message.receiverUid == currentUserUid && !message.isRead) {
+                                        markMessageAsRead(message.messageId)
+                                    }
+
+                                    // 🔥 ADDED: Also refresh from server to be safe
+                                    refreshMessagesFromServer()
+                                }
                             }
                         }
                     }
@@ -484,6 +560,33 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
+        // 🔥 ADDED: Handle chat-message event (direct to chat room)
+        SocketManager.on("chat-message") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as? JSONObject
+                    if (data != null) {
+                        val message = parseMessageFromJson(data)
+
+                        if (message.chatId == currentChatId) {
+                            runOnUiThread {
+                                val exists = messageList.any { it.messageId == message.messageId }
+                                if (!exists) {
+                                    messageList.add(message)
+                                    messageList.sortBy { it.createdAt }
+                                    messageAdapter.notifyDataSetChanged()
+                                    recyclerView.scrollToPosition(messageList.size - 1)
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(tag, "Error parsing chat message: ${e.message}")
+                }
+            }
+        }
+
+        // Handle message sent confirmation
         SocketManager.on("message-sent") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -491,7 +594,16 @@ class ChatActivity : AppCompatActivity() {
                     if (data != null) {
                         val message = parseMessageFromJson(data)
                         runOnUiThread {
-                            updateOrAddMessage(message)
+                            val index = messageList.indexOfFirst { it.messageId == message.messageId }
+                            if (index >= 0) {
+                                messageList[index] = message
+                                messageAdapter.notifyItemChanged(index)
+                            } else if (message.chatId == currentChatId) {
+                                messageList.add(message)
+                                messageList.sortBy { it.createdAt }
+                                messageAdapter.notifyDataSetChanged()
+                                recyclerView.scrollToPosition(messageList.size - 1)
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -500,6 +612,29 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
+        // Handle message read status
+        SocketManager.on("message-read") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as? JSONObject
+                    if (data != null) {
+                        val messageId = data.optString("messageId", "")
+                        runOnUiThread {
+                            val index = messageList.indexOfFirst { it.messageId == messageId }
+                            if (index >= 0) {
+                                val updatedMessage = messageList[index].copy(isRead = true)
+                                messageList[index] = updatedMessage
+                                messageAdapter.notifyItemChanged(index)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(tag, "Error parsing message read: ${e.message}")
+                }
+            }
+        }
+
+        // Handle typing indicator
         SocketManager.on("user-typing") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -520,22 +655,7 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        SocketManager.on("message-read") { args ->
-            if (args.isNotEmpty()) {
-                try {
-                    val data = args[0] as? JSONObject
-                    if (data != null) {
-                        val messageId = data.optString("messageId", "")
-                        runOnUiThread {
-                            updateMessageReadStatus(messageId)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(tag, "Error parsing message read: ${e.message}")
-                }
-            }
-        }
-
+        // Handle chat cleared
         SocketManager.on("chat-cleared") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -566,8 +686,61 @@ class ChatActivity : AppCompatActivity() {
             text = json.optString("text", ""),
             imageUrl = json.optString("imageUrl", ""),
             isRead = json.optBoolean("isRead", false),
+            status = json.optString("status", "delivered"),
             createdAt = json.optString("createdAt", "")
         )
+    }
+
+    // 🔥 NEW: Refresh messages from server every 3 seconds when in foreground
+    private fun startAutoRefresh() {
+        stopAutoRefresh()
+
+        refreshRunnable = Runnable {
+            if (isInForeground && currentChatId.isNotEmpty()) {
+                refreshMessagesFromServer()
+                refreshHandler.postDelayed(refreshRunnable!!, 3000) // Refresh every 3 seconds
+            }
+        }
+        refreshHandler.postDelayed(refreshRunnable!!, 3000)
+        Log.d(tag, "🔄 Auto-refresh started")
+    }
+
+    private fun stopAutoRefresh() {
+        refreshRunnable?.let { refreshHandler.removeCallbacks(it) }
+        refreshRunnable = null
+        Log.d(tag, "🔄 Auto-refresh stopped")
+    }
+
+    // 🔥 NEW: Force refresh messages from server
+    private fun refreshMessagesFromServer() {
+        if (currentChatId.isEmpty() || !isInForeground) return
+
+        lifecycleScope.launch {
+            try {
+                val result = chatRepository.getMessages(currentChatId, currentUserUid, 50, 0)
+
+                if (result.isSuccess) {
+                    val serverMessages = result.getOrNull() ?: emptyList()
+
+                    // Check if we have new messages
+                    val currentIds = messageList.map { it.messageId }.toSet()
+                    val newMessages = serverMessages.filter { !currentIds.contains(it.messageId) }
+
+                    if (newMessages.isNotEmpty()) {
+                        runOnUiThread {
+                            messageList.clear()
+                            messageList.addAll(serverMessages)
+                            messageList.sortBy { it.createdAt }
+                            messageAdapter.notifyDataSetChanged()
+                            recyclerView.scrollToPosition(messageList.size - 1)
+                            Log.d(tag, "✅ Added ${newMessages.size} new messages from server refresh")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error refreshing messages: ${e.message}")
+            }
+        }
     }
 
     private fun addNewMessage(message: ApiMessage) {
@@ -666,6 +839,8 @@ class ChatActivity : AppCompatActivity() {
             SocketManager.sendTypingStatus(currentChatId, currentUserUid, false)
         }
 
+        sendButton.isEnabled = false
+
         lifecycleScope.launch {
             try {
                 val blockCheckResult = blockRepository.checkBlockStatus(receiverUid, currentUser.firebaseUid)
@@ -692,10 +867,22 @@ class ChatActivity : AppCompatActivity() {
                     if (message != null) {
                         messageInput.text.clear()
 
+                        // Add message to list immediately
+                        messageList.add(message)
+                        messageList.sortBy { it.createdAt }
+                        messageAdapter.notifyDataSetChanged()
+                        recyclerView.scrollToPosition(messageList.size - 1)
+
                         if (currentChatId.isEmpty()) {
                             currentChatId = message.chatId
                             SocketManager.joinChatRoom(currentChatId)
-                            setResult(RESULT_OK) // Notify InboxActivity
+                        }
+
+                        setResult(RESULT_OK)
+
+                        if (message.status == "pending") {
+                            Toast.makeText(this@ChatActivity,
+                                "Message request sent", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else {
@@ -703,6 +890,8 @@ class ChatActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@ChatActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                sendButton.isEnabled = true
             }
         }
     }
@@ -720,7 +909,6 @@ class ChatActivity : AppCompatActivity() {
                 if (conversationsResult.isSuccess) {
                     val response = conversationsResult.getOrNull()
 
-                    // Search in both messages and requests for the conversation
                     val existingChat = response?.messages?.find { conv ->
                         conv.participants.contains(receiverUid)
                     } ?: response?.requests?.find { conv ->
@@ -766,8 +954,10 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
+    // ADD LIFECYCLE METHODS
     override fun onResume() {
         super.onResume()
+        isInForeground = true
         SocketManager.connect()
         if (currentUserUid.isNotEmpty()) {
             SocketManager.joinUserRoom(currentUserUid)
@@ -777,10 +967,15 @@ class ChatActivity : AppCompatActivity() {
             loadMessagesForChat(currentChatId)
             markMessagesAsRead()
         }
+        // 🔥 START AUTO-REFRESH
+        startAutoRefresh()
     }
 
     override fun onPause() {
         super.onPause()
+        isInForeground = false
+        // 🔥 STOP AUTO-REFRESH
+        stopAutoRefresh()
         if (currentChatId.isNotEmpty()) {
             SocketManager.leaveChatRoom(currentChatId)
         }
@@ -788,16 +983,21 @@ class ChatActivity : AppCompatActivity() {
             isTyping = false
             SocketManager.sendTypingStatus(currentChatId, currentUserUid, false)
         }
+        statusRunnable?.let { statusHandler.removeCallbacks(it) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        stopAutoRefresh()
         SocketManager.off("new-message")
+        SocketManager.off("chat-message")
         SocketManager.off("message-sent")
         SocketManager.off("user-typing")
         SocketManager.off("message-read")
         SocketManager.off("chat-cleared")
+        SocketManager.removeOnlineStatusListener { _, _ -> }
         typingHandler.removeCallbacksAndMessages(null)
+        statusRunnable?.let { statusHandler.removeCallbacks(it) }
 
         muteCheckJob?.cancel()
     }
@@ -813,7 +1013,6 @@ class ChatActivity : AppCompatActivity() {
                     isMuted = prefs[muteKey] ?: false
                     Log.d(tag, "📖 Loaded local mute status for $receiverUsername: $isMuted")
 
-                    // Sync with API to ensure local matches server
                     syncMuteStatusWithApi()
                 } catch (e: Exception) {
                     Log.e(tag, "❌ Failed to load mute status: ${e.message}")

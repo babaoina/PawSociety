@@ -18,21 +18,46 @@
         android:contentDescription="Post image"
         android:visibility="visible" />
 
-    <!-- Status Badge - OVAL shape with bigger text -->
-    <TextView
-        android:id="@+id/status_badge"
+    <!-- Badges Container (top-left corner) -->
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="20dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
         android:layout_margin="3dp"
-        android:gravity="center"
-        android:text="ADOPTION"
-        android:textColor="#FFFFFF"
-        android:textSize="9sp"
-        android:textStyle="bold"
-        android:maxLines="1"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:background="@drawable/status_badge_oval" />
+        android:orientation="vertical">
+
+        <!-- Status Badge - OVAL shape with bigger text -->
+        <TextView
+            android:id="@+id/status_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:gravity="center"
+            android:text="ADOPTION"
+            android:textColor="#FFFFFF"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="@drawable/status_badge_oval"
+            android:layout_marginBottom="2dp" />
+
+        <!-- Category Badge - below status badge -->
+        <TextView
+            android:id="@+id/category_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:gravity="center"
+            android:text="DOG"
+            android:textColor="#FFFFFF"
+            android:textSize="8sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="@drawable/category_badge_rounded"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <!-- Pet Name -->
     <TextView

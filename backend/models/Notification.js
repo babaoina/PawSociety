@@ -27,7 +27,7 @@ const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['like', 'comment', 'follow']
+    enum: ['like', 'comment', 'follow', 'message', 'message_request', 'report_update', 'warning', 'system']
   },
   postId: {
     type: String,
@@ -51,6 +51,6 @@ const notificationSchema = new mongoose.Schema({
 
 // Index for faster queries
 notificationSchema.index({ userId: 1, createdAt: -1 });
-notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 }); // ADD THIS
+notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

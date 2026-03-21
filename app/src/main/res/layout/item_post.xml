@@ -75,8 +75,8 @@
                     android:id="@+id/post_user_role"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Milo Owner"
-                    android:textColor="#666666"
+                    android:text="Pet Owner"
+                    android:textColor="#7A4F2B"
                     android:textSize="12sp" />
             </LinearLayout>
 
@@ -210,16 +210,41 @@
                 android:orientation="vertical"
                 android:layout_marginEnd="16dp">
 
-                <!-- Breed/Pet Type - Large at top (NO DOT) -->
-                <TextView
-                    android:id="@+id/post_pet_type"
-                    android:layout_width="wrap_content"
+                <!-- 🔥 FIXED: Breed and Badge in a horizontal layout - BADGE STAYS WITH BREED -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Golden Retriever"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:id="@+id/post_pet_type"
+                        android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0"
+                    android:text="Chihuahua"
                     android:textColor="#000000"
                     android:textSize="24sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="4dp" />
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                    <!-- Category Badge - RIGHT NEXT to breed with minimal gap -->
+                    <TextView
+                        android:id="@+id/post_category_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:gravity="center"
+                        android:paddingHorizontal="12dp"
+                        android:layout_marginStart="8dp"
+                    android:text="DOG"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/category_badge_rounded"
+                    android:visibility="gone" />
+                </LinearLayout>
 
                 <!-- Pet Name - Below breed -->
                 <TextView
@@ -227,11 +252,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Milo"
-                    android:textColor="#666666"
+                    android:textColor="#7A4F2B"
                     android:textSize="18sp"
                     android:layout_marginBottom="12dp" />
 
-                <!-- Gender, Age, Weight Row - COPIED FROM POSTVIEW STYLE -->
+                <!-- Gender, Age, Weight Row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -298,13 +323,6 @@
                             android:gravity="center">
 
                             <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="🎂"
-                                android:textSize="14sp"
-                                android:layout_marginEnd="4dp" />
-
-                            <TextView
                                 android:id="@+id/post_age"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -339,13 +357,6 @@
                             android:gravity="center">
 
                             <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="⚖️"
-                                android:textSize="14sp"
-                                android:layout_marginEnd="4dp" />
-
-                            <TextView
                                 android:id="@+id/post_weight"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -356,38 +367,79 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- REWARD SECTION - FOR LOST POSTS (PESO SIGN) -->
+                <!-- REWARD SECTION - SIMPLE DISPLAY LIKE NUMBER -->
                 <LinearLayout
                     android:id="@+id/reward_container"
                     android:layout_width="wrap_content"
-                    android:layout_height="24dp"
+                    android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:background="#FFF9E6"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="2dp"
-                    android:layout_marginBottom="12dp"
-                    android:visibility="gone"
-                    android:layout_gravity="start">
+                    android:background="@drawable/rounded_highlight_gold"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone">
 
-                    <TextView
-                        android:id="@+id/post_reward"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="1,000,000"
-                        android:textColor="#7A4F2B"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/post_reward"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱1,000,000"
+                    android:textColor="#B8860B"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=" REWARD"
-                        android:textColor="#7A4F2B"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginStart="2dp" />
-                </LinearLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="REWARD"
+                    android:textColor="#B8860B"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
+
+                <!-- Contact Number - Simple display with green highlight -->
+                <LinearLayout
+                    android:id="@+id/btn_call_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/rounded_highlight_green"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                    android:layout_marginTop="0dp"
+                    android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/iv_call_icon"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/phone"
+                    android:tint="#4CAF50"
+                android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/post_contact"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="09678768888"
+                    android:textColor="#4CAF50"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            </LinearLayout>
+
+                <!-- Location with emoji - MOVED ABOVE About -->
+                <TextView
+                    android:id="@+id/post_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📍 San Carlos, Pangasinan"
+                    android:textColor="#FF0000"
+                    android:textSize="14sp"
+                    android:layout_marginTop="4dp" />
 
                 <!-- About Section Title -->
                 <TextView
@@ -397,6 +449,7 @@
                     android:textColor="#7A4F2B"
                     android:textSize="16sp"
                     android:textStyle="bold"
+                    android:layout_marginTop="12dp"
                     android:layout_marginBottom="8dp" />
 
                 <!-- Description Container with "more" button -->
@@ -429,29 +482,9 @@
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="8dp" />
 
-                <!-- Contact Info -->
-                <TextView
-                    android:id="@+id/post_contact"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📞 09123456789"
-                    android:textColor="#666666"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp" />
-
-                <!-- Location with emoji -->
-                <TextView
-                    android:id="@+id/post_location"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📍 San Carlos, Pangasinan"
-                    android:textColor="#666666"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp" />
-
             </LinearLayout>
 
-            <!-- Right side - Action Buttons Vertical (ALIGNED WITH GOLDEN RETRIEVER) -->
+            <!-- Right side - Action Buttons Vertical -->
             <LinearLayout
                 android:id="@+id/action_buttons_container"
                 android:layout_width="wrap_content"
@@ -483,10 +516,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="124"
-                        android:textColor="#666666"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="2dp" />
+                        android:textColor="#7A4F2B"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="2dp" />
                 </LinearLayout>
 
                 <!-- Chat Button -->
@@ -506,15 +539,15 @@
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:src="@drawable/message"
-                        android:tint="#666666" />
+                        android:tint="#7A4F2B" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Chat"
-                        android:textColor="#666666"
-                        android:textSize="10sp"
-                        android:layout_marginTop="2dp" />
+                        android:textColor="#7A4F2B"
+                    android:textSize="10sp"
+                    android:layout_marginTop="2dp" />
                 </LinearLayout>
 
                 <!-- Share Button -->
@@ -534,15 +567,15 @@
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:src="@drawable/share"
-                        android:tint="#666666" />
+                        android:tint="#7A4F2B" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Share"
-                        android:textColor="#666666"
-                        android:textSize="10sp"
-                        android:layout_marginTop="2dp" />
+                        android:textColor="#7A4F2B"
+                    android:textSize="10sp"
+                    android:layout_marginTop="2dp" />
                 </LinearLayout>
 
                 <!-- Save/Favorite Button -->
@@ -561,7 +594,7 @@
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:src="@drawable/faved"
-                        android:tint="#666666" />
+                        android:tint="#7A4F2B" />
 
                     <TextView
                         android:layout_width="wrap_content"

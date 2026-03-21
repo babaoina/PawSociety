@@ -31,4 +31,34 @@
         android:ellipsize="end"
         android:visibility="gone" />
 
+    <!-- Status Badge (top-right corner) -->
+    <TextView
+        android:id="@+id/status_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_margin="4dp"
+        android:layout_gravity="top|end"
+        android:paddingHorizontal="8dp"
+        android:gravity="center"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/status_badge_oval"
+        android:visibility="gone" />
+
+    <!-- Category Badge (top-left corner) -->
+    <TextView
+        android:id="@+id/category_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_margin="4dp"
+        android:layout_gravity="top|start"
+        android:paddingHorizontal="8dp"
+        android:gravity="center"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/category_badge_rounded"
+        android:visibility="gone" />
+
 </FrameLayout>

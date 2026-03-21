@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawSociety - Post Management 🐾</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #fef7e8;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #7A4F2B;
+        }
+
+        .logo span {
+            font-weight: 400;
+            color: #B88B4A;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .admin-name .name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 13px;
+        }
+
+        .admin-name .role {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: #7A4F2B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            width: 160px;
+            display: none;
+            z-index: 1001;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .dropdown-item:hover {
+            background: #fef3e8;
+            color: #7A4F2B;
+        }
+
+        .container {
+            display: flex;
+            padding-top: 60px;
+            min-height: 100vh;
+            justify-content: center;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #5a3a1f;
+            position: fixed;
+            left: 0;
+            top: 60px;
+            height: calc(100vh - 60px);
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 10px 20px;
+            margin: 4px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e8d9cc;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .menu-item:hover {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-item.active {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-icon {
+            font-size: 16px;
+            width: 22px;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-wrapper {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .page-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #5a3a1f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-header h2 i {
+            color: #7A4F2B;
+            font-size: 22px;
+        }
+
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            color: #7A4F2B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .search-section {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input-wrapper {
+            flex: 2;
+            position: relative;
+            min-width: 200px;
+        }
+
+        .search-input-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #B88B4A;
+            font-size: 14px;
+        }
+
+        .search-input-wrapper input {
+            width: 100%;
+            padding: 10px 14px 10px 40px;
+            border: 1px solid #eef2f6;
+            border-radius: 40px;
+            font-size: 13px;
+            background: #fef7e8;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 9px 16px;
+            border: 1px solid #eef2f6;
+            border-radius: 40px;
+            font-size: 12px;
+            color: #7A4F2B;
+            font-weight: 500;
+            background: white;
+            cursor: pointer;
+        }
+
+        .clear-btn {
+            background: #fef3e8;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            color: #7A4F2B;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .results-count {
+            margin: 16px 0 12px;
+            font-size: 13px;
+            color: #7A4F2B;
+        }
+
+        .results-count span {
+            font-weight: 700;
+        }
+
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.25s ease;
+            border: 1px solid #f0e4d4;
+        }
+
+        .post-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(90, 58, 31, 0.12);
+        }
+
+        .post-image {
+            height: 180px;
+            background: #e8d9ca;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .post-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .post-status-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 5px 14px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            backdrop-filter: blur(2px);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .status-lost { background: #f97316; }
+        .status-found { background: #22c55e; }
+        .status-adoption { background: #3b82f6; }
+
+        .category-badge {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.3px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+
+        .category-dogs { background: #B88B4A; }
+        .category-cats { background: #FF9800; }
+        .category-fish { background: #00BCD4; }
+        .category-birds { background: #2196F3; }
+        .category-default { background: #6b7280; display: none; }
+
+        .post-content {
+            padding: 18px;
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .post-user-avatar {
+            width: 36px;
+            height: 36px;
+            background: #7A4F2B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .post-user-name {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 14px;
+        }
+
+        .post-time {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .post-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #5a3a1f;
+            margin-bottom: 8px;
+        }
+
+        .post-description {
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.45;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-meta {
+            display: flex;
+            gap: 14px;
+            padding: 10px 0;
+            border-top: 1px solid #f0e4d4;
+            border-bottom: 1px solid #f0e4d4;
+            margin: 12px 0;
+            font-size: 12px;
+            color: #7c6b5a;
+        }
+
+        .post-meta i {
+            width: 18px;
+            color: #B88B4A;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 9px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-view {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #B88B4A;
+        }
+
+        .btn-report {
+            background: #fef3e8;
+            color: #f97316;
+        }
+
+        .btn-report:hover {
+            background: #ffedd5;
+        }
+
+        .btn-delete {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .btn-delete:hover {
+            background: #fecaca;
+        }
+
+        .reported-badge {
+            background: #fff7ed;
+            color: #f97316;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 28px;
+            border-radius: 28px;
+            max-width: 520px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h3 {
+            color: #5a3a1f;
+            margin-bottom: 20px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-detail-item {
+            margin-bottom: 14px;
+            border-bottom: 1px solid #f0e4d4;
+            padding-bottom: 10px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #5a3a1f;
+            min-width: 80px;
+        }
+
+        .detail-value {
+            color: #475569;
+        }
+
+        .close-btn {
+            background: #7A4F2B;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 40px;
+            width: 100%;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 24px;
+            font-size: 14px;
+        }
+
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            padding: 20px;
+            color: #b69b7e;
+            font-size: 11px;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 75px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                height: auto;
+                display: flex;
+                overflow-x: auto;
+                padding: 12px;
+                gap: 8px;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .container {
+                flex-direction: column;
+            }
+            .posts-grid {
+                grid-template-columns: 1fr;
+            }
+            .search-row {
+                flex-direction: column;
+            }
+            .search-input-wrapper, .filter-group {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>PawSociety <span>🐾 Admin</span></h1>
+        </div>
+        <div class="header-right">
+            <div class="admin-profile" id="adminProfile">
+                <div class="admin-name">
+                    <div class="name" id="adminName">Admin User</div>
+                    <div class="role" id="adminRole">Super Admin</div>
+                </div>
+                <div class="avatar" id="avatarBtn">🐶</div>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="dropdown-item" onclick="window.location.href='settings.html'">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                    <div class="dropdown-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="menu-item" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-chart-line menu-icon"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item active">
+                <i class="fas fa-paw menu-icon"></i>
+                <span>Posts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='users.html'">
+                <i class="fas fa-user menu-icon"></i>
+                <span>Users</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='accounts.html'">
+                <i class="fas fa-users menu-icon"></i>
+                <span>Accounts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='reports.html'">
+                <i class="fas fa-chart-bar menu-icon"></i>
+                <span>Reports</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='settings.html'">
+                <i class="fas fa-cog menu-icon"></i>
+                <span>Settings</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="content-wrapper">
+                <div class="page-header">
+                    <h2>
+                        <i class="fas fa-paw"></i>
+                        Post Management
+                    </h2>
+                    <div class="stat-badge">
+                        <i class="fas fa-paw"></i> <span id="totalPosts">0</span> Total
+                    </div>
+                </div>
+
+                <div class="search-section">
+                    <div class="search-row">
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Search by pet name, username, location..." id="searchInput">
+                        </div>
+                        <div class="filter-group">
+                            <select class="filter-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="Lost">Lost</option>
+                                <option value="Found">Found</option>
+                                <option value="Adoption">Adoption</option>
+                            </select>
+                            <button class="clear-btn" onclick="clearFilters()"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="results-count">
+                        <i class="fas fa-paw"></i> <span id="resultCount">0</span> posts found
+                    </div>
+                </div>
+
+                <div class="posts-grid" id="postsGrid">
+                    <div style="text-align: center; padding: 60px; color: #9c856c;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading posts...
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p>© 2025 PawSociety. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="viewPostModal">
+        <div class="modal-content">
+            <h3><i class="fas fa-paw"></i> Post Details</h3>
+            <div id="modalContent"></div>
+            <button class="close-btn" onclick="closeModal('viewPostModal')">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="reportModal">
+        <div class="modal-content">
+            <div id="reportModalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const avatarBtn = document.getElementById('avatarBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const BACKEND_URL = window.location.origin;
+        let allPosts = [];
+        let searchTimeout;
+
+        avatarBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Real-time search with debounce
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadPostsData, 300);
+        });
+        
+        statusFilter.addEventListener('change', function() {
+            loadPostsData();
+        });
+
+        function clearFilters() {
+            searchInput.value = '';
+            statusFilter.value = '';
+            loadPostsData();
+        }
+
+        function getCategoryClass(category) {
+            if (!category) return 'category-default';
+            const cat = category.toLowerCase();
+            if (cat === 'dogs') return 'category-dogs';
+            if (cat === 'cats') return 'category-cats';
+            if (cat === 'fish') return 'category-fish';
+            if (cat === 'birds') return 'category-birds';
+            return 'category-default';
+        }
+
+        function getCategoryLabel(category) {
+            if (!category) return '';
+            const cat = category.toLowerCase();
+            if (cat === 'dogs') return 'DOG';
+            if (cat === 'cats') return 'CAT';
+            if (cat === 'fish') return 'FISH';
+            if (cat === 'birds') return 'BIRD';
+            return '';
+        }
+
+        function getFullImageUrl(imagePath) {
+            if (!imagePath) return null;
+            if (imagePath.startsWith('http')) {
+                return imagePath;
+            }
+            let filename = imagePath;
+            if (imagePath.includes('/')) {
+                filename = imagePath.split('/').pop();
+            }
+            filename = filename.split('?')[0];
+            return `${BACKEND_URL}/api/uploads/posts/${filename}`;
+        }
+
+        async function loadPostsData() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const searchTerm = searchInput.value.trim();
+                const status = statusFilter.value;
+                
+                let url = '/api/admin/posts?';
+                if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+                if (status) url += `status=${status}`;
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load posts');
+                
+                let posts = await response.json();
+                
+                // Client-side filtering for username and email since backend search might not support them
+                if (searchTerm) {
+                    const lowerSearch = searchTerm.toLowerCase();
+                    posts = posts.filter(post => {
+                        const userName = (post.userName || '').toLowerCase();
+                        const petName = (post.petName || '').toLowerCase();
+                        const location = (post.location || '').toLowerCase();
+                        const description = (post.description || '').toLowerCase();
+                        return userName.includes(lowerSearch) || 
+                               petName.includes(lowerSearch) || 
+                               location.includes(lowerSearch) ||
+                               description.includes(lowerSearch);
+                    });
+                }
+                
+                allPosts = posts;
+                document.getElementById('totalPosts').textContent = posts.length;
+                document.getElementById('resultCount').textContent = posts.length;
+                displayPosts(posts);
+                
+            } catch (error) {
+                console.error('Error loading posts:', error);
+                showToast('Failed to load posts', 'error');
+            }
+        }
+
+        function displayPosts(posts) {
+            const grid = document.getElementById('postsGrid');
+            
+            if (posts.length === 0) {
+                grid.innerHTML = `<div style="text-align: center; padding: 60px; color: #9c856c;">
+                    <i class="fas fa-paw" style="font-size: 44px; margin-bottom: 16px;"></i>
+                    <p>No posts found</p>
+                </div>`;
+                return;
+            }
+
+            grid.innerHTML = posts.map(post => {
+                const statusClass = post.status === 'Lost' ? 'status-lost' : post.status === 'Found' ? 'status-found' : 'status-adoption';
+                const statusText = post.status || 'Unknown';
+                const avatarLetter = post.userName?.charAt(0).toUpperCase() || '?';
+                
+                const category = post.category || '';
+                const categoryClass = getCategoryClass(category);
+                const categoryLabel = getCategoryLabel(category);
+                
+                const reportedBadge = post.reported ? 
+                    `<div class="reported-badge" onclick="showReportDetails('${post.postId}')">
+                        <i class="fas fa-flag"></i> ${post.reportCount || 1} report${(post.reportCount || 1) > 1 ? 's' : ''}
+                    </div>` : '';
+                
+                let imageHtml = '';
+                if (post.imageUrls && post.imageUrls.length > 0 && post.imageUrls[0]) {
+                    const fullImageUrl = getFullImageUrl(post.imageUrls[0]);
+                    imageHtml = `<img src="${fullImageUrl}" alt="${post.petName || 'pet'}" 
+                                onerror="this.onerror=null; this.parentNode.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;\'><i class=\'fas fa-paw\' style=\'font-size:48px;color:#B88B4A;\'></i></div>';">`;
+                } else {
+                    imageHtml = '<div style="display: flex; align-items: center; justify-content: center; height: 100%;"><i class="fas fa-paw" style="font-size: 48px; color: #B88B4A;"></i></div>';
+                }
+
+                return `
+                <div class="post-card">
+                    <div class="post-image">
+                        ${imageHtml}
+                        <span class="post-status-badge ${statusClass}">${statusText}</span>
+                        ${categoryLabel ? `<span class="category-badge ${categoryClass}">${categoryLabel}</span>` : ''}
+                    </div>
+                    <div class="post-content">
+                        <div class="post-header">
+                            <div class="post-user-avatar">${avatarLetter}</div>
+                            <div>
+                                <div class="post-user-name">${escapeHtml(post.userName) || 'Anonymous'}</div>
+                                <div class="post-time">${post.time || 'Just now'}</div>
+                            </div>
+                        </div>
+                        <h4 class="post-title">${escapeHtml(post.petName) || 'Unnamed friend'}</h4>
+                        <p class="post-description">${escapeHtml(post.description) || 'No description provided'}</p>
+                        ${reportedBadge}
+                        <div class="post-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(post.location) || 'Not specified'}</span>
+                            <span><i class="fas fa-phone-alt"></i> ${escapeHtml(post.contact) || escapeHtml(post.contactInfo) || 'N/A'}</span>
+                        </div>
+                        <div class="post-actions">
+                            <button class="action-btn btn-view" onclick="viewPost('${post.id}')"><i class="fas fa-eye"></i> View</button>
+                            <button class="action-btn btn-report" onclick="showReportDetails('${post.postId}')"><i class="fas fa-flag"></i> Reports</button>
+                            <button class="action-btn btn-delete" onclick="deletePost('${post.id}')"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        async function viewPost(id) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/posts/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed to load post');
+                const post = await response.json();
+                
+                const category = post.category || '';
+                const categoryLabel = getCategoryLabel(category);
+                const categoryClass = getCategoryClass(category);
+                
+                let genderDisplay = 'Unknown';
+                let genderEmoji = '⚥';
+                if (post.gender === 'Male') { genderDisplay = 'Male'; genderEmoji = '♂️'; }
+                if (post.gender === 'Female') { genderDisplay = 'Female'; genderEmoji = '♀️'; }
+                
+                let ageDisplay = post.age && post.age.trim() !== '' ? post.age : 'Not specified';
+                let weightDisplay = post.weight && post.weight.trim() !== '' ? post.weight : 'Not specified';
+                
+                let imagePreview = '';
+                if (post.imageUrls && post.imageUrls.length > 0) {
+                    const imgUrl = getFullImageUrl(post.imageUrls[0]);
+                    if (imgUrl) {
+                        imagePreview = `<div style="margin-top: 16px; text-align:center;">
+                            <img src="${imgUrl}" style="max-width: 100%; border-radius: 20px; max-height: 260px; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" 
+                                 onerror="this.src='https://placehold.co/400x300?text=No+Image'">
+                        </div>`;
+                    }
+                }
+                
+                const modalContent = document.getElementById('modalContent');
+                modalContent.innerHTML = `
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">🐾 Pet Name:</span>
+                            <span class="detail-value">${escapeHtml(post.petName) || '—'}</span>
+                        </div>
+                    </div>
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">📌 Status:</span>
+                            <span class="detail-value"><span style="background: #f5e6d3; padding:2px 10px; border-radius:20px;">${post.status || 'Unknown'}</span></span>
+                        </div>
+                    </div>
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">${genderEmoji} Gender:</span>
+                            <span class="detail-value">${genderDisplay}</span>
+                        </div>
+                    </div>
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">🎂 Age:</span>
+                            <span class="detail-value">${escapeHtml(ageDisplay)}</span>
+                        </div>
+                    </div>
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">⚖️ Weight:</span>
+                            <span class="detail-value">${escapeHtml(weightDisplay)}</span>
+                        </div>
+                    </div>
+                    ${categoryLabel ? `<div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">🏷️ Category:</span>
+                            <span class="detail-value"><span class="category-badge ${categoryClass}" style="position:relative; display:inline-block; margin-left:0;">${categoryLabel}</span></span>
+                        </div>
+                    </div>` : ''}
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">👤 Posted by:</span>
+                            <span class="detail-value">${escapeHtml(post.userName) || 'Anonymous'}</span>
+                        </div>
+                    </div>
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">📍 Location:</span>
+                            <span class="detail-value">${escapeHtml(post.location) || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">📞 Contact:</span>
+                            <span class="detail-value">${escapeHtml(post.contactInfo) || escapeHtml(post.contact) || 'Not provided'}</span>
+                        </div>
+                    </div>
+                    <div class="modal-detail-item">
+                        <div class="detail-row">
+                            <span class="detail-label">📝 Description:</span>
+                        </div>
+                        <div class="detail-value" style="margin-top: 8px; line-height: 1.5;">${escapeHtml(post.description) || 'No description'}</div>
+                    </div>
+                    ${imagePreview}
+                `;
+                openModal('viewPostModal');
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load post details', 'error');
+            }
+        }
+
+        async function deletePost(id) {
+            if (!confirm('⚠️ Permanently delete this post? This action cannot be undone.')) return;
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/posts/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed to delete');
+                showToast('Post deleted successfully', 'success');
+                loadPostsData();
+            } catch (error) {
+                showToast('Failed to delete post', 'error');
+            }
+        }
+
+        async function showReportDetails(postId) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('/api/admin/reports', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed');
+                const allReports = await response.json();
+                
+                const postReports = allReports.filter(r => r.postId === postId);
+                
+                if (postReports.length === 0) {
+                    showToast('No reports found for this post', 'info');
+                    return;
+                }
+                
+                let html = `
+                    <div style="font-family: Arial, sans-serif;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #FF9800; padding-bottom: 10px;">
+                            <h3 style="color: #FF9800; margin: 0;">
+                                <i class="fas fa-flag"></i> Reports (${postReports.length})
+                            </h3>
+                            <button onclick="closeModal('reportModal')" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                        </div>
+                        <div style="max-height: 60vh; overflow-y: auto;">
+                `;
+                
+                postReports.forEach((report, index) => {
+                    const reporterName = report.reporter?.username || report.reporterUid || 'Unknown User';
+                    const reportDate = new Date(report.createdAt).toLocaleString();
+                    const reportId = report.reportId;
+                    
+                    let statusColor = '#f97316';
+                    let statusText = 'PENDING';
+                    if (report.status === 'reviewed') { statusColor = '#22c55e'; statusText = 'REVIEWED'; }
+                    if (report.status === 'dismissed') { statusColor = '#94a3b8'; statusText = 'DISMISSED'; }
+                    
+                    html += `
+                        <div style="background: #fef3e8; padding: 12px; border-radius: 12px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-weight: bold;">Report #${index + 1}</span>
+                                <span style="display: inline-block; background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px;">${statusText}</span>
+                            </div>
+                            <div><strong>👤 Reporter:</strong> ${escapeHtml(reporterName)}</div>
+                            <div><strong>📝 Reason:</strong> ${escapeHtml(report.reason)}</div>
+                            ${report.description ? `<div><strong>📄 Description:</strong> ${escapeHtml(report.description)}</div>` : ''}
+                            <div><strong>📅 Date:</strong> ${reportDate}</div>
+                            ${report.status === 'pending' ? `
+                                <div style="display: flex; gap: 10px; margin-top: 12px;">
+                                    <button onclick="updateReportStatus('${reportId}', 'reviewed')" 
+                                            style="flex:1; background:#22c55e; color:white; border:none; padding:8px; border-radius:8px; cursor:pointer;">
+                                        ✅ Mark Reviewed
+                                    </button>
+                                    <button onclick="updateReportStatus('${reportId}', 'dismissed')" 
+                                            style="flex:1; background:#94a3b8; color:white; border:none; padding:8px; border-radius:8px; cursor:pointer;">
+                                        ❌ Dismiss
+                                    </button>
+                                </div>
+                            ` : `
+                                <div style="margin-top: 8px; padding: 6px; background: #f0f0f0; border-radius: 6px; text-align: center; color: #666;">
+                                    ✅ This report has been ${report.status}
+                                </div>
+                            `}
+                        </div>
+                    `;
+                });
+                
+                html += `</div><button class="close-btn" onclick="closeModal('reportModal')">Close</button></div>`;
+                const reportModalContent = document.getElementById('reportModalContent');
+                if (reportModalContent) {
+                    reportModalContent.innerHTML = html;
+                    openModal('reportModal');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to load reports', 'error');
+            }
+        }
+
+        async function updateReportStatus(reportId, status) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/reports/${reportId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status })
+                });
+                if (!response.ok) throw new Error('Failed');
+                
+                showToast(`Report marked as ${status}. Reporter notified.`, 'success');
+                loadPostsData();
+                closeModal('reportModal');
+            } catch (error) {
+                console.error('Failed:', error);
+                showToast('Failed to update report', 'error');
+            }
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showToast(message, type) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.style.cssText = `background: ${type === 'success' ? '#22c55e' : type === 'info' ? '#3b82f6' : '#ef4444'}; color: white; padding: 12px 20px; border-radius: 50px; margin-bottom: 8px; animation: slideIn 0.25s ease; font-size: 13px; font-weight: 500; box-shadow: 0 6px 14px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px;`;
+            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'info' ? 'fa-info-circle' : 'fa-exclamation-triangle'}"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3200);
+        }
+
+        // Load posts on page load
+        document.addEventListener('DOMContentLoaded', loadPostsData);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadPostsData, 30000);
+    </script>
+</body>
+</html>

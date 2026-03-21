@@ -1,5 +1,6 @@
 package com.example.pawsociety.api
 
+import android.os.Build
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -8,13 +9,13 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    // FOR EMULATOR - Use your computer's actual IP
-    // Made public by removing 'private' keyword
-    const val BASE_URL = "http://10.0.2.2:5000/api/"
-    const val FULL_BASE_URL = "http://10.0.2.2:5000"
+    // ===== USE YOUR ACTUAL NETWORK IP FROM IPCONFIG =====
+    private const val SERVER_URL = "http://192.168.254.103:5000"  // ← YOUR REAL IP
 
-    // For image loading without the /api prefix
-    const val BASE_URL_NO_API = "http://10.0.2.2:5000/"
+    val BASE_URL = "$SERVER_URL/api/"
+    val PUBLIC_BASE_URL = "$SERVER_URL/api/public/"
+    val FULL_BASE_URL = SERVER_URL
+    val BASE_URL_NO_API = "$SERVER_URL/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -33,29 +34,15 @@ object ApiClient {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
+    private val publicRetrofit = Retrofit.Builder()
+        .baseUrl(PUBLIC_BASE_URL)
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
     val apiService: PawSocietyApi = retrofit.create(PawSocietyApi::class.java)
+    val publicApiService: PawSocietyApi = publicRetrofit.create(PawSocietyApi::class.java)
     val uploadService: UploadApi = retrofit.create(UploadApi::class.java)
 
-    /**
-     * Update base URL for different environments
-     * Call this before making API requests if needed
-     */
-    fun updateBaseUrl(newBaseUrl: String) {
-        val newRetrofit = Retrofit.Builder()
-            .baseUrl(newBaseUrl)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        // Note: This won't update the existing apiService, you'd need to recreate it
-    }
-
-    /**
-     * Get the current base URL
-     */
-    fun getBaseUrl(): String = BASE_URL
-
-    /**
-     * Get the full base URL (without /api) for image loading
-     */
     fun getImageBaseUrl(): String = BASE_URL_NO_API
 }

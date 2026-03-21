@@ -25,12 +25,15 @@ class MyApplication : Application() {
             val name = "PawSociety Notifications"
             val descriptionText = "Notifications for likes, comments, and messages"
             val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel("pawsociety_channel", name, importance).apply {
+
+            // 🔥 FIXED: Use the SAME channel ID as in MyFirebaseMessagingService
+            val channel = NotificationChannel("pawsociety_notifications", name, importance).apply {
                 this.description = descriptionText
                 enableLights(true)
                 enableVibration(true)
                 setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), null)
             }
+
             val notificationManager: NotificationManager =
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)

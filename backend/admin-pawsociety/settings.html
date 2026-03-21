@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawSociety - Settings ⚙️</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #fef7e8;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #7A4F2B;
+        }
+
+        .logo span {
+            font-weight: 400;
+            color: #B88B4A;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .admin-name .name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 13px;
+        }
+
+        .admin-name .role {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: #7A4F2B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            width: 160px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .dropdown-item:hover {
+            background: #fef3e8;
+            color: #7A4F2B;
+        }
+
+        .container {
+            display: flex;
+            padding-top: 60px;
+            min-height: 100vh;
+            justify-content: center;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #5a3a1f;
+            position: fixed;
+            left: 0;
+            top: 60px;
+            height: calc(100vh - 60px);
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 10px 20px;
+            margin: 4px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e8d9cc;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .menu-item:hover {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-item.active {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-icon {
+            font-size: 16px;
+            width: 22px;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-wrapper {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .page-header {
+            margin-bottom: 20px;
+        }
+
+        .page-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #5a3a1f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-header h2 i {
+            color: #7A4F2B;
+            font-size: 22px;
+        }
+
+        .settings-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .settings-tab {
+            background: white;
+            padding: 8px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #7c6b5a;
+            border: 1px solid #f0e4d4;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .settings-tab:hover, .settings-tab.active {
+            background: #7A4F2B;
+            color: white;
+            border-color: #7A4F2B;
+        }
+
+        .settings-section {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid #f0e4d4;
+            display: none;
+        }
+
+        .settings-section.active {
+            display: block;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f0e4d4;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .setting-info label {
+            font-weight: 600;
+            color: #5a3a1f;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .setting-info .description {
+            color: #9c856c;
+            font-size: 12px;
+        }
+
+        .setting-control {
+            width: 260px;
+        }
+
+        .setting-control input, .setting-control textarea, .setting-control select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #eef2f6;
+            border-radius: 12px;
+            font-size: 13px;
+            background: #fef7e8;
+        }
+
+        .toggle-switch {
+            width: 52px;
+            height: 26px;
+            background: #eef2f6;
+            border-radius: 26px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-switch.active {
+            background: #7A4F2B;
+        }
+
+        .toggle-slider {
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: left 0.2s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            left: 28px;
+        }
+
+        .save-button {
+            background: #7A4F2B;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            padding: 16px;
+            color: #9c856c;
+            font-size: 11px;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+                display: flex;
+                overflow-x: auto;
+                padding: 10px;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .container {
+                flex-direction: column;
+            }
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .setting-control {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>PawSociety <span>🐾 Admin</span></h1>
+        </div>
+        <div class="header-right">
+            <div class="admin-profile" id="adminProfile">
+                <div class="admin-name">
+                    <div class="name" id="adminName">Admin User</div>
+                    <div class="role" id="adminRole">Super Admin</div>
+                </div>
+                <div class="avatar" id="avatarBtn">🐶</div>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="dropdown-item" onclick="window.location.href='settings.html'">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                    <div class="dropdown-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="menu-item" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-chart-line menu-icon"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='posts.html'">
+                <i class="fas fa-paw menu-icon"></i>
+                <span>Posts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='users.html'">
+                <i class="fas fa-user menu-icon"></i>
+                <span>Users</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='accounts.html'">
+                <i class="fas fa-users menu-icon"></i>
+                <span>Accounts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='reports.html'">
+                <i class="fas fa-chart-bar menu-icon"></i>
+                <span>Reports</span>
+            </div>
+            <div class="menu-item active">
+                <i class="fas fa-cog menu-icon"></i>
+                <span>Settings</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="content-wrapper">
+                <div class="page-header">
+                    <h2>
+                        <i class="fas fa-cog"></i>
+                        App Settings
+                    </h2>
+                </div>
+
+                <div class="settings-nav">
+                    <div class="settings-tab active" onclick="switchTab('general')">General</div>
+                    <div class="settings-tab" onclick="switchTab('notifications')">Notifications</div>
+                </div>
+
+                <div class="settings-section active" id="general-settings">
+                    <div class="setting-item"><div class="setting-info"><label>Support Email</label><div class="description">Where users can contact for help</div></div><div class="setting-control"><input type="email" id="supportEmail" value="support@pawsociety.com"></div></div>
+                    <div class="setting-item"><div class="setting-info"><label>Maintenance Mode</label><div class="description">When ON, users see maintenance screen</div></div><div class="setting-control"><div class="toggle-switch" id="maintenanceMode" onclick="toggleSwitch(this)"><div class="toggle-slider"></div></div></div></div>
+                    <div class="setting-item"><div class="setting-info"><label>Maintenance Message</label><div class="description">Message shown during maintenance</div></div><div class="setting-control"><textarea id="maintenanceMessage" rows="2">PawSociety is under maintenance. We'll be back soon! 🐾</textarea></div></div>
+                    <div class="setting-item"><div class="setting-info"><label>Allow New Registrations</label><div class="description">Let new users join the app</div></div><div class="setting-control"><div class="toggle-switch active" id="allowRegistration" onclick="toggleSwitch(this)"><div class="toggle-slider"></div></div></div></div>
+                    <button class="save-button" onclick="saveSettings('general')"><i class="fas fa-save"></i> Save General Settings</button>
+                </div>
+
+                <div class="settings-section" id="notifications-settings">
+                    <div class="setting-item"><div class="setting-info"><label>Enable Push Notifications</label><div class="description">Master switch for notifications</div></div><div class="setting-control"><div class="toggle-switch active" id="pushEnabled" onclick="toggleSwitch(this)"><div class="toggle-slider"></div></div></div></div>
+                    <div class="setting-item"><div class="setting-info"><label>Quiet Hours Start</label><div class="description">Don't send notifications after this time</div></div><div class="setting-control"><input type="time" id="quietStart" value="22:00"></div></div>
+                    <div class="setting-item"><div class="setting-info"><label>Quiet Hours End</label><div class="description">Resume notifications after this time</div></div><div class="setting-control"><input type="time" id="quietEnd" value="08:00"></div></div>
+                    <button class="save-button" onclick="saveSettings('notifications')"><i class="fas fa-save"></i> Save Notification Settings</button>
+                </div>
+
+                <div class="footer">
+                    <p>© 2025 PawSociety. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const avatarBtn = document.getElementById('avatarBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        avatarBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
+        document.addEventListener('click', (e) => { if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) dropdownMenu.classList.remove('show'); });
+        function logout() { if(confirm('Logout?')) { localStorage.removeItem('adminToken'); localStorage.removeItem('adminUser'); window.location.href='index.html'; } }
+        function switchTab(tab) { document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active')); document.getElementById(tab+'-settings').classList.add('active'); document.querySelectorAll('.settings-tab').forEach(t=>t.classList.remove('active')); event.target.classList.add('active'); }
+        function toggleSwitch(el) { el.classList.toggle('active'); }
+        async function loadSettingsData() { try { const token=localStorage.getItem('adminToken'); if(!token){window.location.href='index.html';return;} const res=await fetch('/api/admin/settings',{headers:{'Authorization':`Bearer ${token}`}}); if(!res.ok)throw new Error(); const s=await res.json(); if(s.general){ document.getElementById('supportEmail').value=s.general.supportEmail||''; document.getElementById('maintenanceMessage').value=s.general.maintenanceMessage||''; if(s.general.maintenanceMode) document.getElementById('maintenanceMode').classList.add('active'); else document.getElementById('maintenanceMode').classList.remove('active'); if(s.general.allowRegistration) document.getElementById('allowRegistration').classList.add('active'); else document.getElementById('allowRegistration').classList.remove('active'); } if(s.notifications){ if(s.notifications.pushEnabled) document.getElementById('pushEnabled').classList.add('active'); else document.getElementById('pushEnabled').classList.remove('active'); document.getElementById('quietStart').value=s.notifications.quietStart||'22:00'; document.getElementById('quietEnd').value=s.notifications.quietEnd||'08:00'; } } catch(e){ showToast('Failed to load settings','error'); } }
+        async function saveSettings(section) { try { const token=localStorage.getItem('adminToken'); if(!token){window.location.href='index.html';return;} let body={}; if(section==='general'){ body={ supportEmail:document.getElementById('supportEmail').value, maintenanceMode:document.getElementById('maintenanceMode').classList.contains('active'), maintenanceMessage:document.getElementById('maintenanceMessage').value, allowRegistration:document.getElementById('allowRegistration').classList.contains('active') }; } else { body={ pushEnabled:document.getElementById('pushEnabled').classList.contains('active'), quietStart:document.getElementById('quietStart').value, quietEnd:document.getElementById('quietEnd').value }; } const res=await fetch(`/api/admin/settings/${section}`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify(body)}); if(!res.ok)throw new Error(); showToast('Settings saved!','success'); setTimeout(loadSettingsData,1000); } catch(e){ showToast('Failed to save settings','error'); } }
+        function showToast(msg,type){ let c=document.getElementById('toast-container'); if(!c){c=document.createElement('div');c.id='toast-container';document.body.appendChild(c);} const t=document.createElement('div'); t.style.cssText=`background:${type==='success'?'#22c55e':'#ef4444'};color:white;padding:10px 16px;border-radius:8px;margin-bottom:8px;animation:slideIn 0.3s ease;`; t.textContent=msg; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
+        document.addEventListener('DOMContentLoaded', loadSettingsData);
+        setInterval(loadSettingsData, 30000);
+    </script>
+</body>
+</html>s

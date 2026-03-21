@@ -28,6 +28,12 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // 🔥 ADDED - Category field (Dogs, Cats, Fish, Birds)
+  category: {
+    type: String,
+    enum: ['Dogs', 'Cats', 'Fish', 'Birds', ''],
+    default: ''
+  },
   age: {
     type: String,
     default: ''

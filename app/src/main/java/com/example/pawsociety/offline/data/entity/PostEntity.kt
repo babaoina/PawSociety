@@ -6,6 +6,8 @@ import com.example.pawsociety.api.ApiPost
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
+// In PostEntity.kt, add category field
+
 @Entity(tableName = "posts")
 data class PostEntity(
     @PrimaryKey
@@ -15,8 +17,9 @@ data class PostEntity(
     val userImageUrl: String?,
     val petName: String,
     val petType: String,
-    val age: String? = "",  // ADD THIS
-    val weight: String? = "",  // ADD THIS
+    val category: String? = null,  // 🔥 ADD THIS
+    val age: String? = "",
+    val weight: String? = "",
     val gender: String? = "Unknown",
     val status: String,
     val description: String,
@@ -44,6 +47,7 @@ data class PostEntity(
             userImageUrl = userImageUrl,
             petName = petName,
             petType = petType,
+            category = category,  // 🔥 ADD THIS
             age = age,
             weight = weight,
             gender = gender,
@@ -70,6 +74,7 @@ data class PostEntity(
                 userImageUrl = post.userImageUrl,
                 petName = post.petName,
                 petType = post.petType,
+                category = post.category,  // 🔥 ADD THIS
                 age = post.age ?: "",
                 weight = post.weight ?: "",
                 gender = post.gender ?: "Unknown",

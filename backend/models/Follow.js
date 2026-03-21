@@ -4,28 +4,23 @@ const followSchema = new mongoose.Schema({
   followId: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
   followerUid: {
-    type: String, // The user who is following
-    required: true,
-    index: true
+    type: String,
+    required: true
   },
   followingUid: {
-    type: String, // The user being followed
-    required: true,
-    index: true
+    type: String,
+    required: true
   },
   createdAt: {
     type: Date,
     default: Date.now
   }
-}, {
-  timestamps: true
 });
 
-// Compound unique index to prevent duplicate follows
+// Make sure they can't follow twice
 followSchema.index({ followerUid: 1, followingUid: 1 }, { unique: true });
 
 module.exports = mongoose.model('Follow', followSchema);

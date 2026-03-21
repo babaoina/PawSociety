@@ -21,7 +21,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/back"
-            android:tint="#000000"
+            android:tint="#7A4F2B"
             android:contentDescription="Back" />
 
         <TextView
@@ -30,7 +30,7 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:text="Post Details"
-            android:textColor="#000000"
+            android:textColor="#7A4F2B"
             android:textSize="20sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -40,7 +40,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#FAF0E6">
+        android:background="#F5F5F5">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -61,7 +61,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <!-- ===== HEADER with Profile Picture and Time + 3 Dots ===== -->
+                    <!-- ===== HEADER with Profile Picture and 3 dots ===== -->
                     <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="60dp"
@@ -99,23 +99,36 @@
                             android:layout_centerVertical="true"
                             android:visibility="invisible" />
 
-                        <!-- Username -->
-                        <TextView
-                            android:id="@+id/post_user_name"
+                        <!-- Username and Role -->
+                        <LinearLayout
+                            android:id="@+id/user_info_container"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerVertical="true"
                             android:layout_toEndOf="@id/profile_anchor"
                             android:layout_marginStart="12dp"
-                            android:text="Floyd Miles"
-                            android:textColor="#000000"
-                            android:textSize="15sp"
-                            android:textStyle="bold"
-                            android:layout_toLeftOf="@+id/time_options_container" />
+                            android:orientation="vertical">
 
-                        <!-- Time and 3 dots container -->
+                            <TextView
+                                android:id="@+id/post_user_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Username"
+                                android:textColor="#000000"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/post_user_role"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Role"
+                                android:textColor="#7A4F2B"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <!-- Time and 3 dots -->
                         <LinearLayout
-                            android:id="@+id/time_options_container"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
@@ -123,7 +136,6 @@
                             android:orientation="horizontal"
                             android:gravity="center_vertical">
 
-                            <!-- Time -->
                             <TextView
                                 android:id="@+id/post_time"
                                 android:layout_width="wrap_content"
@@ -133,13 +145,12 @@
                                 android:textSize="11sp"
                                 android:layout_marginEnd="8dp" />
 
-                            <!-- Three dots menu -->
                             <ImageView
                                 android:id="@+id/btn_more_details"
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:src="@drawable/ic_more_vert"
-                                android:tint="#666666"
+                                android:tint="#7A4F2B"
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:clickable="true"
                                 android:focusable="true" />
@@ -248,7 +259,7 @@
                         </LinearLayout>
                     </FrameLayout>
 
-                    <!-- ===== PET INFO + ACTION BUTTONS (SIDE BY SIDE) ===== -->
+                    <!-- ===== PET INFO + ACTION BUTTONS ===== -->
                     <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -266,28 +277,52 @@
                             android:orientation="vertical"
                             android:layout_marginEnd="16dp">
 
-                            <!-- Breed/Pet Type - Large -->
-                            <TextView
-                                android:id="@+id/post_pet_type"
-                                android:layout_width="wrap_content"
+                            <!-- Breed/Pet Type with Badge -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Golden Retriever"
-                                android:textColor="#000000"
-                                android:textSize="24sp"
-                                android:textStyle="bold"
-                                android:layout_marginBottom="4dp" />
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginBottom="4dp">
+
+                                <TextView
+                                    android:id="@+id/post_pet_type"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Golden Retriever"
+                                    android:textColor="#000000"
+                                    android:textSize="24sp"
+                                    android:textStyle="bold"
+                                    android:maxLines="1"
+                                    android:ellipsize="end" />
+
+                                <!-- Category Badge -->
+                                <TextView
+                                    android:id="@+id/post_category_badge"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="28dp"
+                                    android:gravity="center"
+                                    android:paddingHorizontal="12dp"
+                                    android:layout_marginStart="8dp"
+                                    android:text="DOG"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:background="@drawable/category_badge_rounded"
+                                    android:visibility="gone" />
+                            </LinearLayout>
 
                             <!-- Pet Name -->
                             <TextView
                                 android:id="@+id/post_pet_name"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Milo"
-                                android:textColor="#666666"
+                                android:text="Pet Name"
+                                android:textColor="#7A4F2B"
                                 android:textSize="18sp"
                                 android:layout_marginBottom="12dp" />
 
-                            <!-- Gender, Age, Weight Row - STACKED STYLE from item post -->
+                            <!-- Gender, Age, Weight Row -->
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -347,27 +382,13 @@
                                         android:textStyle="bold"
                                         android:layout_marginBottom="2dp" />
 
-                                    <LinearLayout
+                                    <TextView
+                                        android:id="@+id/post_age"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:orientation="horizontal"
-                                        android:gravity="center">
-
-                                        <TextView
-                                            android:layout_width="wrap_content"
-                                            android:layout_height="wrap_content"
-                                            android:text="🎂"
-                                            android:textSize="14sp"
-                                            android:layout_marginEnd="4dp" />
-
-                                        <TextView
-                                            android:id="@+id/post_age"
-                                            android:layout_width="wrap_content"
-                                            android:layout_height="wrap_content"
-                                            android:text="8 months"
-                                            android:textColor="#666666"
-                                            android:textSize="14sp" />
-                                    </LinearLayout>
+                                        android:text="8 months"
+                                        android:textColor="#666666"
+                                        android:textSize="14sp" />
                                 </LinearLayout>
 
                                 <!-- Weight Column -->
@@ -388,64 +409,92 @@
                                         android:textStyle="bold"
                                         android:layout_marginBottom="2dp" />
 
-                                    <LinearLayout
+                                    <TextView
+                                        android:id="@+id/post_weight"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:orientation="horizontal"
-                                        android:gravity="center">
-
-                                        <TextView
-                                            android:layout_width="wrap_content"
-                                            android:layout_height="wrap_content"
-                                            android:text="⚖️"
-                                            android:textSize="14sp"
-                                            android:layout_marginEnd="4dp" />
-
-                                        <TextView
-                                            android:id="@+id/post_weight"
-                                            android:layout_width="wrap_content"
-                                            android:layout_height="wrap_content"
-                                            android:text="3.5kg"
-                                            android:textColor="#666666"
-                                            android:textSize="14sp" />
-                                    </LinearLayout>
+                                        android:text="3.5kg"
+                                        android:textColor="#666666"
+                                        android:textSize="14sp" />
                                 </LinearLayout>
                             </LinearLayout>
 
-                            <!-- Reward Container (for Lost posts) - THINNER -->
+                            <!-- REWARD SECTION -->
                             <LinearLayout
                                 android:id="@+id/reward_container"
                                 android:layout_width="wrap_content"
-                                android:layout_height="24dp"
+                                android:layout_height="wrap_content"
                                 android:orientation="horizontal"
                                 android:gravity="center_vertical"
-                                android:background="#FFF9E6"
-                                android:paddingHorizontal="10dp"
-                                android:paddingVertical="2dp"
-                                android:layout_marginBottom="12dp"
-                                android:visibility="gone"
-                                android:layout_gravity="start">
+                                android:background="@drawable/rounded_highlight_gold"
+                                android:paddingHorizontal="12dp"
+                                android:paddingVertical="6dp"
+                                android:layout_marginBottom="4dp"
+                                android:visibility="gone">
 
                                 <TextView
                                     android:id="@+id/post_reward"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="1,000,000"
-                                    android:textColor="#7A4F2B"
+                                    android:text="₱1,000,000"
+                                    android:textColor="#B8860B"
                                     android:textSize="14sp"
                                     android:textStyle="bold" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text=" REWARD"
-                                    android:textColor="#7A4F2B"
+                                    android:text="REWARD"
+                                    android:textColor="#B8860B"
                                     android:textSize="12sp"
                                     android:textStyle="bold"
-                                    android:layout_marginStart="2dp" />
+                                    android:layout_marginStart="4dp" />
                             </LinearLayout>
 
-                            <!-- About Section -->
+                            <!-- Contact Number -->
+                            <LinearLayout
+                                android:id="@+id/btn_call_container"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:background="@drawable/rounded_highlight_green"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="4dp"
+                                android:layout_marginBottom="4dp"
+                                android:clickable="true"
+                                android:focusable="true">
+
+                                <ImageView
+                                    android:id="@+id/iv_call_icon"
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp"
+                                    android:src="@drawable/phone"
+                                    android:tint="#4CAF50"
+                                    android:layout_marginEnd="4dp" />
+
+                                <TextView
+                                    android:id="@+id/post_contact"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="09678768888"
+                                    android:textColor="#4CAF50"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <!-- Location -->
+                            <TextView
+                                android:id="@+id/post_location"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📍 San Carlos, Pangasinan"
+                                android:textColor="#666666"
+                                android:textSize="14sp"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginBottom="8dp" />
+
+                            <!-- About Section Title -->
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -460,11 +509,11 @@
                                 android:id="@+id/post_description"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Dogs are among the most trusted and loving companions in the world. They communicate through actions, experiences and endless loyalty. Every dog has its own personality."
+                                android:text="Description"
                                 android:textColor="#666666"
                                 android:textSize="14sp"
                                 android:lineSpacingExtra="2dp"
-                                android:maxLines="5"
+                                android:maxLines="4"
                                 android:ellipsize="end"
                                 android:layout_marginBottom="4dp" />
 
@@ -479,31 +528,9 @@
                                 android:textStyle="bold"
                                 android:visibility="gone"
                                 android:layout_marginBottom="8dp" />
-
-                            <!-- Contact Info with emoji -->
-                            <TextView
-                                android:id="@+id/post_contact"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="📞 09123456789"
-                                android:textColor="#666666"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                android:visibility="visible" />
-
-                            <!-- Location with emoji -->
-                            <TextView
-                                android:id="@+id/post_location"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="📍 San Carlos, Pangasinan"
-                                android:textColor="#666666"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                android:visibility="visible" />
                         </LinearLayout>
 
-                        <!-- RIGHT SIDE - Action Buttons Vertical (ALIGNED WITH GOLDEN RETRIEVER) -->
+                        <!-- RIGHT SIDE - Action Buttons -->
                         <LinearLayout
                             android:id="@+id/action_buttons_container"
                             android:layout_width="wrap_content"
@@ -535,13 +562,13 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="124"
-                                    android:textColor="#666666"
+                                    android:textColor="#7A4F2B"
                                     android:textSize="12sp"
                                     android:textStyle="bold"
                                     android:layout_marginTop="2dp" />
                             </LinearLayout>
 
-                            <!-- Message Button -->
+                            <!-- Chat Button -->
                             <LinearLayout
                                 android:id="@+id/btn_message"
                                 android:layout_width="wrap_content"
@@ -559,13 +586,13 @@
                                     android:layout_width="32dp"
                                     android:layout_height="32dp"
                                     android:src="@drawable/message"
-                                    android:tint="#666666" />
+                                    android:tint="#7A4F2B" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="Chat"
-                                    android:textColor="#666666"
+                                    android:textColor="#7A4F2B"
                                     android:textSize="10sp"
                                     android:layout_marginTop="2dp" />
                             </LinearLayout>
@@ -587,18 +614,18 @@
                                     android:layout_width="32dp"
                                     android:layout_height="32dp"
                                     android:src="@drawable/share"
-                                    android:tint="#666666" />
+                                    android:tint="#7A4F2B" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="Share"
-                                    android:textColor="#666666"
+                                    android:textColor="#7A4F2B"
                                     android:textSize="10sp"
                                     android:layout_marginTop="2dp" />
                             </LinearLayout>
 
-                            <!-- Favorite Button -->
+                            <!-- Save/Favorite Button -->
                             <LinearLayout
                                 android:id="@+id/btn_favorite"
                                 android:layout_width="wrap_content"
@@ -614,7 +641,7 @@
                                     android:layout_width="32dp"
                                     android:layout_height="32dp"
                                     android:src="@drawable/faved"
-                                    android:tint="#666666" />
+                                    android:tint="#7A4F2B" />
 
                                 <TextView
                                     android:layout_width="wrap_content"

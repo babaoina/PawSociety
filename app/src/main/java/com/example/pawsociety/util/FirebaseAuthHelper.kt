@@ -2,6 +2,7 @@ package com.example.pawsociety.util
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.tasks.await
 
 object FirebaseAuthHelper {
@@ -33,6 +34,19 @@ object FirebaseAuthHelper {
     suspend fun loginWithEmail(email: String, password: String): Result<FirebaseUser> {
         return try {
             val authResult = auth.signInWithEmailAndPassword(email, password).await()
+            val user = authResult.user ?: return Result.failure(Exception("User is null"))
+            Result.success(user)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Sign in with credential (for Google Sign In)
+     */
+    suspend fun signInWithCredential(credential: com.google.firebase.auth.AuthCredential): Result<FirebaseUser> {
+        return try {
+            val authResult = auth.signInWithCredential(credential).await()
             val user = authResult.user ?: return Result.failure(Exception("User is null"))
             Result.success(user)
         } catch (e: Exception) {
@@ -100,6 +114,19 @@ object FirebaseAuthHelper {
     }
 
     /**
+     * Check if email is verified
+     */
+    val isEmailVerified: Boolean
+        get() = currentUser?.isEmailVerified ?: false
+
+    /**
+     * Get current user UID
+     */
+    fun getCurrentUserUid(): String? {
+        return currentUser?.uid
+    }
+
+    /**
      * Sign out
      */
     fun signOut() {
@@ -107,8 +134,63 @@ object FirebaseAuthHelper {
     }
 
     /**
-     * Check if email is verified
+     * Get current user email
      */
-    val isEmailVerified: Boolean
-        get() = currentUser?.isEmailVerified ?: false
+    fun getCurrentUserEmail(): String? {
+        return currentUser?.email
+    }
+
+    /**
+     * Get current user display name
+     */
+    fun getCurrentUserDisplayName(): String? {
+        return currentUser?.displayName
+    }
+
+    /**
+     * Get current user photo URL
+     */
+    fun getCurrentUserPhotoUrl(): String? {
+        return currentUser?.photoUrl?.toString()
+    }
+
+    /**
+     * Reload current user data from Firebase
+     */
+    suspend fun reloadUser(): Result<Unit> {
+        return try {
+            currentUser?.reload()?.await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Update current user profile
+     */
+    suspend fun updateUserProfile(
+        displayName: String? = null,
+        photoUri: String? = null
+    ): Result<Unit> {
+        return try {
+            val user = currentUser ?: return Result.failure(Exception("No user logged in"))
+
+            val profileUpdates = mutableMapOf<String, Any>()
+            displayName?.let { profileUpdates["displayName"] = it }
+            photoUri?.let { profileUpdates["photoUrl"] = it }
+
+            user.updateProfile(com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                .apply {
+                    displayName?.let { setDisplayName(it) }
+                    photoUri?.let { setPhotoUri(android.net.Uri.parse(it)) }
+                }
+                .build()
+            ).await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

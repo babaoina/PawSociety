@@ -10,10 +10,10 @@ import com.example.pawsociety.offline.data.entity.PostEntity
 
 @Database(
     entities = [PostEntity::class],
-    version = 2,  // Keep this at 2
+    version = 3,  // 🔥 CHANGE FROM 2 TO 3
     exportSchema = false
 )
-@TypeConverters(Converters::class)  // ← ADD THIS LINE
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun postDao(): PostDao
 

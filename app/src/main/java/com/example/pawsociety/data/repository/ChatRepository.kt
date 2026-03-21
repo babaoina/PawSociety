@@ -37,6 +37,36 @@ class ChatRepository {
         }
     }
 
+    // In ChatRepository.kt, add:
+
+    /**
+     * Restore a deleted conversation
+     */
+    suspend fun restoreConversation(chatId: String, userId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            println("🔄 Restoring conversation $chatId for user $userId")
+            val response = apiService.restoreConversation(chatId, mapOf("userId" to userId))
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.success) {
+                    println("✅ Conversation restored successfully")
+                    Result.success(Unit)
+                } else {
+                    println("❌ Restore failed: ${body?.message}")
+                    Result.failure(Exception(body?.message ?: "Failed to restore conversation"))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                println("❌ HTTP error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Failed to restore conversation"))
+            }
+        } catch (e: Exception) {
+            println("❌ Exception: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
 
     /**
      * Accept a message request

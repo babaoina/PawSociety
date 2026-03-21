@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
-
 import com.example.pawsociety.api.ApiPost
 import com.example.pawsociety.data.repository.*
 import com.example.pawsociety.util.SessionManager
@@ -32,6 +31,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import com.example.pawsociety.widget.LikeButton
 import kotlin.math.max
+import android.net.Uri
 
 class PostDetailsActivity : AppCompatActivity() {
 
@@ -41,7 +41,6 @@ class PostDetailsActivity : AppCompatActivity() {
 
     // Repositories
     private val postRepository = PostRepository()
-
     private val favoriteRepository = FavoriteRepository()
     private val reportRepository = ReportRepository()
     private val blockRepository = BlockRepository()
@@ -49,7 +48,6 @@ class PostDetailsActivity : AppCompatActivity() {
 
     // Views
     private lateinit var viewPager: ViewPager2
-
     private lateinit var pageIndicator: TextView
     private lateinit var btnBack: ImageView
     private lateinit var btnMore: ImageView
@@ -63,7 +61,6 @@ class PostDetailsActivity : AppCompatActivity() {
     private lateinit var postReward: TextView
     private lateinit var postDescription: TextView
     private lateinit var btnMoreDescription: TextView
-    private lateinit var postContact: TextView
     private lateinit var btnLike: LinearLayout
     private lateinit var tvLikeCount: TextView
     private lateinit var btnShare: LinearLayout
@@ -74,8 +71,18 @@ class PostDetailsActivity : AppCompatActivity() {
     private lateinit var genderText: TextView
     private lateinit var btnLikeLottieDetails: LikeButton
 
+    // 🔥 Age and Weight views
+    private lateinit var postAge: TextView
+    private lateinit var postWeight: TextView
 
+    // 🔥 NEW: Category badge and pet type
+    private lateinit var postPetType: TextView
+    private lateinit var categoryBadge: TextView
 
+    // 🔥 NEW: Call button views
+    private lateinit var btnCallContainer: LinearLayout
+    private lateinit var ivCallIcon: ImageView
+    private lateinit var postContact: TextView
 
     private lateinit var progressBar: ProgressBar
     private lateinit var indicatorContainer: LinearLayout
@@ -86,7 +93,6 @@ class PostDetailsActivity : AppCompatActivity() {
     private var currentUser: com.example.pawsociety.api.ApiUser? = null
     private var isLiked = false
     private var isFavorited = false
-
 
     companion object {
         private const val EDIT_POST_REQUEST = 1002
@@ -111,7 +117,6 @@ class PostDetailsActivity : AppCompatActivity() {
             finish()
             return
         }
-
 
         viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
         viewModel.setSessionManager(sessionManager)
@@ -138,7 +143,6 @@ class PostDetailsActivity : AppCompatActivity() {
         postReward = findViewById(R.id.post_reward)
         postDescription = findViewById(R.id.post_description)
         btnMoreDescription = findViewById(R.id.btn_more_description)
-        postContact = findViewById(R.id.post_contact)
         btnLike = findViewById(R.id.btn_like)
         tvLikeCount = findViewById(R.id.tv_like_count)
         btnShare = findViewById(R.id.btn_share)
@@ -154,22 +158,240 @@ class PostDetailsActivity : AppCompatActivity() {
         singleImageView = findViewById(R.id.post_image)
         noImagePlaceholder = findViewById(R.id.no_image_placeholder)
 
+        // 🔥 Initialize age and weight views
+        postAge = findViewById(R.id.post_age)
+        postWeight = findViewById(R.id.post_weight)
+
+        // 🔥 Initialize new views
+        postPetType = findViewById(R.id.post_pet_type)
+        categoryBadge = findViewById(R.id.post_category_badge)
+        btnCallContainer = findViewById(R.id.btn_call_container)
+        ivCallIcon = findViewById(R.id.iv_call_icon)
+        postContact = findViewById(R.id.post_contact)
+
         // Set click listener for the 3 dots menu
         btnMore.setOnClickListener {
             showPostOptions()
         }
-
-
 
         // Set initial data
         userName.text = post.userName
         postLocation.text = post.location ?: "No location"
         postTime.text = getTimeAgo(post.createdAt)
         petName.text = post.petName
+        postPetType.text = post.petType ?: "Unknown breed"
         postStatus.text = post.status
         postDescription.text = post.description
-        postContact.text = "📞 ${post.contactInfo}"
         tvLikeCount.text = post.likesCount.toString()
+
+        // Set user role - use pet name + "Owner"
+        val petOwnerText = if (!post.petName.isNullOrEmpty()) {
+            "${post.petName}'s Owner"
+        } else {
+            "Pet Owner"
+        }
+        findViewById<TextView>(R.id.post_user_role).text = petOwnerText
+
+        // 🔥 Set contact with call button
+        val rawContact = post.contactInfo ?: ""
+        val phoneDigits = rawContact.replace("[^0-9]".toRegex(), "")
+
+        if (phoneDigits.isNotEmpty()) {
+            postContact.text = phoneDigits
+            btnCallContainer.visibility = View.VISIBLE
+            btnCallContainer.setOnClickListener {
+                try {
+                    val intent = Intent(Intent.ACTION_DIAL).apply {
+                        data = Uri.parse("tel:$phoneDigits")
+                    }
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Cannot make call", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            btnCallContainer.visibility = View.GONE
+        }
+
+        // 🔥 Set age and weight with visibility check
+        if (!post.age.isNullOrEmpty()) {
+            postAge.text = post.age
+            postAge.visibility = View.VISIBLE
+        } else {
+            postAge.visibility = View.GONE
+        }
+
+        if (!post.weight.isNullOrEmpty()) {
+            postWeight.text = post.weight
+            postWeight.visibility = View.VISIBLE
+        } else {
+            postWeight.visibility = View.GONE
+        }
+
+        // ===== SET CATEGORY BADGE =====
+        try {
+            if (::categoryBadge.isInitialized) {
+                var category = when (post.category) {
+                    "Dogs" -> "DOG"
+                    "Cats" -> "CAT"
+                    "Fish" -> "FISH"
+                    "Birds" -> "BIRD"
+                    else -> null
+                }
+
+                if (category == null) {
+                    val petTypeLower = post.petType.lowercase()
+                    category = when {
+                        // DOG detection
+                        petTypeLower.contains("dog") ||
+                                petTypeLower.contains("aspin") ||
+                                petTypeLower.contains("shih") ||
+                                petTypeLower.contains("labrador") ||
+                                petTypeLower.contains("golden") ||
+                                petTypeLower.contains("german") ||
+                                petTypeLower.contains("poodle") ||
+                                petTypeLower.contains("chow") ||
+                                petTypeLower.contains("pug") ||
+                                petTypeLower.contains("beagle") ||
+                                petTypeLower.contains("dachshund") ||
+                                petTypeLower.contains("rottweiler") ||
+                                petTypeLower.contains("pomeranian") ||
+                                petTypeLower.contains("husky") ||
+                                petTypeLower.contains("corgi") ||
+                                petTypeLower.contains("maltese") ||
+                                petTypeLower.contains("chihuahua") ||
+                                petTypeLower.contains("pitbull") ||
+                                petTypeLower.contains("bulldog") ||
+                                petTypeLower.contains("boxer") ||
+                                petTypeLower.contains("shiba") ||
+                                petTypeLower.contains("akita") ||
+                                petTypeLower.contains("samoyed") ||
+                                petTypeLower.contains("cocker") ||
+                                petTypeLower.contains("doberman") ||
+                                petTypeLower.contains("great dane") ||
+                                petTypeLower.contains("saint bernard") ||
+                                petTypeLower.contains("siberian") ||
+                                petTypeLower.contains("jack russell") ||
+                                petTypeLower.contains("border collie") ||
+                                petTypeLower.contains("australian shepherd") ||
+                                petTypeLower.contains("bichon") ||
+                                petTypeLower.contains("unknown dog") ||
+                                petTypeLower.contains("other dog") -> "DOG"
+
+                        // CAT detection
+                        petTypeLower.contains("cat") ||
+                                petTypeLower.contains("puspin") ||
+                                petTypeLower.contains("persian") ||
+                                petTypeLower.contains("siamese") ||
+                                petTypeLower.contains("maine coon") ||
+                                petTypeLower.contains("bengal") ||
+                                petTypeLower.contains("sphynx") ||
+                                petTypeLower.contains("ragdoll") ||
+                                petTypeLower.contains("british shorthair") ||
+                                petTypeLower.contains("scottish fold") ||
+                                petTypeLower.contains("abyssinian") ||
+                                petTypeLower.contains("burmese") ||
+                                petTypeLower.contains("russian blue") ||
+                                petTypeLower.contains("norwegian forest") ||
+                                petTypeLower.contains("birman") ||
+                                petTypeLower.contains("oriental shorthair") ||
+                                petTypeLower.contains("devon rex") ||
+                                petTypeLower.contains("cornish rex") ||
+                                petTypeLower.contains("himalayan") ||
+                                petTypeLower.contains("american shorthair") ||
+                                petTypeLower.contains("exotic shorthair") ||
+                                petTypeLower.contains("unknown cat") ||
+                                petTypeLower.contains("other cat") -> "CAT"
+
+                        // FISH detection
+                        petTypeLower.contains("fish") ||
+                                petTypeLower.contains("goldfish") ||
+                                petTypeLower.contains("betta") ||
+                                petTypeLower.contains("guppy") ||
+                                petTypeLower.contains("molly") ||
+                                petTypeLower.contains("platy") ||
+                                petTypeLower.contains("swordtail") ||
+                                petTypeLower.contains("angelfish") ||
+                                petTypeLower.contains("discus") ||
+                                petTypeLower.contains("oscar") ||
+                                petTypeLower.contains("cichlid") ||
+                                petTypeLower.contains("koi") ||
+                                petTypeLower.contains("tetra") ||
+                                petTypeLower.contains("barb") ||
+                                petTypeLower.contains("corydoras") ||
+                                petTypeLower.contains("plecostomus") ||
+                                petTypeLower.contains("danio") ||
+                                petTypeLower.contains("rainbowfish") ||
+                                petTypeLower.contains("killifish") ||
+                                petTypeLower.contains("arowana") ||
+                                petTypeLower.contains("flowerhorn") ||
+                                petTypeLower.contains("parrot fish") ||
+                                petTypeLower.contains("gourami") ||
+                                petTypeLower.contains("unknown fish") ||
+                                petTypeLower.contains("other fish") -> "FISH"
+
+                        // BIRD detection
+                        petTypeLower.contains("bird") ||
+                                petTypeLower.contains("parrot") ||
+                                petTypeLower.contains("macaw") ||
+                                petTypeLower.contains("lovebird") ||
+                                petTypeLower.contains("parakeet") ||
+                                petTypeLower.contains("budgie") ||
+                                petTypeLower.contains("cockatiel") ||
+                                petTypeLower.contains("african grey") ||
+                                petTypeLower.contains("canary") ||
+                                petTypeLower.contains("finch") ||
+                                petTypeLower.contains("conure") ||
+                                petTypeLower.contains("amazon") ||
+                                petTypeLower.contains("eclectus") ||
+                                petTypeLower.contains("pigeon") ||
+                                petTypeLower.contains("dove") ||
+                                petTypeLower.contains("quaker") ||
+                                petTypeLower.contains("senegal") ||
+                                petTypeLower.contains("cockatoo") ||
+                                petTypeLower.contains("mynah") ||
+                                petTypeLower.contains("java sparrow") ||
+                                petTypeLower.contains("zebra finch") ||
+                                petTypeLower.contains("gouldian finch") ||
+                                petTypeLower.contains("ringneck") ||
+                                petTypeLower.contains("unknown bird") ||
+                                petTypeLower.contains("other bird") -> "BIRD"
+
+                        else -> null
+                    }
+                }
+
+                if (category != null) {
+                    categoryBadge.text = category
+                    categoryBadge.visibility = View.VISIBLE
+
+                    when (category) {
+                        "DOG" -> {
+                            categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            categoryBadge.background.setTint(Color.parseColor("#B88B4A"))
+                        }
+                        "CAT" -> {
+                            categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            categoryBadge.background.setTint(Color.parseColor("#FF9800"))
+                        }
+                        "FISH" -> {
+                            categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            categoryBadge.background.setTint(Color.parseColor("#00BCD4"))
+                        }
+                        "BIRD" -> {
+                            categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            categoryBadge.background.setTint(Color.parseColor("#2196F3"))
+                        }
+                    }
+                    categoryBadge.setTextColor(Color.WHITE)
+                    categoryBadge.setPadding(12.dp, 4.dp, 12.dp, 4.dp)
+                } else {
+                    categoryBadge.visibility = View.GONE
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PostDetailsActivity", "Error setting category badge", e)
+        }
 
         // Set gender display
         when (post.gender?.lowercase()) {
@@ -182,7 +404,7 @@ class PostDetailsActivity : AppCompatActivity() {
                 } catch (e: Exception) {
                     genderIcon.visibility = View.GONE
                     genderText.visibility = View.VISIBLE
-                    genderText.text = "• Male"
+                    genderText.text = "Male"
                     genderText.setTextColor(Color.parseColor("#2196F3"))
                 }
             }
@@ -195,15 +417,15 @@ class PostDetailsActivity : AppCompatActivity() {
                 } catch (e: Exception) {
                     genderIcon.visibility = View.GONE
                     genderText.visibility = View.VISIBLE
-                    genderText.text = "• Female"
+                    genderText.text = "Female"
                     genderText.setTextColor(Color.parseColor("#E91E63"))
                 }
             }
             else -> {
                 genderIcon.visibility = View.GONE
                 genderText.visibility = View.VISIBLE
-                genderText.text = "• Unknown"
-                genderText.setTextColor(Color.parseColor("#999999"))
+                genderText.text = "Unknown"
+                genderText.setTextColor(Color.parseColor("#666666"))
             }
         }
 
@@ -225,23 +447,35 @@ class PostDetailsActivity : AppCompatActivity() {
             "Lost" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_lost)
                 postStatus.setTextColor(Color.WHITE)
-                if (!post.reward.isNullOrEmpty()) {
+
+                // Handle reward badge on image
+                val rewardBadge = findViewById<TextView>(R.id.post_reward_badge)
+                if (!post.reward.isNullOrEmpty() && post.reward != "0" && post.reward != "") {
                     val formattedReward = formatReward(post.reward ?: "")
-                    postReward.text = "Reward = ₱ $formattedReward"
+
+                    // Set reward in info section
+                    postReward.text = "₱$formattedReward"
                     postReward.visibility = View.VISIBLE
+
+                    // Set reward badge on image
+                    rewardBadge?.text = "₱$formattedReward"
+                    rewardBadge?.visibility = View.VISIBLE
                 } else {
                     postReward.visibility = View.GONE
+                    rewardBadge?.visibility = View.GONE
                 }
             }
             "Found" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_found)
                 postStatus.setTextColor(Color.WHITE)
                 postReward.visibility = View.GONE
+                findViewById<TextView>(R.id.post_reward_badge)?.visibility = View.GONE
             }
             "Adoption" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_adoption)
                 postStatus.setTextColor(Color.WHITE)
                 postReward.visibility = View.GONE
+                findViewById<TextView>(R.id.post_reward_badge)?.visibility = View.GONE
             }
         }
 
@@ -268,6 +502,9 @@ class PostDetailsActivity : AppCompatActivity() {
             }
         }
     }
+
+    private val Int.dp: Int
+        get() = (this * resources.displayMetrics.density).toInt()
 
     private fun setupImageCarousel() {
         val imageUrls = post.imageUrls
@@ -421,7 +658,6 @@ class PostDetailsActivity : AppCompatActivity() {
         btnMessage.setOnClickListener {
             startChat()
         }
-
     }
 
     private fun loadPostData() {
@@ -447,11 +683,18 @@ class PostDetailsActivity : AppCompatActivity() {
                         .apply(requestOptions)
                         .into(profileImage)
                 }
+
+                // Update the user role with pet name
+                val userRole = findViewById<TextView>(R.id.post_user_role)
+                val petOwnerText = if (!post.petName.isNullOrEmpty()) {
+                    "${post.petName}'s Owner"
+                } else {
+                    "${it.username}'s Owner"
+                }
+                userRole.text = petOwnerText
             }
         }
     }
-
-
 
     private fun checkLikeStatus() {
         val userId = currentUser?.firebaseUid ?: return
@@ -484,14 +727,11 @@ class PostDetailsActivity : AppCompatActivity() {
             return
         }
 
-        // Get current state from the button
         val wasAlreadyLiked = btnLikeLottieDetails.isLiked
         val willBeLiked = !wasAlreadyLiked
 
-        // Update UI immediately (optimistic update)
         btnLikeLottieDetails.setLiked(willBeLiked, animate = willBeLiked)
 
-        // Calculate optimistic count
         val optimisticCount = if (willBeLiked) {
             post.likesCount + 1
         } else {
@@ -499,39 +739,29 @@ class PostDetailsActivity : AppCompatActivity() {
         }
         tvLikeCount.text = optimisticCount.toString()
 
-        // Disable button to prevent double-clicks
         btnLike.isEnabled = false
 
-        // Call repository - now returns Result<LikeResponse>
         lifecycleScope.launch {
             val result = postRepository.likePost(post.postId, user.firebaseUid)
 
             if (result.isSuccess) {
                 val response = result.getOrNull()!!
-
-                // Get the ACTUAL values from server
                 val serverLiked = response.liked ?: response.isLiked ?: willBeLiked
                 val serverCount = response.likesCount
 
-                // Update with server values
                 btnLikeLottieDetails.setLiked(serverLiked, animate = false)
                 tvLikeCount.text = serverCount.toString()
-
-                // Update post object
                 post = post.copy(likesCount = serverCount)
                 isLiked = serverLiked
 
-                // Optional log to debug
                 Log.d("LikeDebug", "Server returned: liked=$serverLiked, count=$serverCount")
             } else {
-                // Revert on failure
                 btnLikeLottieDetails.setLiked(wasAlreadyLiked, animate = false)
                 tvLikeCount.text = post.likesCount.toString()
                 Toast.makeText(this@PostDetailsActivity,
                     "Failed to update like", Toast.LENGTH_SHORT).show()
             }
 
-            // Re-enable button
             btnLike.isEnabled = true
         }
     }
@@ -567,7 +797,6 @@ class PostDetailsActivity : AppCompatActivity() {
         }
     }
 
-
     // ========== POST MENU WITH INSTAGRAM STYLE ==========
     private fun showPostOptions() {
         try {
@@ -600,11 +829,9 @@ class PostDetailsActivity : AppCompatActivity() {
             val optionReport = dialogView.findViewById<LinearLayout>(R.id.option_report)
             val optionDelete = dialogView.findViewById<LinearLayout>(R.id.option_delete)
 
-            // Set data
             menuUsername?.text = post.userName
             menuPostInfo?.text = "${post.petName} • ${post.status}"
 
-            // Check favorite status
             viewModel.favoriteStatus.value?.let { favMap ->
                 val isFav = favMap[post.postId] ?: false
                 if (isFav) {
@@ -620,7 +847,6 @@ class PostDetailsActivity : AppCompatActivity() {
             val isFollowing = viewModel.checkFollowStatus(post.firebaseUid)
             val isOwnPost = (user != null && post.firebaseUid == user.firebaseUid)
 
-            // Create dialog
             val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
             dialog.setContentView(dialogView)
 
@@ -637,9 +863,7 @@ class PostDetailsActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
 
-            // Configure options based on post ownership
             if (isOwnPost) {
-                // OWN POST - Show Edit and Delete options
                 optionEdit?.visibility = View.VISIBLE
                 optionEdit?.setOnClickListener {
                     openEditPost()
@@ -652,7 +876,6 @@ class PostDetailsActivity : AppCompatActivity() {
                     dialog.dismiss()
                 }
 
-                // Hide other options
                 optionFollow?.visibility = View.GONE
                 optionBlock?.visibility = View.GONE
                 optionReport?.visibility = View.GONE
@@ -660,7 +883,6 @@ class PostDetailsActivity : AppCompatActivity() {
                 optionHide?.visibility = View.GONE
                 optionAboutAccount?.visibility = View.GONE
             } else {
-                // OTHER USER'S POST - Show Follow, Block, Report, etc.
                 optionEdit?.visibility = View.GONE
                 optionDelete?.visibility = View.GONE
 

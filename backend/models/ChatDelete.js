@@ -14,6 +14,11 @@ const chatDeleteSchema = new mongoose.Schema({
   deletedAt: {
     type: Date,
     default: Date.now
+  },
+  // 🔥 ADDED FOR AUTO-RESTORE
+  deletedByUser: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

@@ -278,7 +278,7 @@
             </LinearLayout>
         </HorizontalScrollView>
 
-        <!-- Grid of Pet Pictures with Pull-to-Refresh -->
+        <!-- Grid of Pet Pictures with Pull-to-Refresh - FULL HEIGHT -->
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipe_refresh_layout"
             android:layout_width="match_parent"
@@ -290,7 +290,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="#FFFFFF"
-                android:paddingBottom="80dp">  <!-- ADDED: padding for paw -->
+                android:paddingBottom="0dp">  <!-- REMOVED padding to go full height -->
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/find_recycler_view"

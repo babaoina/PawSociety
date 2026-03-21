@@ -78,12 +78,15 @@ class PostRepository {
         }
     }
 
+    // In PostRepository.kt, update createPost function
+
     suspend fun createPost(
         firebaseUid: String,
         petName: String,
         petType: String,
-        age: String? = null,  // ADD THIS
-        weight: String? = null,  // ADD THIS
+        category: String? = null,  // 🔥 ADD THIS
+        age: String? = "",
+        weight: String? = "",
         gender: String? = "Unknown",
         status: String,
         description: String,
@@ -97,6 +100,7 @@ class PostRepository {
                 firebaseUid = firebaseUid,
                 petName = petName,
                 petType = petType,
+                category = category,  // 🔥 ADD THIS
                 age = age,
                 weight = weight,
                 gender = gender,
@@ -108,7 +112,7 @@ class PostRepository {
                 imageUrls = imageUrls
             )
 
-            println("📤 Creating post with age: $age, weight: $weight")
+            println("📤 Creating post with category: $category, age: $age, weight: $weight")
             val response = apiService.createPost(request)
 
             if (response.isSuccessful) {

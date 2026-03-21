@@ -1,352 +1,287 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFFFF">
 
-    <!-- Background Image -->
-    <ImageView
+    <!-- TOP HALF - Image Carousel with Fade Effect -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:src="@drawable/paws1"
-        android:scaleType="centerCrop"
-        android:contentDescription="Background" />
+        android:layout_height="0dp"
+        android:layout_weight="1.2">
 
-    <!-- Semi-transparent overlay -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#80FFFFFF" />
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/image_carousel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
-    <!-- Content - Centered and Scrollable for smaller screens -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
+        <!-- Dark overlay para readable ang text -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#33000000" />
 
-        <LinearLayout
+        <!-- App Name - nasa TAAS -->
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_vertical"
-            android:padding="32dp"
-            android:layout_marginTop="40dp"
-            android:layout_marginBottom="40dp">
+            android:layout_gravity="top"
+            android:layout_marginTop="60dp"
+            android:gravity="center"
+            android:shadowColor="#80000000"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="6"
+            android:text="PawSociety"
+            android:textColor="#FFFFFF"
+            android:textSize="42sp"
+            android:textStyle="bold" />
 
-            <!-- App Name -->
+        <!-- Dots Indicator -->
+        <LinearLayout
+            android:id="@+id/indicator_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="20dp"
+            android:orientation="horizontal" />
+
+    </FrameLayout>
+
+    <!-- BOTTOM HALF - Main Container -->
+    <LinearLayout
+        android:id="@+id/main_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Welcome Text -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome to PawSociety"
+            android:textColor="#333333"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="16dp" />
+
+        <!-- Tagline -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="because every pet deserves a home"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Continue with Email Button -->
+        <LinearLayout
+            android:id="@+id/btn_continue_email"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/button_rounded_white_border"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_email"
+                android:layout_marginEnd="12dp" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:text="PawSociety"
-                android:textColor="#7A4F2B"
-                android:textSize="42sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.05" />
-
-            <!-- Tagline -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="12dp"
-                android:text="Because Every Pet Deserves a Home"
-                android:textColor="#7A4F2B"
-                android:textSize="15sp"
-                android:alpha="0.9" />
-
-            <!-- Welcome Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="30dp"
-                android:text="WELCOME"
+                android:text="Continue with email"
                 android:textColor="#000000"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.03" />
-
-            <!-- Welcome Message -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
-                android:text="With many pets waiting for a loving home, PawSociety helps you discover adoptable pets and reconnect lost animals with their families."
-                android:textColor="#555555"
-                android:textSize="14sp"
-                android:lineSpacingExtra="6dp"
-                android:gravity="center"
-                android:paddingHorizontal="8dp" />
-
-            <!-- Card Container for Form -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:orientation="vertical"
-                android:padding="24dp"
-                android:background="@drawable/card_rounded"
-                android:elevation="8dp">
-
-                <!-- Email Label -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Email"
-                    android:textColor="#7A4F2B"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp" />
-
-                <!-- Email Input with Error -->
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <EditText
-                        android:id="@+id/email_input"
-                        android:layout_width="match_parent"
-                        android:layout_height="54dp"
-                        android:hint="Enter your email"
-                        android:inputType="textEmailAddress"
-                        android:padding="16dp"
-                        android:background="@drawable/input_oval"
-                        android:textSize="14sp"
-                        android:paddingEnd="16dp" />
-
-                    <TextView
-                        android:id="@+id/email_error"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="56dp"
-                        android:text=""
-                        android:textColor="#F44336"
-                        android:textSize="12sp"
-                        android:visibility="gone" />
-                </FrameLayout>
-
-                <!-- Spacer -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="20dp" />
-
-                <!-- Password Label -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Password"
-                    android:textColor="#7A4F2B"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp" />
-
-                <!-- Password Input with Eye Icon and Error -->
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="54dp">
-
-                        <EditText
-                            android:id="@+id/password_input"
-                            android:layout_width="match_parent"
-                            android:layout_height="54dp"
-                            android:hint="Enter your password"
-                            android:inputType="textPassword"
-                            android:padding="16dp"
-                            android:background="@drawable/input_oval"
-                            android:textSize="14sp"
-                            android:paddingEnd="50dp" />
-
-                        <ImageView
-                            android:id="@+id/eye_icon"
-                            android:layout_width="30dp"
-                            android:layout_height="30dp"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:layout_marginEnd="12dp"
-                            android:src="@drawable/ic_eye_closed"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:background="?android:attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Show/Hide Password" />
-                    </RelativeLayout>
-
-                    <TextView
-                        android:id="@+id/password_error"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="56dp"
-                        android:text=""
-                        android:textColor="#F44336"
-                        android:textSize="12sp"
-                        android:visibility="gone" />
-                </FrameLayout>
-
-                <!-- Spacer -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="20dp" />
-
-                <!-- Forgot Password -->
-                <TextView
-                    android:id="@+id/forgot_password"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="end"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="24dp"
-                    android:text="Forgot Password?"
-                    android:textColor="#B88B4A"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:padding="4dp" />
-
-                <!-- Buttons Row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:layout_marginTop="4dp">
-
-                    <!-- Sign Up Button - OVAL with FIXED text visibility -->
-                    <Button
-                        android:id="@+id/signup_button"
-                        android:layout_width="0dp"
-                        android:layout_height="52dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/button_oval_white"
-                        android:text="Sign Up"
-                        android:textColor="#7A4F2B"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:stateListAnimator="@null" />
-
-                    <!-- Log In Button - OVAL -->
-                    <Button
-                        android:id="@+id/login_button"
-                        android:layout_width="0dp"
-                        android:layout_height="52dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/button_oval_brown"
-                        android:text="Log In"
-                        android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:stateListAnimator="@null" />
-
-                </LinearLayout>
-
-                <!-- Divider OR -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginBottom="16dp">
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="1dp"
-                        android:layout_weight="1"
-                        android:background="#E0E0E0" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="OR"
-                        android:textColor="#999999"
-                        android:textSize="14sp"
-                        android:paddingHorizontal="16dp" />
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="1dp"
-                        android:layout_weight="1"
-                        android:background="#E0E0E0" />
-                </LinearLayout>
-
-                <!-- Google Sign-In Button - DIFFERENT STYLE -->
-                <LinearLayout
-                    android:id="@+id/google_signin_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:paddingHorizontal="16dp"
-                    android:layout_marginBottom="8dp">
-
-                    <ImageView
-                        android:id="@+id/google_icon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_google"
-                        android:layout_marginEnd="12dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Sign in with Google"
-                        android:textColor="#666666"
-                        android:textSize="16sp"
-                        android:textStyle="normal" />
-                </LinearLayout>
-
-                <!-- Alternative: Facebook Sign-In (Optional) -->
-                <LinearLayout
-                    android:id="@+id/facebook_signin_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/button_facebook"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:paddingHorizontal="16dp"
-                    android:visibility="gone">
-
-                    <ImageView
-                        android:id="@+id/facebook_icon"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_facebook"
-                        android:layout_marginEnd="12dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Continue with Facebook"
-                        android:textColor="#FFFFFF"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- Terms and Privacy -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="By continuing, you agree to our Terms of Service and Privacy Policy"
-                android:textColor="#999999"
-                android:textSize="11sp"
-                android:gravity="center"
-                android:lineSpacingExtra="2dp" />
-
+                android:textSize="16sp" />
         </LinearLayout>
-    </ScrollView>
 
-</FrameLayout>
+        <!-- Continue with Google Button -->
+        <LinearLayout
+            android:id="@+id/btn_continue_google"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/button_rounded_white_border"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_google"
+                android:layout_marginEnd="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Continue with Google"
+                android:textColor="#000000"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- Create Account Link -->
+        <TextView
+            android:id="@+id/btn_create_account"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Create an account"
+            android:textColor="#7A4F2B"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingVertical="16dp"
+            android:layout_marginTop="8dp" />
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Terms and Conditions -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="By continuing, you agree to our\nPrivacy Policy and Terms of Use"
+            android:textColor="#999999"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp" />
+
+    </LinearLayout>
+
+    <!-- EMAIL FORM - Hidden -->
+    <LinearLayout
+        android:id="@+id/email_form_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        android:padding="24dp">
+
+        <!-- Back button -->
+        <TextView
+            android:id="@+id/btn_back_from_email"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="← Back"
+            android:textColor="#7A4F2B"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:padding="16dp"
+            android:layout_marginTop="16dp" />
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sign in with email"
+            android:textColor="#333333"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Email Field -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Email"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/email_input"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="Enter your email"
+            android:inputType="textEmailAddress"
+            android:padding="16dp"
+            android:background="@drawable/input_rounded"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Password Field -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Password"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="8dp">
+
+            <EditText
+                android:id="@+id/password_input"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:hint="Enter your password"
+                android:inputType="textPassword"
+                android:padding="16dp"
+                android:paddingEnd="50dp"
+                android:background="@drawable/input_rounded"
+                android:textSize="16sp" />
+
+            <ImageView
+                android:id="@+id/eye_icon"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_eye_closed"
+                android:clickable="true"
+                android:focusable="true" />
+        </RelativeLayout>
+
+        <!-- Forgot Password -->
+        <TextView
+            android:id="@+id/forgot_password"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:text="Forgot Password?"
+            android:textColor="#B88B4A"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Login Button -->
+        <Button
+            android:id="@+id/login_button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Log In"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/button_rounded_brown"
+            android:layout_marginBottom="16dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

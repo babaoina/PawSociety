@@ -76,6 +76,8 @@ data class BatchUser(
 
 // Post API Models with GENDER
 // Post API Models with AGE and WEIGHT
+// In ApiModels.kt, update ApiPost and CreatePostRequest
+
 data class ApiPost(
     @SerializedName("postId") val postId: String,
     @SerializedName("firebaseUid") val firebaseUid: String,
@@ -83,8 +85,9 @@ data class ApiPost(
     @SerializedName("userImageUrl") val userImageUrl: String? = "",
     @SerializedName("petName") val petName: String,
     @SerializedName("petType") val petType: String,
-    @SerializedName("age") val age: String? = "",  // ADD THIS
-    @SerializedName("weight") val weight: String? = "",  // ADD THIS
+    @SerializedName("category") val category: String? = null,  // 🔥 ADD THIS
+    @SerializedName("age") val age: String? = "",
+    @SerializedName("weight") val weight: String? = "",
     @SerializedName("gender") val gender: String? = "Unknown",
     @SerializedName("status") val status: String,
     @SerializedName("description") val description: String,
@@ -100,8 +103,9 @@ data class CreatePostRequest(
     @SerializedName("firebaseUid") val firebaseUid: String,
     @SerializedName("petName") val petName: String,
     @SerializedName("petType") val petType: String,
-    @SerializedName("age") val age: String? = null,  // ADD THIS
-    @SerializedName("weight") val weight: String? = null,  // ADD THIS
+    @SerializedName("category") val category: String? = null,  // 🔥 ADD THIS
+    @SerializedName("age") val age: String? = null,
+    @SerializedName("weight") val weight: String? = null,
     @SerializedName("gender") val gender: String? = "Unknown",
     @SerializedName("status") val status: String,
     @SerializedName("description") val description: String,
@@ -120,6 +124,8 @@ data class ApiMessage(
     @SerializedName("text") val text: String? = "",
     @SerializedName("imageUrl") val imageUrl: String? = "",
     @SerializedName("isRead") val isRead: Boolean = false,
+    // 🔥 ADD THIS LINE (just add it, don't remove anything)
+    @SerializedName("status") val status: String? = "delivered",
     @SerializedName("createdAt") val createdAt: String
 )
 

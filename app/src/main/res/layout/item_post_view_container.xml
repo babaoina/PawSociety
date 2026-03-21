@@ -59,7 +59,7 @@
             android:visibility="visible" />
     </FrameLayout>
 
-    <!-- Post Details Card - TOP CURVE ONLY, BOTTOM STRAIGHT -->
+    <!-- Post Details Card -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -77,7 +77,7 @@
             android:padding="16dp"
             android:background="#FFFFFF">
 
-            <!-- User Info Row - Time and 3 dots side by side -->
+            <!-- User Info Row -->
             <RelativeLayout
                 android:id="@+id/layout_profile"
                 android:layout_width="match_parent"
@@ -114,20 +114,35 @@
                     android:visibility="invisible" />
 
                 <!-- Username -->
-                <TextView
-                    android:id="@+id/tv_username"
+                <LinearLayout
+                    android:id="@+id/user_info_container"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
                     android:layout_toEndOf="@id/profile_anchor"
                     android:layout_marginStart="12dp"
-                    android:text="Floyd Miles"
-                    android:textColor="#000000"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:layout_toLeftOf="@+id/time_options_container" />
+                    android:orientation="vertical">
 
-                <!-- Time and 3 dots container -->
+                    <TextView
+                        android:id="@+id/tv_username"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Floyd Miles"
+                        android:textColor="#000000"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_user_role"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Milo Owner"
+                        android:textColor="#7A4F2B"
+                        android:textSize="12sp"
+                        android:visibility="visible" />
+                </LinearLayout>
+
+                <!-- Time and 3 dots -->
                 <LinearLayout
                     android:id="@+id/time_options_container"
                     android:layout_width="wrap_content"
@@ -137,7 +152,6 @@
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
 
-                    <!-- Time -->
                     <TextView
                         android:id="@+id/tv_time"
                         android:layout_width="wrap_content"
@@ -147,127 +161,137 @@
                         android:textSize="11sp"
                         android:layout_marginEnd="8dp" />
 
-                    <!-- Three dots menu -->
                     <ImageView
                         android:id="@+id/btn_more_details"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_more_vert"
-                        android:tint="#666666"
+                        android:tint="#7A4F2B"
                         android:background="?android:attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
                         android:focusable="true" />
                 </LinearLayout>
             </RelativeLayout>
 
-            <!-- Main Content Row: Left Info + Right Buttons (ALIGNED AT TOP) -->
+            <!-- Main Content Row -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-            <!-- LEFT SIDE - All text info -->
-            <LinearLayout
-                android:id="@+id/pet_info_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@+id/action_buttons_container"
-                android:orientation="vertical"
-                android:layout_marginEnd="16dp">
-
-                <!-- Pet Type (Breed) - NO DOT (dot removed from Kotlin) -->
-                <TextView
-                    android:id="@+id/tv_pet_type"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Golden Retriever"
-                    android:textColor="#000000"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="4dp" />
-
-                <!-- Pet Name -->
-                <TextView
-                    android:id="@+id/tv_pet_name"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Milo"
-                    android:textColor="#666666"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Gender, Age, Weight Row - PULLED CLOSER TOGETHER -->
+                <!-- LEFT SIDE - All text info -->
                 <LinearLayout
+                    android:id="@+id/pet_info_container"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
+                    android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@+id/action_buttons_container"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="16dp">
 
-                    <!-- Gender Column -->
+                    <!-- Pet Type with Badge -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center_horizontal"
-                        android:layout_marginEnd="1dp">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
 
                         <TextView
+                            android:id="@+id/tv_pet_type"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="GENDER"
-                            android:textColor="#7A4F2B"
-                            android:textSize="10sp"
+                            android:text="Golden Retriever"
+                            android:textColor="#000000"
+                            android:textSize="24sp"
                             android:textStyle="bold"
-                            android:layout_marginBottom="2dp" />
+                            android:maxLines="1"
+                            android:ellipsize="end" />
 
+                        <!-- Category Badge -->
                         <TextView
-                            android:id="@+id/tv_gender"
+                            android:id="@+id/tv_category_badge"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Male"
-                            android:textColor="#666666"
-                            android:textSize="14sp" />
-
-                        <ImageView
-                            android:id="@+id/tv_gender_icon"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_height="28dp"
+                            android:gravity="center"
+                            android:paddingHorizontal="12dp"
+                            android:layout_marginStart="8dp"
+                            android:text="DOG"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/category_badge_rounded"
                             android:visibility="gone" />
                     </LinearLayout>
 
-                    <!-- Age Column -->
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <!-- Pet Name -->
+                    <TextView
+                        android:id="@+id/tv_pet_name"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center_horizontal"
-                        android:layout_marginEnd="1dp"
-                        android:layout_marginStart="1dp">
+                        android:text="Milo"
+                        android:textColor="#7A4F2B"
+                        android:textSize="18sp"
+                        android:layout_marginBottom="12dp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="AGE"
-                            android:textColor="#7A4F2B"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="2dp" />
+                    <!-- Gender, Age, Weight Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
 
+                        <!-- Gender Column -->
                         <LinearLayout
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center">
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal"
+                            android:layout_marginEnd="1dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="🎂"
-                                android:textSize="14sp"
-                                android:layout_marginEnd="4dp" />
+                                android:text="GENDER"
+                                android:textColor="#7A4F2B"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="2dp" />
+
+                            <TextView
+                                android:id="@+id/tv_gender"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Male"
+                                android:textColor="#666666"
+                                android:textSize="14sp" />
+
+                            <ImageView
+                                android:id="@+id/tv_gender_icon"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:visibility="gone" />
+                        </LinearLayout>
+
+                        <!-- Age Column -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal"
+                            android:layout_marginEnd="1dp"
+                            android:layout_marginStart="1dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="AGE"
+                                android:textColor="#7A4F2B"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="2dp" />
 
                             <TextView
                                 android:id="@+id/tv_age"
@@ -277,38 +301,24 @@
                                 android:textColor="#666666"
                                 android:textSize="14sp" />
                         </LinearLayout>
-                    </LinearLayout>
 
-                    <!-- Weight Column -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center_horizontal"
-                        android:layout_marginStart="1dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="WEIGHT"
-                            android:textColor="#7A4F2B"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="2dp" />
-
+                        <!-- Weight Column -->
                         <LinearLayout
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center">
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal"
+                            android:layout_marginStart="1dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="⚖️"
-                                android:textSize="14sp"
-                                android:layout_marginEnd="4dp" />
+                                android:text="WEIGHT"
+                                android:textColor="#7A4F2B"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="2dp" />
 
                             <TextView
                                 android:id="@+id/tv_weight"
@@ -319,220 +329,241 @@
                                 android:textSize="14sp" />
                         </LinearLayout>
                     </LinearLayout>
-                </LinearLayout>
 
-                <!-- Reward Container - THINNER -->
-                <LinearLayout
-                    android:id="@+id/reward_container"
-                    android:layout_width="wrap_content"
-                    android:layout_height="24dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="#FFF9E6"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="2dp"
-                    android:layout_marginBottom="12dp"
-                    android:visibility="gone"
-                    android:layout_gravity="start">
-
-                    <TextView
-                        android:id="@+id/tv_reward"
+                    <!-- Reward Section -->
+                    <LinearLayout
+                        android:id="@+id/reward_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="1,000,000"
-                        android:textColor="#7A4F2B"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/rounded_highlight_gold"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:layout_marginBottom="4dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tv_reward"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱1,000,000"
+                            android:textColor="#B8860B"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="REWARD"
+                            android:textColor="#B8860B"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp" />
+                    </LinearLayout>
+
+                    <!-- Contact Number -->
+                    <LinearLayout
+                        android:id="@+id/btn_call_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/rounded_highlight_green"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp"
+                        android:layout_marginBottom="4dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/iv_call_icon"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/phone"
+                            android:tint="#4CAF50"
+                            android:layout_marginEnd="4dp" />
+
+                        <TextView
+                            android:id="@+id/tv_contact"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="09678768888"
+                            android:textColor="#4CAF50"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Location -->
+                    <TextView
+                        android:id="@+id/tv_location"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📍 San Carlos, Pangasinan"
+                        android:textColor="#666666"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="8dp" />
 
+                    <!-- About -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text=" REWARD"
+                        android:text="About"
+                        android:textColor="#7A4F2B"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <!-- Description -->
+                    <TextView
+                        android:id="@+id/tv_description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Dogs are among the most trusted and loving companions in the world."
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="2dp"
+                        android:maxLines="4"
+                        android:ellipsize="end"
+                        android:layout_marginBottom="4dp" />
+
+                    <!-- More/Less -->
+                    <TextView
+                        android:id="@+id/btn_more_description"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="more"
                         android:textColor="#7A4F2B"
                         android:textSize="12sp"
                         android:textStyle="bold"
-                        android:layout_marginStart="2dp" />
+                        android:visibility="gone"
+                        android:layout_marginBottom="8dp" />
                 </LinearLayout>
 
-                <!-- About -->
-                <TextView
+                <!-- RIGHT SIDE - Action Buttons -->
+                <LinearLayout
+                    android:id="@+id/action_buttons_container"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="About"
-                    android:textColor="#7A4F2B"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignTop="@id/pet_info_container"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal">
 
-                <!-- Description -->
-                <TextView
-                    android:id="@+id/tv_description"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Dogs are among the most trusted and loving companions in the world."
-                    android:textColor="#666666"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="2dp"
-                    android:maxLines="5"
-                    android:ellipsize="end"
-                    android:layout_marginBottom="4dp" />
+                    <!-- Like -->
+                    <LinearLayout
+                        android:id="@+id/btn_like"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginBottom="16dp">
 
-                <!-- More/Less -->
-                <TextView
-                    android:id="@+id/btn_more_description"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="more"
-                    android:textColor="#7A4F2B"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    android:layout_marginBottom="8dp" />
+                        <com.example.pawsociety.widget.LikeButton
+                            android:id="@+id/btn_like_lottie_view"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp" />
 
-                <!-- Contact -->
-                <TextView
-                    android:id="@+id/tv_contact"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📞 09123456789"
-                    android:textColor="#666666"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp" />
+                        <TextView
+                            android:id="@+id/tv_likes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="124"
+                            android:textColor="#7A4F2B"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
 
-                <!-- Location with emoji -->
-                <TextView
-                    android:id="@+id/tv_location"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📍 San Carlos, Pangasinan"
-                    android:textColor="#666666"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp" />
-            </LinearLayout>
+                    <!-- Message -->
+                    <LinearLayout
+                        android:id="@+id/btn_message"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="visible">
 
-            <!-- RIGHT SIDE - Action Buttons (ALIGNED WITH GOLDEN RETRIEVER) -->
-            <LinearLayout
-                android:id="@+id/action_buttons_container"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_alignTop="@id/pet_info_container"
-            android:orientation="vertical"
-            android:gravity="center_horizontal">
+                        <ImageView
+                            android:id="@+id/btn_message_icon"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/message"
+                            android:tint="#7A4F2B" />
 
-            <!-- Like -->
-            <LinearLayout
-                android:id="@+id/btn_like"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginBottom="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Chat"
+                            android:textColor="#7A4F2B"
+                            android:textSize="10sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
 
-                <com.example.pawsociety.widget.LikeButton
-                    android:id="@+id/btn_like_lottie_view"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp" />
+                    <!-- Share -->
+                    <LinearLayout
+                        android:id="@+id/btn_share"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginBottom="16dp">
 
-                <TextView
-                    android:id="@+id/tv_likes"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="124"
-                    android:textColor="#666666"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
+                        <ImageView
+                            android:id="@+id/btn_share_icon"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/share"
+                            android:tint="#7A4F2B" />
 
-            <!-- Message -->
-            <LinearLayout
-                android:id="@+id/btn_message"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginBottom="16dp"
-                android:visibility="visible">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Share"
+                            android:textColor="#7A4F2B"
+                            android:textSize="10sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
 
-                <ImageView
-                    android:id="@+id/btn_message_icon"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/message"
-                    android:tint="#666666" />
+                    <!-- Save -->
+                    <LinearLayout
+                        android:id="@+id/btn_favorite"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Chat"
-                    android:textColor="#666666"
-                    android:textSize="10sp"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
+                        <ImageView
+                            android:id="@+id/iv_favorite"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/faved"
+                            android:tint="#7A4F2B" />
 
-            <!-- Share -->
-            <LinearLayout
-                android:id="@+id/btn_share"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginBottom="16dp">
-
-                <ImageView
-                    android:id="@+id/btn_share_icon"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/share"
-                    android:tint="#666666" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Share"
-                    android:textColor="#666666"
-                    android:textSize="10sp"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <!-- Save -->
-            <LinearLayout
-                android:id="@+id/btn_favorite"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:id="@+id/iv_favorite"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/faved"
-                    android:tint="#666666" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Save"
-                    android:textColor="#666666"
-                    android:textSize="10sp"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Save"
+                            android:textColor="#666666"
+                            android:textSize="10sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </RelativeLayout>
         </LinearLayout>
-    </RelativeLayout>
-</LinearLayout>
     </androidx.cardview.widget.CardView>
-    </LinearLayout>
+</LinearLayout>

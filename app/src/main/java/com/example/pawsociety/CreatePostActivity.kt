@@ -66,6 +66,18 @@ class CreatePostActivity : AppCompatActivity() {
     private lateinit var thumbnailContainer: LinearLayout
     private lateinit var photoUploadProgress: ProgressBar
 
+    // 🔥 NEW: Age and Weight Unit Views
+    private lateinit var layoutAgeUnits: LinearLayout
+    private lateinit var btnAgeYears: TextView
+    private lateinit var btnAgeMonths: TextView
+    private lateinit var layoutWeightUnits: LinearLayout
+    private lateinit var btnWeightKg: TextView
+    private lateinit var btnWeightLbs: TextView
+
+    // Track selected units
+    private var selectedAgeUnit = "years" // default
+    private var selectedWeightUnit = "kg" // default
+
     // Error Views
     private lateinit var errorPetName: TextView
     private lateinit var errorPetType: TextView
@@ -125,7 +137,7 @@ class CreatePostActivity : AppCompatActivity() {
         val currentUser = sessionManager.getCurrentUser()
 
         if (currentUser == null || currentUser.firebaseUid.isNullOrEmpty()) {
-            Toast.makeText(this, "Session error. Please login again.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Session error. Please login again.", Toast.LENGTH_LONG).show()
             finish()
             return
         }
@@ -137,6 +149,10 @@ class CreatePostActivity : AppCompatActivity() {
 
         // Set initial gender selection
         updateGenderSelection("Unknown", btnGenderUnknown)
+
+        // Set initial unit selections
+        updateAgeUnitButtons(btnAgeYears)
+        updateWeightUnitButtons(btnWeightKg)
     }
 
     private fun initializeViews() {
@@ -203,6 +219,14 @@ class CreatePostActivity : AppCompatActivity() {
         thumbnailContainer = findViewById(R.id.thumbnail_container)
         photoUploadProgress = findViewById(R.id.photo_upload_progress)
         imagePreviewContainer = findViewById(R.id.image_preview_container)
+
+        // ===== 🔥 NEW: Age and Weight Unit Views =====
+        layoutAgeUnits = findViewById(R.id.layout_age_units)
+        btnAgeYears = findViewById(R.id.btn_age_years)
+        btnAgeMonths = findViewById(R.id.btn_age_months)
+        layoutWeightUnits = findViewById(R.id.layout_weight_units)
+        btnWeightKg = findViewById(R.id.btn_weight_kg)
+        btnWeightLbs = findViewById(R.id.btn_weight_lbs)
 
         // ===== INITIALIZE ADAPTERS =====
         photoPagerAdapter = PhotoPagerAdapter(selectedImages) { uri ->
@@ -294,25 +318,49 @@ class CreatePostActivity : AppCompatActivity() {
         layoutCategoryDogs.setOnClickListener {
             selectedCategory = "Dogs"
             highlightCategory(layoutCategoryDogs, ivCategoryDogs, tvCategoryDogs)
-            showBreedSelector(PetData.dogBreeds)
+
+            // Get dog breeds and add "Unknown Dog" sa list
+            val breeds = PetData.dogBreeds.toMutableList()
+            breeds.add(0, "Unknown Dog")  // ← Specific for dogs
+            breeds.add(1, "Other Dog")
+
+            showBreedSelector(breeds)
         }
 
         layoutCategoryCats.setOnClickListener {
             selectedCategory = "Cats"
             highlightCategory(layoutCategoryCats, ivCategoryCats, tvCategoryCats)
-            showBreedSelector(PetData.catBreeds)
+
+            // Get cat breeds and add "Unknown Cat" sa list
+            val breeds = PetData.catBreeds.toMutableList()
+            breeds.add(0, "Unknown Cat")  // ← Specific for cats
+            breeds.add(1, "Other Cat")
+
+            showBreedSelector(breeds)
         }
 
         layoutCategoryFish.setOnClickListener {
             selectedCategory = "Fish"
             highlightCategory(layoutCategoryFish, ivCategoryFish, tvCategoryFish)
-            showBreedSelector(PetData.fishBreeds)
+
+            // Get fish breeds and add "Unknown Fish" sa list
+            val breeds = PetData.fishBreeds.toMutableList()
+            breeds.add(0, "Unknown Fish")  // ← Specific for fish
+            breeds.add(1, "Other Fish")
+
+            showBreedSelector(breeds)
         }
 
         layoutCategoryBirds.setOnClickListener {
             selectedCategory = "Birds"
             highlightCategory(layoutCategoryBirds, ivCategoryBirds, tvCategoryBirds)
-            showBreedSelector(PetData.birdBreeds)
+
+            // Get bird breeds and add "Unknown Bird" sa list
+            val breeds = PetData.birdBreeds.toMutableList()
+            breeds.add(0, "Unknown Bird")  // ← Specific for birds
+            breeds.add(1, "Other Bird")
+
+            showBreedSelector(breeds)
         }
 
         btnBackToCategories.setOnClickListener {
@@ -362,9 +410,13 @@ class CreatePostActivity : AppCompatActivity() {
         layoutBreedSelector.visibility = View.VISIBLE
 
         breedAdapter.setData(breeds)
-        actPetType.setText("") // Clear any previous text
 
-        // Show keyboard and focus on breed input
+        // AUTO-FILL with the first option (which is "Unknown Dog/Cat/etc")
+        if (breeds.isNotEmpty()) {
+            actPetType.setText(breeds[0])  // Sets "Unknown Dog" or "Unknown Cat"
+        }
+
+        // Show keyboard
         actPetType.requestFocus()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.showSoftInput(actPetType, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
@@ -437,19 +489,24 @@ class CreatePostActivity : AppCompatActivity() {
             }
         }
 
-        // ===== AGE VALIDATION =====
+        // ===== AGE (OPTIONAL) - ONLY NUMBER VALIDATION =====
         etAge.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 validateAge()
             }
             override fun afterTextChanged(s: Editable?) {
-                // Format age input (allow numbers and text like "years", "months")
-                val input = s.toString()
-                if (input.matches(Regex("^\\d+$"))) {
-                    // If just numbers, keep as is
-                } else if (input.matches(Regex("^\\d+\\s*(year|month|yr|mo)s?$", RegexOption.IGNORE_CASE))) {
-                    // Valid format with unit
+                val hasText = !s.toString().trim().isEmpty()
+                layoutAgeUnits.visibility = if (hasText) View.VISIBLE else View.GONE
+
+                if (hasText) {
+                    // Validate only numbers
+                    val input = s.toString()
+                    if (!input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                        etAge.error = "Only numbers allowed"
+                    } else {
+                        etAge.error = null
+                    }
                 }
             }
         })
@@ -463,19 +520,24 @@ class CreatePostActivity : AppCompatActivity() {
             }
         }
 
-        // ===== WEIGHT VALIDATION =====
+        // ===== WEIGHT (OPTIONAL) - ONLY NUMBER VALIDATION =====
         etWeight.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 validateWeight()
             }
             override fun afterTextChanged(s: Editable?) {
-                // Format weight input
-                val input = s.toString()
-                if (input.matches(Regex("^\\d+(\\.\\d{1,2})?$"))) {
-                    // Valid number format
-                } else if (input.matches(Regex("^\\d+(\\.\\d{1,2})?\\s*(kg|kgs|lb|lbs)$", RegexOption.IGNORE_CASE))) {
-                    // Valid format with unit
+                val hasText = !s.toString().trim().isEmpty()
+                layoutWeightUnits.visibility = if (hasText) View.VISIBLE else View.GONE
+
+                if (hasText) {
+                    // Validate only numbers (allow decimals)
+                    val input = s.toString()
+                    if (!input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                        etWeight.error = "Only numbers allowed"
+                    } else {
+                        etWeight.error = null
+                    }
                 }
             }
         })
@@ -490,6 +552,36 @@ class CreatePostActivity : AppCompatActivity() {
                 true
             } else {
                 false
+            }
+        }
+
+        // ===== AGE UNIT BUTTON CLICKS =====
+        btnAgeYears.setOnClickListener {
+            if (btnAgeYears.isClickable) {
+                selectedAgeUnit = "years"
+                updateAgeUnitButtons(btnAgeYears)
+            }
+        }
+
+        btnAgeMonths.setOnClickListener {
+            if (btnAgeMonths.isClickable) {
+                selectedAgeUnit = "months"
+                updateAgeUnitButtons(btnAgeMonths)
+            }
+        }
+
+        // ===== WEIGHT UNIT BUTTON CLICKS =====
+        btnWeightKg.setOnClickListener {
+            if (btnWeightKg.isClickable) {
+                selectedWeightUnit = "kg"
+                updateWeightUnitButtons(btnWeightKg)
+            }
+        }
+
+        btnWeightLbs.setOnClickListener {
+            if (btnWeightLbs.isClickable) {
+                selectedWeightUnit = "lbs"
+                updateWeightUnitButtons(btnWeightLbs)
             }
         }
 
@@ -584,52 +676,94 @@ class CreatePostActivity : AppCompatActivity() {
         }
     }
 
-    // ===== VALIDATION FUNCTIONS =====
+    // ===== UNIT BUTTON UPDATE FUNCTIONS =====
+    private fun updateAgeUnitButtons(selected: TextView) {
+        // Enable both buttons
+        btnAgeYears.isClickable = true
+        btnAgeYears.isFocusable = true
+        btnAgeYears.alpha = 1.0f
+        btnAgeMonths.isClickable = true
+        btnAgeMonths.isFocusable = true
+        btnAgeMonths.alpha = 1.0f
 
+        // Highlight selected
+        if (selected == btnAgeYears) {
+            btnAgeYears.setBackgroundResource(R.drawable.button_oval_brown)
+            btnAgeYears.alpha = 1.0f
+            btnAgeMonths.setBackgroundResource(R.drawable.button_oval_brown_outline)
+            btnAgeMonths.alpha = 0.7f
+        } else {
+            btnAgeMonths.setBackgroundResource(R.drawable.button_oval_brown)
+            btnAgeMonths.alpha = 1.0f
+            btnAgeYears.setBackgroundResource(R.drawable.button_oval_brown_outline)
+            btnAgeYears.alpha = 0.7f
+        }
+    }
+
+    private fun updateWeightUnitButtons(selected: TextView) {
+        // Enable both buttons
+        btnWeightKg.isClickable = true
+        btnWeightKg.isFocusable = true
+        btnWeightKg.alpha = 1.0f
+        btnWeightLbs.isClickable = true
+        btnWeightLbs.isFocusable = true
+        btnWeightLbs.alpha = 1.0f
+
+        // Highlight selected
+        if (selected == btnWeightKg) {
+            btnWeightKg.setBackgroundResource(R.drawable.button_oval_brown)
+            btnWeightKg.alpha = 1.0f
+            btnWeightLbs.setBackgroundResource(R.drawable.button_oval_brown_outline)
+            btnWeightLbs.alpha = 0.7f
+        } else {
+            btnWeightLbs.setBackgroundResource(R.drawable.button_oval_brown)
+            btnWeightLbs.alpha = 1.0f
+            btnWeightKg.setBackgroundResource(R.drawable.button_oval_brown_outline)
+            btnWeightKg.alpha = 0.7f
+        }
+    }
+
+    // ===== VALIDATION FUNCTIONS (Age and Weight now optional) =====
     private fun validateAge(): Boolean {
         val age = etAge.text.toString().trim()
-        return when {
-            age.isEmpty() -> {
-                etAge.setBackgroundResource(R.drawable.edittext_error_bg)
-                errorAge.text = "Age is required"
-                errorAge.visibility = View.VISIBLE
-                false
-            }
-            !age.matches(Regex("^\\d+\\s*(year|month|yr|mo)?s?$", RegexOption.IGNORE_CASE)) &&
-                    !age.matches(Regex("^\\d+$")) -> {
-                etAge.setBackgroundResource(R.drawable.edittext_error_bg)
-                errorAge.text = "Use format: 2 years, 8 months, or just 12"
-                errorAge.visibility = View.VISIBLE
-                false
-            }
-            else -> {
+        return if (age.isEmpty()) {
+            // Age is optional - no error
+            etAge.setBackgroundResource(R.drawable.edittext_bg)
+            errorAge.visibility = View.GONE
+            true
+        } else {
+            // Only validate that it's a number
+            if (age.matches(Regex("^\\d*\\.?\\d*$"))) {
                 etAge.setBackgroundResource(R.drawable.edittext_bg)
                 errorAge.visibility = View.GONE
                 true
+            } else {
+                etAge.setBackgroundResource(R.drawable.edittext_error_bg)
+                errorAge.text = "Only numbers allowed"
+                errorAge.visibility = View.VISIBLE
+                false
             }
         }
     }
 
     private fun validateWeight(): Boolean {
         val weight = etWeight.text.toString().trim()
-        return when {
-            weight.isEmpty() -> {
-                etWeight.setBackgroundResource(R.drawable.edittext_error_bg)
-                errorWeight.text = "Weight is required"
-                errorWeight.visibility = View.VISIBLE
-                false
-            }
-            !weight.matches(Regex("^\\d+(\\.\\d{1,2})?\\s*(kg|kgs|lb|lbs)?$", RegexOption.IGNORE_CASE)) &&
-                    !weight.matches(Regex("^\\d+(\\.\\d{1,2})?$")) -> {
-                etWeight.setBackgroundResource(R.drawable.edittext_error_bg)
-                errorWeight.text = "Use format: 3.5 kg, 10 lbs, or just 3.5"
-                errorWeight.visibility = View.VISIBLE
-                false
-            }
-            else -> {
+        return if (weight.isEmpty()) {
+            // Weight is optional - no error
+            etWeight.setBackgroundResource(R.drawable.edittext_bg)
+            errorWeight.visibility = View.GONE
+            true
+        } else {
+            // Only validate that it's a number (allow decimals)
+            if (weight.matches(Regex("^\\d*\\.?\\d*$"))) {
                 etWeight.setBackgroundResource(R.drawable.edittext_bg)
                 errorWeight.visibility = View.GONE
                 true
+            } else {
+                etWeight.setBackgroundResource(R.drawable.edittext_error_bg)
+                errorWeight.text = "Only numbers allowed"
+                errorWeight.visibility = View.VISIBLE
+                false
             }
         }
     }
@@ -770,8 +904,8 @@ class CreatePostActivity : AppCompatActivity() {
     private fun validateAllFields(): Boolean {
         val isPetNameValid = validatePetName()
         val isPetTypeValid = validatePetType()
-        val isAgeValid = validateAge()
-        val isWeightValid = validateWeight()
+        val isAgeValid = validateAge()  // Now optional
+        val isWeightValid = validateWeight()  // Now optional
         val isStatusValid = validateStatus()
         val isLocationValid = validateLocation()
         val isContactValid = validateContact()
@@ -1215,12 +1349,25 @@ class CreatePostActivity : AppCompatActivity() {
 
         val petName = etPetName.text.toString().trim()
         val petType = actPetType.text.toString().trim()
-        val age = etAge.text.toString().trim()
-        val weight = etWeight.text.toString().trim()
+
+        // 🔥 FIXED: Handle empty age and weight properly - send empty strings, not null
+        val ageNumber = etAge.text.toString().trim()
+        val age = if (ageNumber.isNotEmpty()) {
+            "$ageNumber $selectedAgeUnit"
+        } else {
+            "" // Send empty string, not null
+        }
+
+        val weightNumber = etWeight.text.toString().trim()
+        val weight = if (weightNumber.isNotEmpty()) {
+            "$weightNumber $selectedWeightUnit"
+        } else {
+            "" // Send empty string, not null
+        }
 
         // Remove commas from reward before saving
         val rewardRaw = etReward.text.toString().trim().replace(",", "")
-        val reward = if (selectedStatus == "Lost") rewardRaw else ""
+        val reward = if (selectedStatus == "Lost" && rewardRaw.isNotEmpty()) rewardRaw else ""
 
         val location = tvLocation.text.toString()
         val contact = etContact.text.toString().trim()
@@ -1257,13 +1404,19 @@ class CreatePostActivity : AppCompatActivity() {
                     emptyList()
                 }
 
-                // Step 2: Create post with all fields including age and weight
+                // Right before calling postRepository.createPost
+                Log.d("CreatePost", "📝 Creating post with category: $selectedCategory")
+
+                // Step 2: Create post with all fields including age and weight (empty strings allowed)
+                // In CreatePostActivity.kt, inside createNewPost function:
+
                 val result = postRepository.createPost(
                     firebaseUid = currentUser.firebaseUid,
                     petName = petName,
                     petType = petType,
-                    age = age,
-                    weight = weight,
+                    category = selectedCategory,  // 🔥 ADD THIS - selectedCategory is "Dogs", "Cats", etc.
+                    age = age,  // Can be empty string
+                    weight = weight,  // Can be empty string
                     gender = selectedGender,
                     status = selectedStatus,
                     description = description,
@@ -1273,7 +1426,7 @@ class CreatePostActivity : AppCompatActivity() {
                     imageUrls = if (imageUrls.isNotEmpty()) imageUrls else null
                 )
 
-                // In createNewPost() function, after successful post creation:
+
 
                 if (result.isSuccess) {
                     Log.d(TAG, "✅ Post created successfully with age: $age, weight: $weight")
@@ -1287,7 +1440,6 @@ class CreatePostActivity : AppCompatActivity() {
 
                     clearForm()
                     finish()
-
 
                 } else {
                     val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"

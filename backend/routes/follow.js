@@ -5,79 +5,53 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { v4: uuidv4 } = require('uuid');
 
-/**
- * GET /api/follow/followers/:userId
- * Get all followers of a user
- */
+// ========== GET FOLLOWERS ==========
 router.get('/followers/:userId', async (req, res) => {
   try {
-    const follows = await Follow.find({ followingUid: req.params.userId })
-      .sort({ createdAt: -1 });
-
-    // Get user details for each follower
-    const followers = await Promise.all(
-      follows.map(async (follow) => {
-        const user = await User.findOne({ firebaseUid: follow.followerUid })
-          .select('username fullName profileImageUrl bio firebaseUid');
-        return user;
-      })
-    );
-
-    const validFollowers = followers.filter(f => f !== null);
-
-    res.json({
-      success: true,
-      count: validFollowers.length,
-      users: validFollowers
+    const follows = await Follow.find({ followingUid: req.params.userId });
+    const users = [];
+    
+    for (const f of follows) {
+      const user = await User.findOne({ firebaseUid: f.followerUid })
+        .select('username fullName profileImageUrl bio firebaseUid');
+      if (user) users.push(user);
+    }
+    
+    res.json({ 
+      success: true, 
+      count: users.length,
+      users: users 
     });
   } catch (error) {
     console.error('Get followers error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-/**
- * GET /api/follow/following/:userId
- * Get all users that a user is following
- */
+// ========== GET FOLLOWING ==========
 router.get('/following/:userId', async (req, res) => {
   try {
-    const follows = await Follow.find({ followerUid: req.params.userId })
-      .sort({ createdAt: -1 });
-
-    // Get user details for each following
-    const following = await Promise.all(
-      follows.map(async (follow) => {
-        const user = await User.findOne({ firebaseUid: follow.followingUid })
-          .select('username fullName profileImageUrl bio firebaseUid');
-        return user;
-      })
-    );
-
-    const validFollowing = following.filter(f => f !== null);
-
-    res.json({
-      success: true,
-      count: validFollowing.length,
-      users: validFollowing
+    const follows = await Follow.find({ followerUid: req.params.userId });
+    const users = [];
+    
+    for (const f of follows) {
+      const user = await User.findOne({ firebaseUid: f.followingUid })
+        .select('username fullName profileImageUrl bio firebaseUid');
+      if (user) users.push(user);
+    }
+    
+    res.json({ 
+      success: true, 
+      count: users.length,
+      users: users 
     });
   } catch (error) {
     console.error('Get following error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-/**
- * POST /api/follow/follow
- * Follow a user
- * Body: { followerUid, followingUid }
- */
+// ========== FOLLOW A USER - UPDATED WITH SOCKET EMIT ==========
 router.post('/follow', async (req, res) => {
   try {
     const { followerUid, followingUid } = req.body;
@@ -125,20 +99,48 @@ router.post('/follow', async (req, res) => {
     });
 
     await follow.save();
+    console.log(`✅ User ${followerUid} followed ${followingUid}`);
 
-    // Create notification for the user being followed
-    const notification = new Notification({
-      notificationId: `notif_${Date.now()}_${uuidv4().substring(0, 8)}`,
-      userId: followingUid,
-      fromUserId: followerUid,
-      fromUserName: follower.username,
-      fromUserImage: follower.profileImageUrl || '',
-      type: 'follow',
-      message: `${follower.username} started following you`
-    });
-    await notification.save();
+    // 🔥 FIXED: Emit socket event with username
+    const io = req.app.get('io');
+    if (io) {
+      io.to(followingUid).emit('new-follow', {
+        fromUserId: followerUid,
+        fromUserName: follower.username,
+        type: 'follow'
+      });
+    }
 
-    console.log(`🔔 Follow notification created: ${follower.username} -> ${following.username}`);
+    // Create notification
+    try {
+      const Notification = require('../models/Notification');
+      
+      const notification = new Notification({
+        notificationId: `notif_${Date.now()}_${uuidv4().substring(0, 8)}`,
+        userId: followingUid,
+        fromUserId: followerUid,
+        fromUserName: follower.username,
+        fromUserImage: follower.profileImageUrl || '',
+        type: 'follow',
+        postId: '',
+        message: `${follower.username} started following you`
+      });
+      
+      await notification.save();
+      
+      if (io) {
+        io.to(followingUid).emit('new-notification', {
+          notificationId: notification.notificationId,
+          message: notification.message,
+          type: notification.type,
+          fromUserName: follower.username,
+          createdAt: notification.createdAt
+        });
+      }
+      
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError);
+    }
 
     res.status(201).json({
       success: true,
@@ -154,11 +156,7 @@ router.post('/follow', async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/follow/unfollow
- * Unfollow a user
- * Query: followerUid, followingUid
- */
+// ========== UNFOLLOW A USER ==========
 router.delete('/unfollow', async (req, res) => {
   try {
     const { followerUid, followingUid } = req.query;
@@ -197,11 +195,7 @@ router.delete('/unfollow', async (req, res) => {
   }
 });
 
-/**
- * GET /api/follow/check
- * Check if a user is following another user
- * Query: followerUid, followingUid
- */
+// ========== CHECK FOLLOW STATUS ==========
 router.get('/check', async (req, res) => {
   try {
     const { followerUid, followingUid } = req.query;
@@ -228,10 +222,7 @@ router.get('/check', async (req, res) => {
   }
 });
 
-/**
- * GET /api/follow/counts/:userId
- * Get follower and following counts for a user
- */
+// ========== GET FOLLOW COUNTS ==========
 router.get('/counts/:userId', async (req, res) => {
   try {
     const followersCount = await Follow.countDocuments({ followingUid: req.params.userId });

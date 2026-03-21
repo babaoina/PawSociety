@@ -109,4 +109,6 @@
     <string name="logout_title">Log Out</string>
     <string name="logout_confirmation">Are you sure you want to log out?</string>
 
+    <string name="default_web_client_id">YOUR_GOOGLE_CLIENT_ID</string>
+
 </resources>

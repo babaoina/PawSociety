@@ -10,6 +10,7 @@ object NetworkUtils {
 
     private const val TAG = "NetworkUtils"
 
+    // 🔥 THIS FUNCTION IS MISSING - ADD IT!
     fun isNetworkAvailable(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 

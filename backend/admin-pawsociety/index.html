@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawSociety Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #7A4F2B 0%, #B88B4A 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-name {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .app-name h1 {
+            color: #7A4F2B;
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .app-name p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 30px;
+            transition: opacity 0.3s ease;
+        }
+
+        .welcome-section h2 {
+            color: #7A4F2B;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .welcome-section p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Login Form */
+        .login-form {
+            transition: all 0.3s ease;
+        }
+
+        .login-form.hidden {
+            opacity: 0;
+            transform: translateX(-20px);
+            pointer-events: none;
+            position: absolute;
+        }
+
+        /* Forgot Password Form */
+        .forgot-form {
+            opacity: 0;
+            transform: translateX(20px);
+            pointer-events: none;
+            transition: all 0.3s ease;
+            position: absolute;
+            width: calc(100% - 80px);
+        }
+
+        .forgot-form.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: all;
+            position: relative;
+        }
+
+        /* Back Button */
+        .back-button {
+            margin-bottom: 20px;
+        }
+
+        .back-button a {
+            color: #7A4F2B;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.3s;
+        }
+
+        .back-button a:hover {
+            color: #B88B4A;
+        }
+
+        .back-button a:hover .back-arrow {
+            transform: translateX(-3px);
+        }
+
+        .back-arrow {
+            font-size: 16px;
+            transition: transform 0.3s;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            color: #7A4F2B;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            height: 50px;
+            padding: 0 15px;
+            border: 2px solid #F0F0F0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #B88B4A;
+        }
+
+        .input-group input.error {
+            border-color: #F44336;
+        }
+
+        .error-message {
+            color: #F44336;
+            font-size: 12px;
+            margin-top: 5px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .success-message {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: slideDown 0.3s ease;
+            font-size: 14px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 25px;
+        }
+
+        .forgot-password a {
+            color: #B88B4A;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .forgot-password a:hover {
+            color: #7A4F2B;
+            text-decoration: underline;
+        }
+
+        .login-btn {
+            width: 100%;
+            height: 50px;
+            background: #7A4F2B;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .login-btn:hover {
+            background: #B88B4A;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .reset-btn {
+            width: 100%;
+            height: 50px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .reset-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .reset-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .admin-badge {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #F0F0F0;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .admin-badge span {
+            color: #B88B4A;
+            font-weight: bold;
+        }
+
+        .demo-credentials {
+            background: #F5E6D3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+            border-left: 4px solid #7A4F2B;
+        }
+
+        .demo-credentials strong {
+            color: #7A4F2B;
+        }
+
+        .demo-credentials code {
+            background: rgba(122, 79, 43, 0.1);
+            padding: 3px 6px;
+            border-radius: 4px;
+            color: #7A4F2B;
+        }
+
+        .countdown {
+            font-weight: bold;
+            color: #7A4F2B;
+        }
+
+        .password-strength {
+            font-size: 12px;
+            margin-top: 5px;
+            transition: color 0.3s;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="app-name">
+            <h1>PawSociety</h1>
+            <p>Admin Portal</p>
+        </div>
+
+        <!-- Welcome Section (shows on both forms) -->
+        <div class="welcome-section" id="welcomeSection">
+            <h2 id="formTitle">WELCOME</h2>
+            <p id="formDescription">With many pets waiting for a loving home,<br>PawSociety helps you discover adoptable pets<br>and reconnect lost animals with their families.</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="login-form" id="loginForm">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" placeholder="Enter your email" id="email" value="admin@pawsociety.com">
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" placeholder="Enter your password" id="password" value="admin123">
+            </div>
+
+            <div class="forgot-password">
+                <a onclick="showForgotPassword()">Forgot Password?</a>
+            </div>
+
+            <button class="login-btn" onclick="login()" id="loginBtn">Login</button>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div class="forgot-form" id="forgotForm">
+            <!-- Back Button at the top -->
+            <div class="back-button">
+                <a onclick="showLogin()">
+                    <span class="back-arrow"></span> Back to Log in
+                </a>
+            </div>
+
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" placeholder="Enter your email" id="resetEmail">
+            </div>
+
+            <div class="input-group">
+                <label>New Password</label>
+                <input type="password" placeholder="Enter new password" id="newPassword">
+                <div id="passwordStrength" class="password-strength"></div>
+            </div>
+
+            <div class="input-group">
+                <label>Confirm Password</label>
+                <input type="password" placeholder="Confirm new password" id="confirmPassword">
+            </div>
+
+            <button class="reset-btn" onclick="resetPassword()" id="resetBtn">Reset Password</button>
+        </div>
+
+        <!-- Success Message Container -->
+        <div id="successMessage" style="display: none;"></div>
+
+    </div>
+
+    <script>
+    // State management
+    let resetCooldown = false;
+    let countdownInterval;
+
+    // Toggle between forms
+    function showForgotPassword() {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('forgotForm').classList.add('active');
+        document.getElementById('formTitle').textContent = 'RESET PASSWORD';
+        document.getElementById('formDescription').textContent = 'Enter your email and new password to reset your account.';
+        
+        // Clear any previous messages
+        hideSuccessMessage();
+        clearErrors();
+    }
+
+    function showLogin() {
+        document.getElementById('loginForm').classList.remove('hidden');
+        document.getElementById('forgotForm').classList.remove('active');
+        document.getElementById('formTitle').textContent = 'WELCOME';
+        document.getElementById('formDescription').innerHTML = 'With many pets waiting for a loving home,<br>PawSociety helps you discover adoptable pets<br>and reconnect lost animals with their families.';
+        
+        // Clear any previous messages
+        hideSuccessMessage();
+        clearErrors();
+        
+        // Clear reset form
+        document.getElementById('resetEmail').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('passwordStrength').textContent = '';
+    }
+
+    // Login function - FIXED
+    async function login() {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+        
+        clearErrors();
+
+        let isValid = true;
+
+        if (!email) {
+            showError('email', 'Email is required');
+            isValid = false;
+        } else if (!isValidEmail(email)) {
+            showError('email', 'Please enter a valid email address');
+            isValid = false;
+        }
+
+        if (!password) {
+            showError('password', 'Password is required');
+            isValid = false;
+        }
+
+        if (!isValid) return;
+
+        const loginBtn = document.getElementById('loginBtn');
+        loginBtn.textContent = 'Logging in...';
+        loginBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/admin/auth/login', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                localStorage.setItem('adminToken', data.token);
+                localStorage.setItem('adminUser', JSON.stringify(data.user));
+                window.location.href = 'dashboard.html';
+            } else {
+                loginBtn.textContent = 'Login';
+                loginBtn.disabled = false;
+                
+                showError('email', data.error || 'Invalid credentials');
+                showError('password', data.error || 'Invalid credentials');
+                
+                document.getElementById('email').classList.add('error');
+                document.getElementById('password').classList.add('error');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            loginBtn.textContent = 'Login';
+            loginBtn.disabled = false;
+            alert('Connection error: Cannot connect to backend server. Make sure it is running on http://localhost:5000');
+        }
+    }
+
+    // Reset password function
+    function resetPassword() {
+        if (resetCooldown) {
+            alert('Please wait before requesting another password reset.');
+            return;
+        }
+
+        const email = document.getElementById('resetEmail').value.trim();
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        clearErrors();
+
+        let isValid = true;
+
+        // Email validation
+        if (!email) {
+            showError('resetEmail', 'Email is required');
+            isValid = false;
+        } else if (!isValidEmail(email)) {
+            showError('resetEmail', 'Please enter a valid email address');
+            isValid = false;
+        }
+
+        // Password validation
+        if (!newPassword) {
+            showError('newPassword', 'New password is required');
+            isValid = false;
+        } else if (newPassword.length < 6) {
+            showError('newPassword', 'Password must be at least 6 characters');
+            isValid = false;
+        } else if (!isValidPassword(newPassword)) {
+            showError('newPassword', 'Password must contain at least one uppercase letter, one number, and one special character');
+            isValid = false;
+        }
+
+        // Confirm password validation
+        if (!confirmPassword) {
+            showError('confirmPassword', 'Please confirm your password');
+            isValid = false;
+        } else if (newPassword !== confirmPassword) {
+            showError('confirmPassword', 'Passwords do not match');
+            isValid = false;
+        }
+
+        if (!isValid) return;
+
+        // Check if email exists in our "database"
+        if (email !== 'admin@pawsociety.com') {
+            showError('resetEmail', 'Email not found in our system');
+            return;
+        }
+
+        const resetBtn = document.getElementById('resetBtn');
+        resetBtn.textContent = 'Resetting...';
+        resetBtn.disabled = true;
+
+        // Simulate API call
+        setTimeout(() => {
+            // Show success message
+            showSuccessMessage('Password reset successfully! You can now login with your new password.');
+            
+            // Clear form
+            document.getElementById('resetEmail').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('passwordStrength').textContent = '';
+            
+            resetBtn.textContent = 'Reset Password';
+            resetBtn.disabled = false;
+
+            // Start cooldown
+            startResetCooldown();
+
+            // Auto redirect to login after 3 seconds
+            setTimeout(() => {
+                showLogin();
+            }, 3000);
+        }, 1500);
+    }
+
+    // Start cooldown timer
+    function startResetCooldown() {
+        resetCooldown = true;
+        let seconds = 30;
+        
+        const forgotLink = document.querySelector('.forgot-password a');
+        const originalText = forgotLink.textContent;
+        
+        countdownInterval = setInterval(() => {
+            seconds--;
+            forgotLink.textContent = `Try again in ${seconds}s`;
+            
+            if (seconds <= 0) {
+                clearInterval(countdownInterval);
+                resetCooldown = false;
+                forgotLink.textContent = originalText;
+            }
+        }, 1000);
+    }
+
+    // Show success message
+    function showSuccessMessage(message) {
+        const successDiv = document.getElementById('successMessage');
+        successDiv.style.display = 'block';
+        successDiv.className = 'success-message';
+        successDiv.textContent = message;
+    }
+
+    // Hide success message
+    function hideSuccessMessage() {
+        document.getElementById('successMessage').style.display = 'none';
+    }
+
+    // Email validation
+    function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    // Password strength validation
+    function isValidPassword(password) {
+        // At least one uppercase, one number, one special character
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+        return passwordRegex.test(password);
+    }
+
+    // Show error message
+    function showError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        field.classList.add('error');
+        
+        const existingError = field.parentNode.querySelector('.error-message');
+        if (existingError) existingError.remove();
+        
+        const error = document.createElement('div');
+        error.className = 'error-message';
+        error.textContent = message;
+        
+        field.parentNode.appendChild(error);
+    }
+
+    // Clear all errors
+    function clearErrors() {
+        document.querySelectorAll('input').forEach(input => {
+            input.classList.remove('error');
+        });
+        document.querySelectorAll('.error-message').forEach(error => error.remove());
+    }
+
+    // Real-time validation
+    document.getElementById('email').addEventListener('input', function() {
+        this.classList.remove('error');
+        const error = this.parentNode.querySelector('.error-message');
+        if (error) error.remove();
+    });
+
+    document.getElementById('password').addEventListener('input', function() {
+        this.classList.remove('error');
+        const error = this.parentNode.querySelector('.error-message');
+        if (error) error.remove();
+    });
+
+    document.getElementById('resetEmail').addEventListener('input', function() {
+        this.classList.remove('error');
+        const error = this.parentNode.querySelector('.error-message');
+        if (error) error.remove();
+    });
+
+    document.getElementById('newPassword').addEventListener('input', function() {
+        this.classList.remove('error');
+        const error = this.parentNode.querySelector('.error-message');
+        if (error) error.remove();
+        
+        // Real-time password strength indicator
+        const password = this.value;
+        const strengthIndicator = document.getElementById('passwordStrength');
+        
+        if (password.length > 0) {
+            if (password.length < 6) {
+                strengthIndicator.textContent = 'Too short';
+                strengthIndicator.style.color = '#F44336';
+            } else if (isValidPassword(password)) {
+                strengthIndicator.textContent = 'Strong password ✓';
+                strengthIndicator.style.color = '#4CAF50';
+            } else {
+                strengthIndicator.textContent = 'Need: uppercase, number, and special character';
+                strengthIndicator.style.color = '#FF9800';
+            }
+        } else {
+            strengthIndicator.textContent = '';
+        }
+    });
+
+    document.getElementById('confirmPassword').addEventListener('input', function() {
+        this.classList.remove('error');
+        const error = this.parentNode.querySelector('.error-message');
+        if (error) error.remove();
+        
+        // Real-time match indicator
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = this.value;
+        const strengthIndicator = document.getElementById('passwordStrength');
+        
+        if (confirmPassword.length > 0) {
+            if (newPassword === confirmPassword) {
+                strengthIndicator.textContent = 'Passwords match ✓';
+                strengthIndicator.style.color = '#4CAF50';
+            } else {
+                strengthIndicator.textContent = 'Passwords do not match';
+                strengthIndicator.style.color = '#F44336';
+            }
+        }
+    });
+
+    // Enter key press for login
+    document.getElementById('password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+
+    // Enter key press for reset
+    document.getElementById('confirmPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            resetPassword();
+        }
+    });
+
+    // Auto-focus email field on load
+    window.addEventListener('load', function() {
+        document.getElementById('email').focus();
+    });
+
+    // Clean up interval on page unload
+    window.addEventListener('beforeunload', function() {
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+        }
+    });
+</script>
+</body>
+</html>

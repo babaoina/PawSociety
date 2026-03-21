@@ -321,6 +321,7 @@ router.post('/', async (req, res) => {
       firebaseUid, 
       petName, 
       petType, 
+      category,  // 🔥 ADDED - Category field
       age,
       weight,
       gender,
@@ -357,6 +358,7 @@ router.post('/', async (req, res) => {
       userImageUrl: user.profileImageUrl || '',
       petName,
       petType,
+      category: category || '',  // 🔥 ADDED - Save category
       age: age || '',
       weight: weight || '',
       gender: gender || 'Unknown',
@@ -370,7 +372,7 @@ router.post('/', async (req, res) => {
 
     await post.save();
 
-    console.log(`✅ Post created with age: ${age}, weight: ${weight}, gender: ${gender}`);
+    console.log(`✅ Post created with category: ${category}, age: ${age}, weight: ${weight}, gender: ${gender}`);
 
     res.status(201).json({
       success: true,
@@ -475,7 +477,7 @@ router.delete('/:postId', async (req, res) => {
 
 /**
  * POST /api/posts/:postId/like
- * Like/unlike a post
+ * Like/unlike a post - UPDATED WITH SOCKET EMIT INCLUDING USERNAME
  */
 router.post('/:postId/like', async (req, res) => {
   try {
@@ -513,6 +515,17 @@ router.post('/:postId/like', async (req, res) => {
       const postOwner = await User.findOne({ firebaseUid: post.firebaseUid });
       if (postOwner && postOwner.firebaseUid !== firebaseUid) {
         const liker = await User.findOne({ firebaseUid });
+        
+        // 🔥 FIXED: Get the socket.io instance and emit with username
+        const io = req.app.get('io');
+        if (io) {
+          io.to(post.firebaseUid).emit('new-like', {
+            fromUserId: firebaseUid,
+            fromUserName: liker ? liker.username : 'Someone',
+            postId: post.postId
+          });
+        }
+        
         const notification = new Notification({
           notificationId: `notif_${Date.now()}_${uuidv4().substring(0, 8)}`,
           userId: post.firebaseUid,

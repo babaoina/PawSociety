@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -40,14 +41,23 @@ class InboxAdapter(
     private val onlineStatus = mutableMapOf<String, Boolean>()
 
     class InboxViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        // Profile image views
         val ivProfile: ImageView = itemView.findViewById(R.id.iv_profile)
         val tvProfileIcon: TextView = itemView.findViewById(R.id.tv_profile_icon)
+
+        // Online indicator (green dot)
+        val onlineIndicator: View = itemView.findViewById(R.id.online_indicator)
+
+        // Text views
         val tvUsername: TextView = itemView.findViewById(R.id.tv_username)
         val tvLastMessage: TextView = itemView.findViewById(R.id.tv_last_message)
         val tvTime: TextView = itemView.findViewById(R.id.tv_time)
         val tvUnread: TextView = itemView.findViewById(R.id.tv_unread)
+
+        // Status indicators
         val redPing: View = itemView.findViewById(R.id.red_ping)
-        val onlineIndicator: View = itemView.findViewById(R.id.online_indicator)
+
+        // Request tab buttons
         val btnAccept: Button = itemView.findViewById(R.id.btn_accept)
         val btnReject: Button = itemView.findViewById(R.id.btn_reject)
         val requestBadge: TextView = itemView.findViewById(R.id.request_badge)
@@ -79,6 +89,16 @@ class InboxAdapter(
 
         // Set username
         holder.tvUsername.text = user.username
+
+        // ===== PROFILE IMAGE - CIRCULAR for ALL =====
+        setupCircularProfileImage(holder, user)
+
+        // Show online status if user is online (green dot on profile)
+        if (onlineStatus[otherUserId] == true) {
+            holder.onlineIndicator.visibility = View.VISIBLE
+        } else {
+            holder.onlineIndicator.visibility = View.GONE
+        }
 
         // Handle different states based on tab type
         if (isRequestTab) {
@@ -174,54 +194,6 @@ class InboxAdapter(
                 holder.tvLastMessage.setTypeface(null, android.graphics.Typeface.NORMAL)
                 holder.tvLastMessage.setTextColor(Color.parseColor("#666666"))
             }
-
-            // Show online status if user is online
-            if (onlineStatus[otherUserId] == true) {
-                holder.onlineIndicator.visibility = View.VISIBLE
-            } else {
-                holder.onlineIndicator.visibility = View.GONE
-            }
-        }
-
-        // ===== PROFILE IMAGE =====
-        if (!user.profileImageUrl.isNullOrEmpty()) {
-            val fullImageUrl = if (user.profileImageUrl.startsWith("http")) {
-                user.profileImageUrl
-            } else {
-                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}${user.profileImageUrl}"
-            }
-
-            // Show image view, hide text icon
-            holder.ivProfile.visibility = View.VISIBLE
-            holder.tvProfileIcon.visibility = View.GONE
-
-            // Clear any previous image
-            holder.ivProfile.setImageDrawable(null)
-
-            // Load image with CircleCrop
-            try {
-                val requestOptions = RequestOptions()
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .error(android.R.drawable.ic_menu_report_image)
-                    .transform(CircleCrop())
-
-                Glide.with(holder.itemView.context)
-                    .load(fullImageUrl)
-                    .apply(requestOptions)
-                    .into(holder.ivProfile)
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                // Fallback to text icon
-                holder.ivProfile.visibility = View.GONE
-                holder.tvProfileIcon.visibility = View.VISIBLE
-                showTextIcon(holder, user)
-            }
-        } else {
-            // No profile image - show text icon
-            holder.ivProfile.visibility = View.GONE
-            holder.tvProfileIcon.visibility = View.VISIBLE
-            showTextIcon(holder, user)
         }
 
         // Regular click listener - different behavior for requests vs messages
@@ -242,8 +214,51 @@ class InboxAdapter(
         }
     }
 
-    // Helper function to show text icon with first letter
-    private fun showTextIcon(holder: InboxViewHolder, user: ApiUser) {
+    // Helper function to setup circular profile image (WITHOUT RequestListener)
+    private fun setupCircularProfileImage(holder: InboxViewHolder, user: ApiUser) {
+        if (!user.profileImageUrl.isNullOrEmpty()) {
+            val fullImageUrl = if (user.profileImageUrl.startsWith("http")) {
+                user.profileImageUrl
+            } else {
+                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}${user.profileImageUrl}"
+            }
+
+            // Show image view, hide text icon
+            holder.ivProfile.visibility = View.VISIBLE
+            holder.tvProfileIcon.visibility = View.GONE
+
+            // Clear any previous image
+            holder.ivProfile.setImageDrawable(null)
+
+            // Load image with CircleCrop transform
+            try {
+                val requestOptions = RequestOptions()
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .error(android.R.drawable.ic_menu_report_image)
+                    .transform(CircleCrop()) // This makes it circular!
+
+                Glide.with(holder.itemView.context)
+                    .load(fullImageUrl)
+                    .apply(requestOptions)
+                    .into(holder.ivProfile)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Fallback to text icon if Glide fails
+                holder.ivProfile.visibility = View.GONE
+                holder.tvProfileIcon.visibility = View.VISIBLE
+                showCircularTextIcon(holder, user)
+            }
+        } else {
+            // No profile image - show circular text icon
+            holder.ivProfile.visibility = View.GONE
+            holder.tvProfileIcon.visibility = View.VISIBLE
+            showCircularTextIcon(holder, user)
+        }
+    }
+
+    // Helper function to show CIRCULAR text icon with first letter
+    private fun showCircularTextIcon(holder: InboxViewHolder, user: ApiUser) {
         val firstLetter = if (user.username.isNotEmpty()) {
             user.username.first().toString().uppercase()
         } else {
@@ -251,8 +266,18 @@ class InboxAdapter(
         }
         holder.tvProfileIcon.text = firstLetter
 
+        // Get color based on user ID
         val colorIndex = Math.abs(user.firebaseUid.hashCode()) % colors.size
-        holder.tvProfileIcon.setBackgroundColor(Color.parseColor(colors[colorIndex]))
+        val bgColor = Color.parseColor(colors[colorIndex])
+
+        // Set the circular drawable as background
+        val drawable = ContextCompat.getDrawable(holder.itemView.context, R.drawable.circle_solid_profile)
+        drawable?.mutate()
+        drawable?.setTint(bgColor)
+
+        // Apply the circular drawable to TextView
+        holder.tvProfileIcon.background = drawable
+        holder.tvProfileIcon.setTextColor(Color.WHITE)
     }
 
     override fun getItemCount() = conversations.size

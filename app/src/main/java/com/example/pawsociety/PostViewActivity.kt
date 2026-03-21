@@ -28,24 +28,18 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.pawsociety.api.ApiClient
 import com.example.pawsociety.api.ApiPost
-import com.example.pawsociety.data.repository.BlockRepository
-import com.example.pawsociety.data.repository.FavoriteRepository
-import com.example.pawsociety.data.repository.HidePostRepository
-import com.example.pawsociety.data.repository.PostRepository
-import com.example.pawsociety.data.repository.ReportRepository
+import com.example.pawsociety.data.repository.*
 import com.example.pawsociety.util.SessionManager
 import com.example.pawsociety.widget.LikeButton
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.max
+import android.net.Uri
 
 class PostViewActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var btnClose: ImageView
-    private lateinit var btnMore: ImageView
-    private lateinit var tvPostCounter: TextView
 
     private lateinit var sessionManager: SessionManager
     private lateinit var viewModel: HomeViewModel
@@ -86,8 +80,6 @@ class PostViewActivity : AppCompatActivity() {
 
         initializeViews()
         setupRecyclerView()
-        setupClickListeners()
-        updatePostCounter()
 
         recyclerView.post {
             recyclerView.scrollToPosition(currentPosition)
@@ -96,9 +88,6 @@ class PostViewActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         recyclerView = findViewById(R.id.main_post_pager)
-        btnClose = findViewById(R.id.btn_close)
-        btnMore = findViewById(R.id.btn_more)
-        tvPostCounter = findViewById(R.id.tv_post_counter)
     }
 
     private fun setupRecyclerView() {
@@ -107,26 +96,9 @@ class PostViewActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
     }
 
-    private fun updatePostCounter() {
-        if (allPosts.size > 1) {
-            tvPostCounter.visibility = View.VISIBLE
-            tvPostCounter.text = "${currentPosition + 1}/${allPosts.size}"
-        } else {
-            tvPostCounter.visibility = View.GONE
-        }
-    }
-
-    private fun setupClickListeners() {
-        btnClose.setOnClickListener {
-            finish()
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        }
-
-        btnMore.setOnClickListener {
-            if (allPosts.isNotEmpty() && currentPosition < allPosts.size) {
-                showPostOptions(allPosts[currentPosition])
-            }
-        }
+    override fun onBackPressed() {
+        super.onBackPressed()
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 
     private fun showPostOptions(post: ApiPost) {
@@ -396,7 +368,7 @@ class PostViewActivity : AppCompatActivity() {
         }
     }
 
-    // ========== FIXED POST ADAPTER WITH CORRECT VIEW IDs ==========
+    // ========== POST ADAPTER WITH NEW UI ELEMENTS ==========
     inner class PostAdapter(private val posts: List<ApiPost>) :
         RecyclerView.Adapter<PostAdapter.PostViewHolder>() {
 
@@ -415,7 +387,7 @@ class PostViewActivity : AppCompatActivity() {
             return position // Prevent any recycling
         }
 
-        // FIXED: ViewHolder with correct IDs from item_post_view_container.xml
+        // ViewHolder with all new UI elements
         inner class PostViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             // Image views
             val imageViewPager: ViewPager2 = itemView.findViewById(R.id.image_view_pager)
@@ -427,12 +399,12 @@ class PostViewActivity : AppCompatActivity() {
             val tvProfileIcon: TextView = itemView.findViewById(R.id.tv_profile_icon)
             val ivProfileImage: ImageView = itemView.findViewById(R.id.iv_profile_image)
             val tvUsername: TextView = itemView.findViewById(R.id.tv_username)
-            // REMOVED: tvUserRole - doesn't exist in XML
             val tvTime: TextView = itemView.findViewById(R.id.tv_time)
             val btnMoreDetails: ImageView = itemView.findViewById(R.id.btn_more_details)
 
-            // Pet info
+            // Pet info with badge
             val tvPetType: TextView = itemView.findViewById(R.id.tv_pet_type)
+            val tvCategoryBadge: TextView = itemView.findViewById(R.id.tv_category_badge)
             val tvPetName: TextView = itemView.findViewById(R.id.tv_pet_name)
 
             // Gender, Age, Weight
@@ -445,29 +417,34 @@ class PostViewActivity : AppCompatActivity() {
             val rewardContainer: LinearLayout = itemView.findViewById(R.id.reward_container)
             val tvReward: TextView = itemView.findViewById(R.id.tv_reward)
 
+            // Call button
+            val btnCallContainer: LinearLayout = itemView.findViewById(R.id.btn_call_container)
+            val ivCallIcon: ImageView = itemView.findViewById(R.id.iv_call_icon)
+            val tvContact: TextView = itemView.findViewById(R.id.tv_contact)
+
+            // Location
+            val tvLocation: TextView = itemView.findViewById(R.id.tv_location)
+
             // Description
             val tvDescription: TextView = itemView.findViewById(R.id.tv_description)
             val btnMoreDescription: TextView = itemView.findViewById(R.id.btn_more_description)
 
-            // Contact and location
-            val tvContact: TextView = itemView.findViewById(R.id.tv_contact)
-            val tvLocation: TextView = itemView.findViewById(R.id.tv_location)
+            // Status badge
             val tvStatusBadge: TextView = itemView.findViewById(R.id.tv_status_badge)
 
             // Action buttons
             val btnLike: LinearLayout = itemView.findViewById(R.id.btn_like)
             val btnLikeLottie: LikeButton = itemView.findViewById(R.id.btn_like_lottie_view)
-
             val tvLikes: TextView = itemView.findViewById(R.id.tv_likes)
-
             val btnMessage: LinearLayout = itemView.findViewById(R.id.btn_message)
             val btnMessageIcon: ImageView = itemView.findViewById(R.id.btn_message_icon)
-
             val btnShare: LinearLayout = itemView.findViewById(R.id.btn_share)
             val btnShareIcon: ImageView = itemView.findViewById(R.id.btn_share_icon)
-
             val btnFavorite: LinearLayout = itemView.findViewById(R.id.btn_favorite)
             val ivFavorite: ImageView = itemView.findViewById(R.id.iv_favorite)
+
+            // User role
+            val tvUserRole: TextView = itemView.findViewById(R.id.tv_user_role)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
@@ -488,11 +465,40 @@ class PostViewActivity : AppCompatActivity() {
             holder.tvLocation.text = post.location ?: "No location"
             holder.tvTime.text = getTimeAgo(post.createdAt)
             holder.tvPetName.text = post.petName
-            holder.tvPetType.text = post.petType
+            holder.tvPetType.text = post.petType ?: "Unknown breed"
             holder.tvDescription.text = post.description
-            holder.tvContact.text = "📞 ${post.contactInfo}"
             holder.tvLikes.text = post.likesCount.toString()
 
+            // Set user role with pet name
+            val petOwnerText = if (!post.petName.isNullOrEmpty()) {
+                "${post.petName}'s Owner"
+            } else {
+                "Pet Owner"
+            }
+            holder.tvUserRole.text = petOwnerText
+
+            // ===== SET CONTACT WITH CALL BUTTON =====
+            val rawContact = post.contactInfo ?: ""
+            val phoneDigits = rawContact.replace("[^0-9]".toRegex(), "")
+
+            if (phoneDigits.isNotEmpty()) {
+                holder.tvContact.text = phoneDigits
+                holder.btnCallContainer.visibility = View.VISIBLE
+                holder.btnCallContainer.setOnClickListener {
+                    try {
+                        val intent = Intent(Intent.ACTION_DIAL).apply {
+                            data = Uri.parse("tel:$phoneDigits")
+                        }
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(this@PostViewActivity, "Cannot make call", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                holder.btnCallContainer.visibility = View.GONE
+            }
+
+            // ===== SET GENDER =====
             when (post.gender?.lowercase(Locale.getDefault())) {
                 "male" -> {
                     holder.tvGender.text = "Male"
@@ -508,6 +514,219 @@ class PostViewActivity : AppCompatActivity() {
                     holder.tvGender.text = "Unknown"
                     holder.tvGender.setTextColor(Color.parseColor("#666666"))
                     holder.tvGenderIcon.visibility = View.GONE
+                }
+            }
+
+            // ===== SET AGE AND WEIGHT =====
+            if (post.age.isNullOrEmpty()) {
+                holder.tvAge.visibility = View.GONE
+            } else {
+                holder.tvAge.visibility = View.VISIBLE
+                holder.tvAge.text = post.age
+            }
+
+            if (post.weight.isNullOrEmpty()) {
+                holder.tvWeight.visibility = View.GONE
+            } else {
+                holder.tvWeight.visibility = View.VISIBLE
+                holder.tvWeight.text = post.weight
+            }
+
+            // ===== SET CATEGORY BADGE =====
+            try {
+                var category = when (post.category) {
+                    "Dogs" -> "DOG"
+                    "Cats" -> "CAT"
+                    "Fish" -> "FISH"
+                    "Birds" -> "BIRD"
+                    else -> null
+                }
+
+                if (category == null) {
+                    val petTypeLower = post.petType.lowercase()
+                    category = when {
+                        // DOG detection
+                        petTypeLower.contains("dog") ||
+                                petTypeLower.contains("aspin") ||
+                                petTypeLower.contains("shih") ||
+                                petTypeLower.contains("labrador") ||
+                                petTypeLower.contains("golden") ||
+                                petTypeLower.contains("german") ||
+                                petTypeLower.contains("poodle") ||
+                                petTypeLower.contains("chow") ||
+                                petTypeLower.contains("pug") ||
+                                petTypeLower.contains("beagle") ||
+                                petTypeLower.contains("dachshund") ||
+                                petTypeLower.contains("rottweiler") ||
+                                petTypeLower.contains("pomeranian") ||
+                                petTypeLower.contains("husky") ||
+                                petTypeLower.contains("corgi") ||
+                                petTypeLower.contains("maltese") ||
+                                petTypeLower.contains("chihuahua") ||
+                                petTypeLower.contains("pitbull") ||
+                                petTypeLower.contains("bulldog") ||
+                                petTypeLower.contains("boxer") ||
+                                petTypeLower.contains("shiba") ||
+                                petTypeLower.contains("akita") ||
+                                petTypeLower.contains("samoyed") ||
+                                petTypeLower.contains("cocker") ||
+                                petTypeLower.contains("doberman") ||
+                                petTypeLower.contains("great dane") ||
+                                petTypeLower.contains("saint bernard") ||
+                                petTypeLower.contains("siberian") ||
+                                petTypeLower.contains("jack russell") ||
+                                petTypeLower.contains("border collie") ||
+                                petTypeLower.contains("australian shepherd") ||
+                                petTypeLower.contains("bichon") ||
+                                petTypeLower.contains("unknown dog") ||
+                                petTypeLower.contains("other dog") -> "DOG"
+
+                        // CAT detection
+                        petTypeLower.contains("cat") ||
+                                petTypeLower.contains("puspin") ||
+                                petTypeLower.contains("persian") ||
+                                petTypeLower.contains("siamese") ||
+                                petTypeLower.contains("maine coon") ||
+                                petTypeLower.contains("bengal") ||
+                                petTypeLower.contains("sphynx") ||
+                                petTypeLower.contains("ragdoll") ||
+                                petTypeLower.contains("british shorthair") ||
+                                petTypeLower.contains("scottish fold") ||
+                                petTypeLower.contains("abyssinian") ||
+                                petTypeLower.contains("burmese") ||
+                                petTypeLower.contains("russian blue") ||
+                                petTypeLower.contains("norwegian forest") ||
+                                petTypeLower.contains("birman") ||
+                                petTypeLower.contains("oriental shorthair") ||
+                                petTypeLower.contains("devon rex") ||
+                                petTypeLower.contains("cornish rex") ||
+                                petTypeLower.contains("himalayan") ||
+                                petTypeLower.contains("american shorthair") ||
+                                petTypeLower.contains("exotic shorthair") ||
+                                petTypeLower.contains("unknown cat") ||
+                                petTypeLower.contains("other cat") -> "CAT"
+
+                        // FISH detection
+                        petTypeLower.contains("fish") ||
+                                petTypeLower.contains("goldfish") ||
+                                petTypeLower.contains("betta") ||
+                                petTypeLower.contains("guppy") ||
+                                petTypeLower.contains("molly") ||
+                                petTypeLower.contains("platy") ||
+                                petTypeLower.contains("swordtail") ||
+                                petTypeLower.contains("angelfish") ||
+                                petTypeLower.contains("discus") ||
+                                petTypeLower.contains("oscar") ||
+                                petTypeLower.contains("cichlid") ||
+                                petTypeLower.contains("koi") ||
+                                petTypeLower.contains("tetra") ||
+                                petTypeLower.contains("barb") ||
+                                petTypeLower.contains("corydoras") ||
+                                petTypeLower.contains("plecostomus") ||
+                                petTypeLower.contains("danio") ||
+                                petTypeLower.contains("rainbowfish") ||
+                                petTypeLower.contains("killifish") ||
+                                petTypeLower.contains("arowana") ||
+                                petTypeLower.contains("flowerhorn") ||
+                                petTypeLower.contains("parrot fish") ||
+                                petTypeLower.contains("gourami") ||
+                                petTypeLower.contains("unknown fish") ||
+                                petTypeLower.contains("other fish") -> "FISH"
+
+                        // BIRD detection
+                        petTypeLower.contains("bird") ||
+                                petTypeLower.contains("parrot") ||
+                                petTypeLower.contains("macaw") ||
+                                petTypeLower.contains("lovebird") ||
+                                petTypeLower.contains("parakeet") ||
+                                petTypeLower.contains("budgie") ||
+                                petTypeLower.contains("cockatiel") ||
+                                petTypeLower.contains("african grey") ||
+                                petTypeLower.contains("canary") ||
+                                petTypeLower.contains("finch") ||
+                                petTypeLower.contains("conure") ||
+                                petTypeLower.contains("amazon") ||
+                                petTypeLower.contains("eclectus") ||
+                                petTypeLower.contains("pigeon") ||
+                                petTypeLower.contains("dove") ||
+                                petTypeLower.contains("quaker") ||
+                                petTypeLower.contains("senegal") ||
+                                petTypeLower.contains("cockatoo") ||
+                                petTypeLower.contains("mynah") ||
+                                petTypeLower.contains("java sparrow") ||
+                                petTypeLower.contains("zebra finch") ||
+                                petTypeLower.contains("gouldian finch") ||
+                                petTypeLower.contains("ringneck") ||
+                                petTypeLower.contains("unknown bird") ||
+                                petTypeLower.contains("other bird") -> "BIRD"
+
+                        else -> null
+                    }
+                }
+
+                if (category != null) {
+                    holder.tvCategoryBadge.text = category
+                    holder.tvCategoryBadge.visibility = View.VISIBLE
+
+                    when (category) {
+                        "DOG" -> {
+                            holder.tvCategoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            holder.tvCategoryBadge.background.setTint(Color.parseColor("#B88B4A"))
+                        }
+                        "CAT" -> {
+                            holder.tvCategoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            holder.tvCategoryBadge.background.setTint(Color.parseColor("#4CAF50"))
+                        }
+                        "FISH" -> {
+                            holder.tvCategoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            holder.tvCategoryBadge.background.setTint(Color.parseColor("#2196F3"))
+                        }
+                        "BIRD" -> {
+                            holder.tvCategoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                            holder.tvCategoryBadge.background.setTint(Color.parseColor("#FF9800"))
+                        }
+                    }
+                    holder.tvCategoryBadge.setTextColor(Color.WHITE)
+                    holder.tvCategoryBadge.setPadding(12.dp, 4.dp, 12.dp, 4.dp)
+                } else {
+                    holder.tvCategoryBadge.visibility = View.GONE
+                }
+            } catch (e: Exception) {
+                Log.e("PostViewActivity", "Error setting badge", e)
+            }
+
+            // ===== SET STATUS BADGE AND REWARD =====
+            when (post.status) {
+                "Lost" -> {
+                    holder.tvStatusBadge.apply {
+                        text = "LOST"
+                        setBackgroundResource(R.drawable.status_badge_lost)
+                        visibility = View.VISIBLE
+                    }
+
+                    if (!post.reward.isNullOrEmpty()) {
+                        val formattedReward = formatReward(post.reward)
+                        holder.tvReward.text = "₱$formattedReward"
+                        holder.rewardContainer.visibility = View.VISIBLE
+                    } else {
+                        holder.rewardContainer.visibility = View.GONE
+                    }
+                }
+                "Found" -> {
+                    holder.tvStatusBadge.apply {
+                        text = "FOUND"
+                        setBackgroundResource(R.drawable.status_badge_found)
+                        visibility = View.VISIBLE
+                    }
+                    holder.rewardContainer.visibility = View.GONE
+                }
+                "Adoption" -> {
+                    holder.tvStatusBadge.apply {
+                        text = "ADOPTION"
+                        setBackgroundResource(R.drawable.status_badge_adoption)
+                        visibility = View.VISIBLE
+                    }
+                    holder.rewardContainer.visibility = View.GONE
                 }
             }
 
@@ -545,56 +764,6 @@ class PostViewActivity : AppCompatActivity() {
             } else {
                 holder.tvProfileIcon.visibility = View.VISIBLE
                 holder.ivProfileImage.visibility = View.GONE
-            }
-
-            // Set age and weight
-            if (post.age.isNullOrEmpty()) {
-                holder.tvAge.visibility = View.GONE
-            } else {
-                holder.tvAge.visibility = View.VISIBLE
-                holder.tvAge.text = post.age
-            }
-
-            if (post.weight.isNullOrEmpty()) {
-                holder.tvWeight.visibility = View.GONE
-            } else {
-                holder.tvWeight.visibility = View.VISIBLE
-                holder.tvWeight.text = post.weight
-            }
-
-            // Set status badge
-            when (post.status) {
-                "Lost" -> {
-                    holder.tvStatusBadge.apply {
-                        text = "LOST"
-                        setBackgroundResource(R.drawable.status_badge_lost)
-                        visibility = View.VISIBLE
-                    }
-
-                    if (!post.reward.isNullOrEmpty()) {
-                        val formattedReward = formatReward(post.reward)
-                        holder.tvReward.text = "₱$formattedReward"
-                        holder.rewardContainer.visibility = View.VISIBLE
-                    } else {
-                        holder.rewardContainer.visibility = View.GONE
-                    }
-                }
-                "Found" -> {
-                    holder.tvStatusBadge.apply {
-                        text = "FOUND"
-                        setBackgroundResource(R.drawable.status_badge_found)
-                        visibility = View.VISIBLE
-                    }
-                    holder.rewardContainer.visibility = View.GONE
-                }
-                "Adoption" -> {
-                    holder.tvStatusBadge.apply {
-                        text = "ADOPTION"
-                        setBackgroundResource(R.drawable.status_badge_adoption)
-                        visibility = View.VISIBLE
-                    }
-                    holder.rewardContainer.visibility = View.GONE
-                }
             }
 
             // Show/hide message button
@@ -742,7 +911,7 @@ class PostViewActivity : AppCompatActivity() {
             holder.btnLike.isEnabled = false
 
             val wasAlreadyLiked = holder.btnLikeLottie.isLiked
-            holder.btnLikeLottie.setLiked(!wasAlreadyLiked, animate = true)  // This plays animation
+            holder.btnLikeLottie.setLiked(!wasAlreadyLiked, animate = true)
 
             val optimisticCount = if (!wasAlreadyLiked) {
                 post.likesCount + 1

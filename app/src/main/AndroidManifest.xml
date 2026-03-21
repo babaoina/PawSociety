@@ -60,6 +60,14 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".MaintenanceActivity" />
+
+        <activity
+            android:name=".RegisterWizardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Search Activity -->
         <activity
             android:name=".SearchUsersActivity"

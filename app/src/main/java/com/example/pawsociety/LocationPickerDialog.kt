@@ -186,12 +186,17 @@ class LocationPickerDialog(
             setupCitySpinner(spinnerCity, spinnerBarangay)
             setupBarangaySpinner(spinnerBarangay)
 
+            // 🔥 ADDED: Create dialog WITHOUT setTitle
             val dialog = AlertDialog.Builder(context)
                 .setView(dialogView)
                 .setCancelable(false)
                 .create()
 
+            // 🔥 ADDED: Remove grey background frame
             dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+            // 🔥 ADDED: Remove default title bar
+            dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
 
             btnConfirm.setOnClickListener {
                 if (validateSelection()) {

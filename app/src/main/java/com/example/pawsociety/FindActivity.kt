@@ -33,6 +33,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.pawsociety.util.InboxBadgeManager
+
+// 🔥 ADD THIS IMPORT - To access inbox badge
+import android.widget.TextView
 
 class FindActivity : BaseNavigationActivity() {
 
@@ -51,7 +55,9 @@ class FindActivity : BaseNavigationActivity() {
     private lateinit var recentSearchesLayout: LinearLayout
     private lateinit var recentSearchesContainer: LinearLayout
 
-    private lateinit var sessionManager: SessionManager
+    // 🔥 REMOVE THIS LINE - SessionManager is already in BaseNavigationActivity
+    // private lateinit var sessionManager: SessionManager
+
     private val postRepository = PostRepository()
     private val searchRepository = SearchRepository()
 
@@ -60,6 +66,8 @@ class FindActivity : BaseNavigationActivity() {
     private var filteredPosts = listOf<ApiPost>()
     private var searchQuery = ""
     private var isSearching = false
+
+
 
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
@@ -82,7 +90,15 @@ class FindActivity : BaseNavigationActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_find)
 
-        sessionManager = SessionManager(this)
+        try {
+            inboxBadge = findViewById(R.id.inbox_badge)
+            InboxBadgeManager.registerBadge(inboxBadge)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 🔥 REMOVE THIS LINE - SessionManager is already initialized in BaseNavigationActivity
+        // sessionManager = SessionManager(this)
 
         // Check if user is logged in
         val currentUser = sessionManager.getCurrentUser()

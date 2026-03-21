@@ -4,33 +4,11 @@ const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const ChatClear = require('../models/ChatClear');
+const ChatDelete = require('../models/ChatDelete');
 const { v4: uuidv4 } = require('uuid');
 
 // 👇 ADD THIS IMPORT
 const { sendPushNotification } = require('./notifications');
-
-// 👇 ADD THIS - Create ChatDelete model if it doesn't exist
-const mongoose = require('mongoose');
-const chatDeleteSchema = new mongoose.Schema({
-  chatId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  userId: {
-    type: String, // The user who deleted the conversation
-    required: true,
-    index: true
-  },
-  deletedAt: {
-    type: Date,
-    default: Date.now
-  }
-}, {
-  timestamps: true
-});
-chatDeleteSchema.index({ chatId: 1, userId: 1 }, { unique: true });
-const ChatDelete = mongoose.models.ChatDelete || mongoose.model('ChatDelete', chatDeleteSchema);
 
 /**
  * GET /api/chat/conversations/:firebaseUid
@@ -48,11 +26,11 @@ router.get('/conversations/:firebaseUid', async (req, res) => {
     })
     .sort({ lastMessageAt: -1 });
 
-    // Get deleted conversations
+    // Get deleted conversations - FILTER THEM OUT (user's choice respected)
     const deletedChats = await ChatDelete.find({ userId });
     const deletedChatIds = deletedChats.map(d => d.chatId);
 
-    // Filter out deleted chats
+    // SIMPLE FILTER - no auto-restore, user's delete choice is respected
     const activeChats = chats.filter(chat => !deletedChatIds.includes(chat.chatId));
 
     // Separate messages and requests
@@ -126,7 +104,7 @@ router.get('/conversations/:firebaseUid', async (req, res) => {
         lastMessageAt: chat.lastMessageAt,
         createdAt: chat.createdAt,
         unreadCount: unreadCount,
-        pendingCount: pendingCount,  // 👈 NUMBER OF PENDING MESSAGES
+        pendingCount: pendingCount,
         clearedAt: chatClear ? chatClear.clearedAt : null
       };
 
@@ -308,7 +286,8 @@ router.get('/:chatId/messages', async (req, res) => {
 
 /**
  * POST /api/chat/send
- * Send a message (goes to requests if not mutual followers)
+ * Send a message (goes to requests if not mutual followers OR no existing accepted chat)
+ * UPDATED WITH SOCKET EMIT INCLUDING USERNAME
  */
 router.post('/send', async (req, res) => {
   try {
@@ -322,20 +301,6 @@ router.post('/send', async (req, res) => {
     }
 
     console.log(`📨 Send message from ${senderUid} to ${receiverUid}`);
-
-    // 👇 CHECK IF THEY ARE MUTUAL FOLLOWERS
-    const Follow = require('../models/Follow');
-    
-    const areMutual = await Follow.findOne({
-      followerUid: receiverUid,
-      followingUid: senderUid
-    });
-
-    // Determine message status
-    let messageStatus = 'pending'; // Default to request
-    if (areMutual) {
-      messageStatus = 'delivered'; // Mutual followers go straight to inbox
-    }
 
     // Find or create chat
     let chat = await Chat.findOne({
@@ -355,6 +320,52 @@ router.post('/send', async (req, res) => {
       await ChatDelete.deleteMany({ chatId: chat.chatId });
     }
 
+    // 👇 CHECK IF THERE'S ALREADY AN ACCEPTED CONVERSATION
+    // Look for any non-pending messages in this chat
+    const existingAcceptedMessage = await Message.findOne({
+      chatId: chat.chatId,
+      status: { $ne: 'pending' } // Any message that's not pending
+    });
+
+    // Determine message status
+    let messageStatus = 'pending'; // Default to request
+
+    if (existingAcceptedMessage) {
+      // If there's already an accepted message in this chat, keep it in messages
+      messageStatus = 'delivered';
+      console.log(`📨 Existing accepted chat found, sending as delivered`);
+    } else {
+      // No accepted messages yet, check follow status
+      const Follow = require('../models/Follow');
+
+      // Check if receiver follows sender (for mutual follow)
+      const receiverFollowsSender = await Follow.findOne({
+        followerUid: receiverUid,
+        followingUid: senderUid
+      });
+
+      // Check if sender follows receiver
+      const senderFollowsReceiver = await Follow.findOne({
+        followerUid: senderUid,
+        followingUid: receiverUid
+      });
+
+      console.log('🔍 FOLLOW CHECK RESULTS:');
+      console.log(`   receiverFollowsSender: ${receiverFollowsSender ? 'YES' : 'NO'}`);
+      console.log(`   senderFollowsReceiver: ${senderFollowsReceiver ? 'YES' : 'NO'}`);
+
+      // If they follow each other (mutual), go to inbox
+      if (receiverFollowsSender && senderFollowsReceiver) {
+        messageStatus = 'delivered';
+      } 
+      // If sender is already following receiver, still go to inbox (they initiated)
+      else if (senderFollowsReceiver) {
+        messageStatus = 'delivered';
+      }
+    }
+    
+    console.log(`   Final messageStatus: ${messageStatus}`);
+
     // Create message with appropriate status
     const message = new Message({
       messageId: `msg_${Date.now()}_${uuidv4().substring(0, 8)}`,
@@ -368,6 +379,7 @@ router.post('/send', async (req, res) => {
     });
 
     await message.save();
+    console.log(`✅ Message saved with status: ${message.status}`);
 
     // Update chat last message
     chat.lastMessage = text || (imageUrl ? '📷 Image' : '');
@@ -378,6 +390,7 @@ router.post('/send', async (req, res) => {
     const sender = await User.findOne({ firebaseUid: senderUid })
       .select('username profileImageUrl');
 
+    // 🔥 FIXED: Include username in message data
     const messageData = {
       messageId: message.messageId,
       chatId: message.chatId,
@@ -386,14 +399,17 @@ router.post('/send', async (req, res) => {
       text: message.text,
       imageUrl: message.imageUrl,
       isRead: false,
-      status: message.status,  // 👈 SEND STATUS
+      status: message.status,
       createdAt: message.createdAt,
-      senderName: sender ? sender.username : 'Unknown',
-      senderImage: sender ? sender.profileImageUrl : ''
+      fromUserName: sender ? sender.username : 'Someone',
+      fromUserId: senderUid
     };
 
     // Emit socket events
     const io = req.app.get('io');
+    
+    // 🔥 IMPORTANT: Only emit to user-specific rooms, NOT globally
+    // This prevents messages from appearing in Home feed
     
     // Always notify receiver
     io.to(receiverUid).emit('new-message', messageData);
@@ -402,6 +418,7 @@ router.post('/send', async (req, res) => {
     if (messageStatus === 'pending') {
       io.to(receiverUid).emit('new-message-request', {
         ...messageData,
+        fromUserName: sender ? sender.username : 'Someone',
         message: 'Message request from ' + (sender ? sender.username : 'Someone')
       });
     }
@@ -869,11 +886,14 @@ router.delete('/conversation/:chatId', async (req, res) => {
     // Save that this user deleted the conversation
     await ChatDelete.findOneAndUpdate(
       { chatId, userId },
-      { deletedAt: new Date() },
+      { 
+        deletedAt: new Date(),
+        deletedByUser: true 
+      },
       { upsert: true, new: true }
     );
 
-    console.log(`✅ Conversation removed from user ${userId}'s inbox`);
+    console.log(`✅ Conversation marked as deleted for user ${userId}`);
 
     res.json({
       success: true,
@@ -881,6 +901,49 @@ router.delete('/conversation/:chatId', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Delete conversation error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/chat/conversation/:chatId/restore
+ * Restore a deleted conversation
+ */
+router.post('/conversation/:chatId/restore', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const { chatId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId is required'
+      });
+    }
+
+    console.log(`🔄 Restoring conversation ${chatId} for user ${userId}`);
+
+    // Remove the delete marker
+    const result = await ChatDelete.findOneAndDelete({ chatId, userId });
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: 'Conversation not found in deleted list'
+      });
+    }
+
+    console.log(`✅ Conversation restored for user ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Conversation restored successfully'
+    });
+  } catch (error) {
+    console.error('❌ Restore conversation error:', error);
     res.status(500).json({
       success: false,
       message: error.message

@@ -1,5 +1,6 @@
 package com.example.pawsociety
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
@@ -15,6 +16,7 @@ import com.example.pawsociety.api.ApiPost
 import com.example.pawsociety.api.ApiUser
 import com.example.pawsociety.data.repository.FollowRepository
 import com.example.pawsociety.data.repository.PostRepository
+import com.example.pawsociety.data.repository.ReportRepository  // 🔥 ADDED
 import com.example.pawsociety.data.repository.UserRepository
 import com.example.pawsociety.util.SessionManager
 import kotlinx.coroutines.launch
@@ -24,6 +26,7 @@ class UserProfileActivity : AppCompatActivity() {
 
     private lateinit var tvUsername: TextView
     private lateinit var btnBack: ImageView
+    private lateinit var btnMenu: ImageView  // 🔥 ADDED
     private lateinit var profileImage: ImageView
     private lateinit var profileInitial: TextView
     private lateinit var profileBackground: View
@@ -48,6 +51,7 @@ class UserProfileActivity : AppCompatActivity() {
     private val userRepository = UserRepository()
     private val postRepository = PostRepository()
     private lateinit var followRepository: FollowRepository
+    private val reportRepository = ReportRepository()  // 🔥 ADDED
 
     private var targetUser: ApiUser? = null
     private var currentUser: ApiUser? = null
@@ -88,6 +92,7 @@ class UserProfileActivity : AppCompatActivity() {
     private fun initializeViews() {
         tvUsername = findViewById(R.id.tv_username)
         btnBack = findViewById(R.id.btn_back)
+        btnMenu = findViewById(R.id.btn_menu)  // 🔥 ADDED
         profileImage = findViewById(R.id.profile_image)
         profileInitial = findViewById(R.id.profile_initial)
         profileBackground = findViewById(R.id.profile_circle_background)
@@ -110,11 +115,19 @@ class UserProfileActivity : AppCompatActivity() {
 
         tvUsername.text = targetUserName
         emptyState.visibility = View.GONE
+
+        // 🔥 ADDED: Hide menu by default, will show if not current user
+        btnMenu.visibility = View.GONE
     }
 
     private fun setupClickListeners() {
         btnBack.setOnClickListener {
             finish()
+        }
+
+        // 🔥 ADDED: Menu button click listener
+        btnMenu.setOnClickListener {
+            showUserOptions()
         }
 
         btnFollow.setOnClickListener {
@@ -164,6 +177,75 @@ class UserProfileActivity : AppCompatActivity() {
             intent.putExtra("userName", targetUserName)
             intent.putExtra("mode", "following")
             startActivity(intent)
+        }
+    }
+
+    // 🔥 ADDED: Show user options menu
+    private fun showUserOptions() {
+        val options = arrayOf("Report User", "Cancel")
+
+        AlertDialog.Builder(this)
+            .setTitle("More Options")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showReportDialog()
+                }
+            }
+            .show()
+    }
+
+    // 🔥 ADDED: Show report reasons dialog
+    private fun showReportDialog() {
+        val reportReasons = arrayOf(
+            "Harassment",
+            "Fake Account",
+            "Inappropriate Profile",
+            "Spam",
+            "Impersonation",
+            "Other"
+        )
+
+        AlertDialog.Builder(this)
+            .setTitle("Report ${targetUserName}")
+            .setItems(reportReasons) { _, which ->
+                val reason = reportReasons[which].lowercase(Locale.getDefault()).replace(" ", "_")
+                submitUserReport(reason)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // 🔥 ADDED: Submit report to admin backend
+    private fun submitUserReport(reason: String) {
+        val currentUser = currentUser ?: run {
+            Toast.makeText(this, "Please login to report", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            try {
+                Toast.makeText(this@UserProfileActivity, "Submitting report...", Toast.LENGTH_SHORT).show()
+
+                val result = reportRepository.createReport(
+                    reporterUid = currentUser.firebaseUid,
+                    reason = reason,
+                    reportedUid = targetUserId,
+                    description = "Reported from user profile"
+                )
+
+                if (result.isSuccess) {
+                    Toast.makeText(
+                        this@UserProfileActivity,
+                        "✅ User reported. Admin will review.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Failed to submit report"
+                    Toast.makeText(this@UserProfileActivity, "❌ $error", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@UserProfileActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -248,6 +330,13 @@ class UserProfileActivity : AppCompatActivity() {
                 tvLocationBio.text = user.location
             } else {
                 tvLocationBio.visibility = View.GONE
+            }
+
+            // 🔥 ADDED: Show menu button only for OTHER users (not current user)
+            if (targetUserId != currentUser?.firebaseUid) {
+                btnMenu.visibility = View.VISIBLE
+            } else {
+                btnMenu.visibility = View.GONE
             }
         }
     }
@@ -451,6 +540,94 @@ class UserProfileActivity : AppCompatActivity() {
                     val postView = layoutInflater.inflate(R.layout.item_profile_post, squareContainer, false)
                     val postContent = postView.findViewById<TextView>(R.id.post_content)
                     val postImage = postView.findViewById<ImageView>(R.id.post_image)
+
+                    // 🔥 Category badge
+                    val categoryBadge = postView.findViewById<TextView>(R.id.category_badge)
+
+                    // 🔥 Status badge
+                    val statusBadge = postView.findViewById<TextView>(R.id.status_badge)
+
+                    // ===== DETECT CATEGORY FOR BADGE =====
+                    var category = when (post.category) {
+                        "Dogs" -> "DOG"
+                        "Cats" -> "CAT"
+                        "Fish" -> "FISH"
+                        "Birds" -> "BIRD"
+                        else -> null
+                    }
+
+                    if (category == null && post.petType != null) {
+                        val petTypeLower = post.petType.lowercase(Locale.getDefault())
+                        category = when {
+                            petTypeLower.contains("dog") ||
+                                    petTypeLower.contains("aspin") -> "DOG"
+
+                            petTypeLower.contains("cat") ||
+                                    petTypeLower.contains("puspin") -> "CAT"
+
+                            petTypeLower.contains("fish") ||
+                                    petTypeLower.contains("goldfish") -> "FISH"
+
+                            petTypeLower.contains("bird") ||
+                                    petTypeLower.contains("parrot") -> "BIRD"
+
+                            else -> null
+                        }
+                    }
+
+                    // Set category badge if detected
+                    if (category != null && categoryBadge != null) {
+                        categoryBadge.text = category
+                        categoryBadge.visibility = View.VISIBLE
+
+                        when (category) {
+                            "DOG" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#B88B4A"))
+                            }
+                            "CAT" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#FF9800"))
+                            }
+                            "FISH" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#00BCD4"))
+                            }
+                            "BIRD" -> {
+                                categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
+                                categoryBadge.background.setTint(Color.parseColor("#2196F3"))
+                            }
+                        }
+                        categoryBadge.setTextColor(Color.WHITE)
+                    }
+
+                    // ===== SET STATUS BADGE =====
+                    if (statusBadge != null) {
+                        when (post.status.lowercase(Locale.getDefault())) {
+                            "lost" -> {
+                                statusBadge.text = "LOST"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#F44336"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            "found" -> {
+                                statusBadge.text = "FOUND"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#4CAF50"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            "adoption" -> {
+                                statusBadge.text = "ADOPTION"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#2196F3"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            else -> {
+                                statusBadge.visibility = View.GONE
+                            }
+                        }
+                        statusBadge.setTextColor(Color.WHITE)
+                    }
 
                     if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
                         val imageUrl = post.imageUrls[0]

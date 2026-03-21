@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawSociety - Dashboard 🐾</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #fef7e8;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #7A4F2B;
+        }
+
+        .logo span {
+            font-weight: 400;
+            color: #B88B4A;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .admin-name .name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 13px;
+        }
+
+        .admin-name .role {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: #7A4F2B;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            width: 160px;
+            display: none;
+            z-index: 1001;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .dropdown-item:hover {
+            background: #fef3e8;
+            color: #7A4F2B;
+        }
+
+        /* Container */
+        .container {
+            display: flex;
+            padding-top: 60px;
+            min-height: 100vh;
+            justify-content: center;
+        }
+
+        /* Sidebar - Dark Brown */
+        .sidebar {
+            width: 240px;
+            background: #5a3a1f;
+            position: fixed;
+            left: 0;
+            top: 60px;
+            height: calc(100vh - 60px);
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 10px 20px;
+            margin: 4px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e8d9cc;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .menu-item:hover {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-item.active {
+            background: #7A4F2B;
+            color: white;
+        }
+
+        .menu-icon {
+            font-size: 16px;
+            width: 22px;
+        }
+
+        /* Main Content - Centered with max-width */
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content-wrapper {
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #5a3a1f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-header h2 i {
+            color: #7A4F2B;
+            font-size: 22px;
+        }
+
+        .date-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            color: #7A4F2B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* Stats Grid - Compact */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 18px 20px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(90, 58, 31, 0.08);
+        }
+
+        .stat-info h3 {
+            color: #7c6b5a;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .stat-info .number {
+            color: #5a3a1f;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+            background: #fef3e8;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #7A4F2B;
+        }
+
+        /* Status Grid - Compact */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .status-card {
+            background: white;
+            padding: 16px 18px;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .status-card.lost::before { background: #f97316; }
+        .status-card.found::before { background: #22c55e; }
+        .status-card.adoption::before { background: #3b82f6; }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .status-header h3 {
+            color: #7c6b5a;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .status-icon.lost { background: #fff7ed; color: #f97316; }
+        .status-icon.found { background: #f0fdf4; color: #22c55e; }
+        .status-icon.adoption { background: #eff6ff; color: #3b82f6; }
+
+        .status-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .status-value.lost { color: #f97316; }
+        .status-value.found { color: #22c55e; }
+        .status-value.adoption { color: #3b82f6; }
+
+        .status-footer {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-change {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .status-change.lost { background: #fff7ed; color: #f97316; }
+        .status-change.found { background: #f0fdf4; color: #22c55e; }
+        .status-change.adoption { background: #eff6ff; color: #3b82f6; }
+
+        .status-period {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        /* Growth Section - Compact */
+        .growth-section {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .growth-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .growth-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5a3a1f;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .year-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #fef7e8;
+            padding: 5px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #7A4F2B;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+
+        .growth-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid #f0e4d4;
+        }
+
+        .growth-stat-item {
+            text-align: center;
+        }
+
+        .growth-stat-label {
+            color: #7c6b5a;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        .growth-stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #5a3a1f;
+        }
+
+        .growth-stat-change {
+            font-size: 10px;
+            color: #22c55e;
+            margin-top: 2px;
+        }
+
+        /* Recent Activity - Compact */
+        .recent-activity {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .recent-activity h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5a3a1f;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0e4d4;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 34px;
+            height: 34px;
+            background: #fef3e8;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7A4F2B;
+            font-size: 14px;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        .activity-details .text {
+            color: #1e293b;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .activity-details .time {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .activity-status {
+            background: #f0fdf4;
+            color: #22c55e;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            padding: 16px;
+            color: #9c856c;
+            font-size: 11px;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        @media (max-width: 1024px) {
+            .stats-grid, .status-grid, .growth-stats {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                width: 200px;
+            }
+            .main-content {
+                margin-left: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                height: auto;
+                display: flex;
+                overflow-x: auto;
+                padding: 10px;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .container {
+                flex-direction: column;
+            }
+            .content-wrapper {
+                padding: 0 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>PawSociety <span>🐾 Admin</span></h1>
+        </div>
+        <div class="header-right">
+            <div class="admin-profile" id="adminProfile">
+                <div class="admin-name">
+                    <div class="name" id="adminName">Admin User</div>
+                    <div class="role" id="adminRole">Super Admin</div>
+                </div>
+                <div class="avatar" id="avatarBtn">🐶</div>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="dropdown-item" onclick="window.location.href='settings.html'">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                    <div class="dropdown-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="menu-item active" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-chart-line menu-icon"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='posts.html'">
+                <i class="fas fa-paw menu-icon"></i>
+                <span>Posts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='users.html'">
+                <i class="fas fa-user menu-icon"></i>
+                <span>Users</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='accounts.html'">
+                <i class="fas fa-users menu-icon"></i>
+                <span>Accounts</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='reports.html'">
+                <i class="fas fa-chart-bar menu-icon"></i>
+                <span>Reports</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='settings.html'">
+                <i class="fas fa-cog menu-icon"></i>
+                <span>Settings</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="content-wrapper">
+                <div class="page-header">
+                    <h2>
+                        <i class="fas fa-chart-line"></i>
+                        Dashboard
+                    </h2>
+                    <div class="date-badge">
+                        <i class="fas fa-calendar"></i>
+                        <span id="currentMonth">March 2026</span>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>Total Users</h3>
+                            <div class="number" id="total-users">0</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info">
+                            <h3>Total Posts</h3>
+                            <div class="number" id="total-posts">0</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-paw"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Grid -->
+                <div class="status-grid">
+                    <div class="status-card lost">
+                        <div class="status-header">
+                            <h3>Lost Pets</h3>
+                            <div class="status-icon lost">🔍</div>
+                        </div>
+                        <div class="status-value lost" id="lost-pets">0</div>
+                        <div class="status-footer">
+                            <div class="status-change lost" id="lost-change">↑ 1.56%</div>
+                            <div class="status-period">Weekly</div>
+                        </div>
+                    </div>
+                    <div class="status-card found">
+                        <div class="status-header">
+                            <h3>Found Pets</h3>
+                            <div class="status-icon found">✅</div>
+                        </div>
+                        <div class="status-value found" id="found-pets">0</div>
+                        <div class="status-footer">
+                            <div class="status-change found" id="found-change">↑ 1.56%</div>
+                            <div class="status-period">Monthly</div>
+                        </div>
+                    </div>
+                    <div class="status-card adoption">
+                        <div class="status-header">
+                            <h3>For Adoption</h3>
+                            <div class="status-icon adoption">🏠</div>
+                        </div>
+                        <div class="status-value adoption" id="adoption-pets">0</div>
+                        <div class="status-footer">
+                            <div class="status-change adoption" id="adoption-change">↑ 1.56%</div>
+                            <div class="status-period">Yearly</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Growth Section -->
+                <div class="growth-section">
+                    <div class="growth-header">
+                        <h3>
+                            <i class="fas fa-chart-line"></i>
+                            User Growth
+                        </h3>
+                        <div class="year-selector" onclick="toggleYear()">
+                            <span id="selectedYear">2026</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="userGrowthChart"></canvas>
+                    </div>
+                    <div class="growth-stats">
+                        <div class="growth-stat-item">
+                            <div class="growth-stat-label">Total Users</div>
+                            <div class="growth-stat-value" id="total-users-growth">0</div>
+                            <div class="growth-stat-change" id="total-users-change">↑ 12.5%</div>
+                        </div>
+                        <div class="growth-stat-item">
+                            <div class="growth-stat-label">New This Month</div>
+                            <div class="growth-stat-value" id="new-this-month">0</div>
+                            <div class="growth-stat-change" id="new-month-change">↑ 8.2%</div>
+                        </div>
+                        <div class="growth-stat-item">
+                            <div class="growth-stat-label">Active Users</div>
+                            <div class="growth-stat-value" id="active-users">0</div>
+                            <div class="growth-stat-change" id="active-change">↑ 5.3%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h3>
+                        <i class="fas fa-clock"></i>
+                        Recent Activity
+                    </h3>
+                    <div id="activity-container">
+                        <p style="color: #9c856c; text-align: center; padding: 16px;">Loading activities...</p>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p>© 2025 PawSociety. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+    <script>
+        const avatarBtn = document.getElementById('avatarBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        let currentYear = 2026;
+        let growthChart = null;
+
+        avatarBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function toggleYear() {
+            currentYear = currentYear === 2026 ? 2025 : 2026;
+            document.getElementById('selectedYear').textContent = currentYear;
+            loadDashboardData();
+        }
+
+        async function loadDashboardData() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const response = await fetch('/api/admin/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load stats');
+
+                const stats = await response.json();
+                console.log('Dashboard stats:', stats);
+
+                const totalUsers = stats.totalUsers || 0;
+                const totalPosts = stats.totalPosts || 0;
+                const lostCount = stats.lostPets || 0;
+                const foundCount = stats.foundPets || 0;
+                const adoptionCount = stats.adoptions || 0;
+                const userGrowth = stats.userGrowth || [12, 19, 15, 17, 24, 23, 25, 28, 32, 35, 38, 42];
+                const lastMonthGrowth = userGrowth[userGrowth.length - 1] || Math.floor(totalUsers * 0.1);
+                const activeUsers = Math.floor(totalUsers * 0.7);
+
+                document.getElementById('total-users').textContent = totalUsers;
+                document.getElementById('total-posts').textContent = totalPosts;
+                document.getElementById('lost-pets').textContent = lostCount;
+                document.getElementById('found-pets').textContent = foundCount;
+                document.getElementById('adoption-pets').textContent = adoptionCount;
+                document.getElementById('total-users-growth').textContent = totalUsers;
+                document.getElementById('new-this-month').textContent = lastMonthGrowth;
+                document.getElementById('active-users').textContent = activeUsers;
+
+                updateLineChart(userGrowth);
+
+                const activityContainer = document.getElementById('activity-container');
+                if (stats.recentActivity && stats.recentActivity.length > 0) {
+                    activityContainer.innerHTML = stats.recentActivity.map(activity => `
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                ${activity.type === 'lost' ? '🔍' : activity.type === 'found' ? '✅' : '🏠'}
+                            </div>
+                            <div class="activity-details">
+                                <div class="text">${activity.text}</div>
+                                <div class="time">${activity.time}</div>
+                            </div>
+                            <div class="activity-status">${activity.status}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    activityContainer.innerHTML = '<p style="color: #9c856c; text-align: center; padding: 16px;">No recent activity</p>';
+                }
+
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+            }
+        }
+
+        function updateLineChart(userGrowth) {
+            const ctx = document.getElementById('userGrowthChart').getContext('2d');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            if (growthChart) growthChart.destroy();
+            
+            growthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'New Users',
+                        data: userGrowth,
+                        borderColor: '#7A4F2B',
+                        backgroundColor: 'rgba(122, 79, 43, 0.05)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#B88B4A',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 1.5,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#5a3a1f' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f0e4d4' } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setInterval(loadDashboardData, 30000);
+        });
+    </script>
+</body>
+</html>
