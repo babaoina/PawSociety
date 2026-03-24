@@ -1,6 +1,5 @@
 package com.example.pawsociety.api
 
-import android.os.Build
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -9,8 +8,8 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    // ===== USE YOUR ACTUAL NETWORK IP FROM IPCONFIG =====
-    private const val SERVER_URL = "http://192.168.254.103:5000"  // ← YOUR REAL IP
+    // Linux laptop backend IP on the same Wi-Fi network
+    private const val SERVER_URL = "http://192.168.254.107:5000"
 
     val BASE_URL = "$SERVER_URL/api/"
     val PUBLIC_BASE_URL = "$SERVER_URL/api/public/"

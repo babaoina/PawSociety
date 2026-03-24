@@ -27,12 +27,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.URISyntaxException
-import java.net.InetAddress
-import java.net.NetworkInterface
 
 object SocketManager {
     private const val TAG = "SocketManager"
     private const val CHANNEL_ID = "pawsociety_notifications"
+    private const val SERVER_URL = "http://192.168.254.107:5000"
     private var mSocket: Socket? = null
     private val listeners = mutableMapOf<String, MutableList<(Array<Any>) -> Unit>>()
     private var isConnecting = false
@@ -43,7 +42,7 @@ object SocketManager {
         return if (isEmulator()) {
             "http://10.0.2.2:5000"
         } else {
-            "http://${getLocalIpAddress()}:5000"
+            SERVER_URL
         }
     }
 
@@ -56,30 +55,6 @@ object SocketManager {
                 Build.MODEL.contains("Android SDK built for x86") ||
                 Build.MANUFACTURER.contains("Genymotion") ||
                 Build.HARDWARE == "ranchu"
-    }
-
-    private fun getLocalIpAddress(): String {
-        try {
-            val interfaces = NetworkInterface.getNetworkInterfaces()
-            while (interfaces.hasMoreElements()) {
-                val networkInterface = interfaces.nextElement() as NetworkInterface
-                val addresses = networkInterface.inetAddresses
-                while (addresses.hasMoreElements()) {
-                    val inetAddress = addresses.nextElement() as InetAddress
-
-                    if (!inetAddress.isLoopbackAddress &&
-                        inetAddress.address.size == 4 &&
-                        !inetAddress.hostAddress?.startsWith("169.254")!!) {
-
-                        return inetAddress.hostAddress
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return "192.168.254.100"
     }
 
     // 🔥 ADD THIS - Function to refresh inbox count
