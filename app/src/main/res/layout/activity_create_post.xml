@@ -2,153 +2,157 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="@drawable/bg_create_post_screen"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:overScrollMode="never">
 
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="28dp">               
 
-        <!-- Background Image -->
-        <ImageView
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:src="@drawable/paws1"
-            android:scaleType="centerCrop"
-            android:contentDescription="Background" />
+            android:layout_height="140dp"
+            android:background="@drawable/bg_create_post_header"
+            android:elevation="10dp"
+            android:paddingLeft="18dp"
+            android:paddingTop="18dp"
+            android:paddingRight="18dp"
+            android:paddingBottom="16dp">
 
-        <!-- Semi-transparent overlay -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#80FFFFFF" />
+            <TextView
+                android:id="@+id/btn_cancel"
+                android:layout_width="72dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:gravity="start|center_vertical"
+                android:text="Cancel"
+                android:textColor="#FFF8F0"
+                android:textSize="16sp" />
 
-        <!-- Content -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            <TextView
+                android:id="@+id/btn_post"
+                android:layout_width="72dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:gravity="end|center_vertical"
+                android:text="Post"
+                android:textColor="#FFF8F0"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-            <!-- Top Bar -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:background="#7A4F2B"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:gravity="center_vertical"
-                android:elevation="4dp">
-
-                <TextView
-                    android:id="@+id/btn_cancel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Cancel"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="New Post"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:id="@+id/btn_post"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Post"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- ========== PHOTO UPLOAD AREA ========== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/card_rounded"
-                android:layout_margin="16dp"
-                android:elevation="4dp"
-                android:padding="16dp">
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="48dp"
+                android:gravity="center"
+                android:orientation="vertical">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Add Photos"
-                    android:textColor="#7A4F2B"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                    android:gravity="center"
+                    android:text="Create Post"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
-                <!-- Photo Count and Add Button Row -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center"
+                    android:text="Share a pet that needs help, a home, or a reunion."
+                    android:textColor="#F3E3D3"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_create_post_card"
+                android:elevation="3dp"
+                android:orientation="vertical">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
+                    android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/tv_photo_count"
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="0/5 photos"
-                        android:textColor="#7A4F2B"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Add Photos"
+                            android:textColor="#7A4F2B"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Show the pet clearly so people can recognize it fast."
+                            android:textColor="#8A6B4C"
+                            android:textSize="12sp" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/btn_add_photo"
                         android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:paddingHorizontal="16dp"
+                        android:layout_height="42dp"
+                        android:background="@drawable/button_oval_brown"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
+                        android:paddingHorizontal="18dp"
                         android:text="+ Add Photo"
                         android:textColor="#FFFFFF"
                         android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:background="@drawable/button_oval_brown"
-                        android:clickable="true"
-                        android:focusable="true" />
+                        android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Horizontal ScrollView for photo thumbnails -->
-                <HorizontalScrollView
-                    android:id="@+id/thumbnail_scroll"
-                    android:layout_width="match_parent"
-                    android:layout_height="100dp"
-                    android:scrollbars="none"
-                    android:visibility="gone">
+                <TextView
+                    android:id="@+id/tv_photo_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_create_post_category"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:text="0/5 photos"
+                    android:textColor="#7A4F2B"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
-                    <LinearLayout
-                        android:id="@+id/thumbnail_container"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:padding="4dp" />
-                </HorizontalScrollView>
-
-                <!-- CAROUSEL VIEW for photos -->
                 <FrameLayout
                     android:id="@+id/carousel_container"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
-                    android:background="#F0F0F0"
+                    android:layout_height="212dp"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/edittext_bg"
+                    android:foreground="?android:attr/selectableItemBackground"
                     android:visibility="gone">
 
                     <androidx.viewpager2.widget.ViewPager2
@@ -161,21 +165,22 @@
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:layout_gravity="top|end"
-                        android:layout_margin="8dp"
+                        android:layout_margin="10dp"
+                        android:background="@drawable/circle_solid_white"
+                        android:contentDescription="Remove photo"
+                        android:elevation="4dp"
+                        android:padding="8dp"
                         android:src="@drawable/close_circle"
                         android:tint="#F44336"
-                        android:background="@drawable/circle_solid_white"
-                        android:padding="8dp"
-                        android:elevation="4dp"
-                        android:visibility="gone"
-                        android:contentDescription="Remove photo" />
+                        android:visibility="gone" />
 
                     <LinearLayout
                         android:id="@+id/photo_indicator_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|center_horizontal"
-                        android:layout_marginBottom="8dp"
+                        android:layout_marginBottom="12dp"
+                        android:gravity="center"
                         android:orientation="horizontal"
                         android:visibility="gone" />
 
@@ -185,29 +190,31 @@
                         android:layout_height="match_parent"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:background="#F8F8F8">
+                        android:padding="24dp">
 
                         <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
+                            android:layout_width="52dp"
+                            android:layout_height="52dp"
                             android:src="@drawable/camera"
-                            android:tint="#CCCCCC" />
+                            android:tint="#B88B4A" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="No photos added"
-                            android:textColor="#999999"
-                            android:textSize="14sp"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="10dp"
+                            android:text="No photos yet"
+                            android:textColor="#7A4F2B"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Tap + Add Photo to upload"
-                            android:textColor="#B88B4A"
-                            android:textSize="12sp"
-                            android:layout_marginTop="4dp" />
+                            android:layout_marginTop="4dp"
+                            android:gravity="center"
+                            android:text="Tap Add Photo to upload up to 5 images."
+                            android:textColor="#8A6B4C"
+                            android:textSize="12sp" />
                     </LinearLayout>
                 </FrameLayout>
 
@@ -215,98 +222,123 @@
                     android:id="@+id/photo_upload_progress"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:visibility="gone"
-                    android:layout_marginTop="8dp" />
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone" />
+                <HorizontalScrollView
+                    android:id="@+id/thumbnail_scroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="90dp"
+                    android:layout_marginTop="12dp"
+                    android:scrollbars="none"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/thumbnail_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp" />
+                </HorizontalScrollView>
 
                 <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:scrollbars="none"
-                    android:layout_marginTop="12dp">
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none">
 
                     <LinearLayout
                         android:id="@+id/image_preview_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:padding="4dp" />
+                        android:paddingVertical="2dp" />
                 </HorizontalScrollView>
-
             </LinearLayout>
 
-            <!-- Form -->
             <LinearLayout
+                android:id="@+id/form_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp"
-                android:background="@drawable/card_rounded"
-                android:layout_margin="16dp"
-                android:layout_marginTop="0dp"
-                android:elevation="4dp"
-                android:id="@+id/form_container">
+                android:background="@drawable/bg_create_post_card"
+                android:elevation="3dp"
+                android:orientation="vertical">
 
-                <!-- Pet Name -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="Pet details"
+                    android:textColor="#7A4F2B"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Fill in the important info so people can help quickly."
+                    android:textColor="#8A6B4C"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Pet Name"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/et_pet_name"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/edittext_bg"
                     android:hint="Enter pet name (max 10 chars)"
-                    android:inputType="textPersonName"
-                    android:paddingHorizontal="16dp"
-                    android:background="@drawable/input_oval"
-                    android:layout_marginBottom="16dp"
-                    android:maxLength="10"
                     android:imeOptions="actionNext"
+                    android:inputType="textPersonName"
+                    android:maxLength="10"
+                    android:paddingHorizontal="16dp"
                     android:textSize="14sp" />
 
-                <!-- SELECT TYPE (Category Selector) with Images -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="10dp"
                     android:text="Select Type"
                     android:textColor="#7A4F2B"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
                 <LinearLayout
                     android:id="@+id/layout_category_selector"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:baselineAligned="false"
+                    android:gravity="center"
                     android:orientation="horizontal"
-                    android:weightSum="4"
-                    android:gravity="center_horizontal"
-                    android:layout_marginBottom="16dp"
-                    android:visibility="visible">
+                    android:weightSum="4">
 
-                    <!-- Dogs Category -->
                     <LinearLayout
                         android:id="@+id/layout_category_dogs"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="96dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:layout_marginEnd="4dp"
+                        android:background="@drawable/bg_create_post_category"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?android:attr/selectableItemBackgroundBorderless">
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="8dp">
 
                         <ImageView
                             android:id="@+id/iv_category_dogs"
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:src="@drawable/dog"
                             android:tint="#7A4F2B" />
 
@@ -314,30 +346,30 @@
                             android:id="@+id/tv_category_dogs"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
                             android:text="Dogs"
                             android:textColor="#7A4F2B"
                             android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp" />
+                            android:textStyle="bold" />
                     </LinearLayout>
 
-                    <!-- Cats Category -->
                     <LinearLayout
                         android:id="@+id/layout_category_cats"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="96dp"
+                        android:layout_marginHorizontal="2dp"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:layout_marginEnd="4dp"
+                        android:background="@drawable/bg_create_post_category"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?android:attr/selectableItemBackgroundBorderless">
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="8dp">
 
                         <ImageView
                             android:id="@+id/iv_category_cats"
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:src="@drawable/cat"
                             android:tint="#7A4F2B" />
 
@@ -345,30 +377,30 @@
                             android:id="@+id/tv_category_cats"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
                             android:text="Cats"
                             android:textColor="#7A4F2B"
                             android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp" />
+                            android:textStyle="bold" />
                     </LinearLayout>
 
-                    <!-- Fish Category -->
                     <LinearLayout
                         android:id="@+id/layout_category_fish"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="96dp"
+                        android:layout_marginHorizontal="4dp"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:layout_marginEnd="4dp"
+                        android:background="@drawable/bg_create_post_category"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?android:attr/selectableItemBackgroundBorderless">
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="8dp">
 
                         <ImageView
                             android:id="@+id/iv_category_fish"
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:src="@drawable/fish"
                             android:tint="#7A4F2B" />
 
@@ -376,29 +408,30 @@
                             android:id="@+id/tv_category_fish"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
                             android:text="Fish"
                             android:textColor="#7A4F2B"
                             android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp" />
+                            android:textStyle="bold" />
                     </LinearLayout>
 
-                    <!-- Birds Category -->
                     <LinearLayout
                         android:id="@+id/layout_category_birds"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="96dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="center"
+                        android:background="@drawable/bg_create_post_category"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?android:attr/selectableItemBackgroundBorderless">
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="8dp">
 
                         <ImageView
                             android:id="@+id/iv_category_birds"
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:src="@drawable/bird"
                             android:tint="#7A4F2B" />
 
@@ -406,346 +439,402 @@
                             android:id="@+id/tv_category_birds"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
                             android:text="Birds"
                             android:textColor="#7A4F2B"
                             android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp" />
+                            android:textStyle="bold" />
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- Breed Selector (appears after category selection) - REDESIGNED -->
                 <LinearLayout
                     android:id="@+id/layout_breed_selector"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/input_oval"
                     android:orientation="vertical"
-                    android:visibility="gone"
-                    android:background="@drawable/card_rounded"
-                    android:padding="16dp"
-                    android:layout_marginTop="8dp">
+                    android:padding="14dp"
+                    android:visibility="gone">
 
                     <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp">
+                        android:layout_marginBottom="12dp">
 
-                        <!-- Cooler back button with icon -->
                         <ImageView
                             android:id="@+id/btn_back_to_categories"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:layout_centerVertical="true"
-                            android:src="@drawable/ic_back_arrow"
-                            android:background="?android:attr/selectableItemBackgroundBorderless"
-                            android:padding="8dp"
+                            android:background="@drawable/bg_create_post_category"
                             android:clickable="true"
-                            android:focusable="true" />
+                            android:contentDescription="Back"
+                            android:focusable="true"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_back_arrow" />
 
                         <TextView
                             android:id="@+id/tv_selected_category"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerInParent="true"
-                            android:text="What breed?"
+                            android:text="Choose a breed"
                             android:textColor="#7A4F2B"
-                            android:textSize="18sp"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
                     </RelativeLayout>
-
-                    <!-- Breed Input (searchable) with icon -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Breed"
-                        android:textColor="#7A4F2B"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="8dp" />
 
                     <AutoCompleteTextView
                         android:id="@+id/act_pet_type"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:hint="e.g., Aspin, Labrador, Persian..."
-                        android:paddingHorizontal="16dp"
-                        android:paddingStart="40dp"
-                        android:background="@drawable/input_oval"
+                        android:layout_height="52dp"
+                        android:background="@drawable/edittext_bg"
+                        android:completionThreshold="1"
                         android:drawableStart="@drawable/ic_search"
                         android:drawablePadding="8dp"
-                        android:layout_marginBottom="8dp"
-                        android:completionThreshold="1"
                         android:dropDownWidth="match_parent"
                         android:dropDownVerticalOffset="4dp"
-                        android:popupBackground="#FFFFFF"
+                        android:hint="e.g. Aspin, Labrador, Persian..."
                         android:imeOptions="actionNext"
+                        android:paddingHorizontal="16dp"
+                        android:popupBackground="#FFFFFF"
                         android:textSize="14sp" />
 
-                    <!-- Breed suggestions hint -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
                         android:text="Start typing to see suggestions"
-                        android:textColor="#999999"
-                        android:textSize="12sp"
-                        android:layout_marginStart="4dp" />
+                        android:textColor="#9A826B"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- Status -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Status"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:textStyle="bold" />
 
                 <LinearLayout
                     android:id="@+id/status_buttons_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
+                    android:orientation="horizontal">
 
                     <TextView
                         android:id="@+id/btn_status_lost"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
+                        android:layout_height="46dp"
                         android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_status_lost"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:text="Lost"
                         android:textColor="#FFFFFF"
-                        android:background="@drawable/button_oval_red"
-                        android:clickable="true"
-                        android:focusable="true"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/btn_status_found"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
+                        android:layout_height="46dp"
                         android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_status_found"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:text="Found"
                         android:textColor="#FFFFFF"
-                        android:background="@drawable/button_oval_green"
-                        android:clickable="true"
-                        android:focusable="true"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/btn_status_adoption"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="46dp"
                         android:layout_weight="1"
+                        android:background="@drawable/button_oval_status_adoption"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:text="Adoption"
                         android:textColor="#FFFFFF"
-                        android:background="@drawable/button_oval_blue"
-                        android:clickable="true"
-                        android:focusable="true"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- GENDER SELECTION -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Post Scenario"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/layout_case_type_buttons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/btn_case_owner_lost"
+                        android:layout_width="match_parent"
+                        android:layout_height="46dp"
+                        android:background="@drawable/button_oval_brown"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="Lost Pet"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_case_seen_lost_pet"
+                        android:layout_width="match_parent"
+                        android:layout_height="46dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/button_oval_brown_outline"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="Seen Lost Pet"
+                        android:textColor="#7A4F2B"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_case_found_in_care"
+                        android:layout_width="match_parent"
+                        android:layout_height="46dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/button_oval_brown_outline"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="Found Pet"
+                        android:textColor="#7A4F2B"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_case_adoption"
+                        android:layout_width="match_parent"
+                        android:layout_height="46dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/button_oval_brown_outline"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="For Adoption"
+                        android:textColor="#7A4F2B"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_case_type_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Choose the situation that matches this post."
+                    android:textColor="#9A826B"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Gender"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"/>
+                    android:textStyle="bold" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="4dp">
+                    android:orientation="horizontal">
 
                     <TextView
                         android:id="@+id/btn_gender_male"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
+                        android:layout_height="44dp"
                         android:layout_marginEnd="8dp"
-                        android:gravity="center"
-                        android:text="Male"
-                        android:textColor="#666666"
+                        android:layout_weight="1"
                         android:background="@drawable/button_oval_white"
                         android:clickable="true"
                         android:focusable="true"
+                        android:gravity="center"
+                        android:text="Male"
+                        android:textColor="#666666"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/btn_gender_female"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
+                        android:layout_height="44dp"
                         android:layout_marginEnd="8dp"
-                        android:gravity="center"
-                        android:text="Female"
-                        android:textColor="#666666"
+                        android:layout_weight="1"
                         android:background="@drawable/button_oval_white"
                         android:clickable="true"
                         android:focusable="true"
+                        android:gravity="center"
+                        android:text="Female"
+                        android:textColor="#666666"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/btn_gender_unknown"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1"
-                        android:gravity="center"
-                        android:text="Unknown"
-                        android:textColor="#666666"
                         android:background="@drawable/button_oval_white"
                         android:clickable="true"
                         android:focusable="true"
+                        android:gravity="center"
+                        android:text="Unknown"
+                        android:textColor="#666666"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Age with Unit Buttons -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Age (Optional)"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="6dp" />
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/et_age"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:hint="Enter number (e.g., 2, 8, 12)"
-                    android:inputType="numberDecimal"
+                    android:layout_height="52dp"
+                    android:background="@drawable/edittext_bg"
+                    android:hint="Enter age"
+                    android:inputType="number"
+                    android:maxLength="2"
                     android:paddingHorizontal="16dp"
-                    android:background="@drawable/input_oval"
-                    android:layout_marginBottom="8dp"
                     android:textSize="14sp" />
 
-                <!-- Age Unit Buttons -->
                 <LinearLayout
                     android:id="@+id/layout_age_units"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp"
                     android:gravity="center"
-                    android:layout_marginBottom="16dp"
+                    android:orientation="horizontal"
                     android:visibility="gone">
 
                     <TextView
                         android:id="@+id/btn_age_years"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="4dp"
-                        android:gravity="center"
-                        android:text="Years"
-                        android:textColor="#FFFFFF"
-                        android:background="@drawable/button_oval_brown"
-                        android:alpha="0.5"
+                        android:background="@drawable/button_oval_brown_outline"
                         android:clickable="false"
                         android:focusable="false"
+                        android:gravity="center"
+                        android:text="Years"
+                        android:textColor="#7A4F2B"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/btn_age_months"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="4dp"
-                        android:gravity="center"
-                        android:text="Months"
-                        android:textColor="#FFFFFF"
-                        android:background="@drawable/button_oval_brown"
-                        android:alpha="0.5"
+                        android:background="@drawable/button_oval_brown_outline"
                         android:clickable="false"
                         android:focusable="false"
+                        android:gravity="center"
+                        android:text="Months"
+                        android:textColor="#7A4F2B"
                         android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Weight with Unit Buttons -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Weight (Optional)"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/et_weight"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:hint="Enter number (e.g., 3.5, 10)"
-                    android:inputType="numberDecimal"
+                    android:layout_height="52dp"
+                    android:background="@drawable/edittext_bg"
+                    android:hint="Enter weight"
+                    android:inputType="number"
+                    android:maxLength="3"
                     android:paddingHorizontal="16dp"
-                    android:background="@drawable/input_oval"
-                    android:layout_marginBottom="8dp"
                     android:textSize="14sp" />
 
-                <!-- Weight Unit Buttons -->
                 <LinearLayout
                     android:id="@+id/layout_weight_units"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp"
                     android:gravity="center"
-                    android:layout_marginBottom="16dp"
+                    android:orientation="horizontal"
                     android:visibility="gone">
 
                     <TextView
                         android:id="@+id/btn_weight_kg"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        android:layout_marginEnd="4dp"
-                        android:gravity="center"
-                        android:text="kg"
-                        android:textColor="#FFFFFF"
-                        android:background="@drawable/button_oval_brown"
-                        android:alpha="0.5"
+                        android:background="@drawable/button_oval_brown_outline"
                         android:clickable="false"
                         android:focusable="false"
+                        android:gravity="center"
+                        android:text="kg"
+                        android:textColor="#7A4F2B"
                         android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/btn_weight_lbs"
                         android:layout_width="0dp"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        android:layout_marginStart="4dp"
-                        android:gravity="center"
-                        android:text="lbs"
-                        android:textColor="#FFFFFF"
-                        android:background="@drawable/button_oval_brown"
-                        android:alpha="0.5"
+                        android:background="@drawable/button_oval_brown_outline"
                         android:clickable="false"
                         android:focusable="false"
+                        android:gravity="center"
+                        android:text="lbs"
+                        android:textColor="#7A4F2B"
                         android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Reward/Price -->
                 <LinearLayout
                     android:id="@+id/layout_reward"
                     android:layout_width="match_parent"
@@ -755,138 +844,388 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Reward/Price"
+                        android:layout_marginTop="18dp"
+                        android:layout_marginBottom="8dp"
+                        android:text="Reward / Price (Optional)"
                         android:textColor="#7A4F2B"
                         android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="6dp" />
+                        android:textStyle="bold" />
 
                     <EditText
                         android:id="@+id/et_reward"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:hint="Enter amount (e.g., ₱1000)"
-                        android:inputType="numberDecimal"
-                        android:paddingHorizontal="16dp"
-                        android:background="@drawable/input_oval"
-                        android:layout_marginBottom="16dp"
-                        android:maxLength="20"
+                        android:layout_height="52dp"
+                        android:background="@drawable/edittext_bg"
+                        android:hint="Enter amount (e.g. ₱1000)"
                         android:imeOptions="actionNext"
+                        android:inputType="numberDecimal"
+                        android:maxLength="20"
+                        android:paddingHorizontal="16dp"
                         android:textSize="14sp" />
                 </LinearLayout>
 
-                <!-- Location - REDESIGNED with better visibility -->
+                <TextView
+                    android:id="@+id/tv_event_date_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Last Seen Date"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_event_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:background="@drawable/edittext_bg"
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:focusable="false"
+                    android:hint="Tap to choose a date"
+                    android:paddingHorizontal="16dp"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tv_event_location_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Last Seen Location"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Location"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:textStyle="bold" />
 
                 <Button
                     android:id="@+id/btn_select_location"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:text="  Select Location"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:gravity="center|start"
+                    android:layout_height="52dp"
+                    android:background="@drawable/edittext_bg"
                     android:drawableStart="@drawable/ic_location"
                     android:drawablePadding="8dp"
-                    android:background="@drawable/button_oval_brown_outline"
-                    android:paddingLeft="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:elevation="2dp" />
+                    android:gravity="start|center_vertical"
+                    android:paddingHorizontal="16dp"
+                    android:text="Select Location"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_location"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/location_selected_bg"
                     android:padding="12dp"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:background="@drawable/location_selected_bg"
-                    android:visibility="gone"
-                    android:layout_marginBottom="8dp" />
+                    android:visibility="gone" />
 
-                <!-- Contact -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Contact Number"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/et_contact"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:hint="09123456789"
-                    android:inputType="phone"
-                    android:paddingHorizontal="16dp"
-                    android:background="@drawable/input_oval"
-                    android:layout_marginBottom="8dp"
-                    android:maxLength="11"
+                    android:layout_height="52dp"
+                    android:background="@drawable/edittext_bg"
                     android:digits="0123456789"
+                    android:hint="09123456789"
                     android:imeOptions="actionNext"
+                    android:inputType="phone"
+                    android:maxLength="11"
+                    android:paddingHorizontal="16dp"
                     android:textSize="14sp" />
 
-                <!-- Phone hint -->
-                <TextView
+                <LinearLayout
+                    android:id="@+id/layout_current_care"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="11 digits starting with 09"
-                    android:textColor="#666666"
-                    android:textSize="11sp"
-                    android:layout_marginBottom="16dp"
-                    android:layout_marginStart="4dp" />
+                    android:layout_marginTop="18dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-                <!-- Description -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Current Situation"
+                        android:textColor="#7A4F2B"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btn_care_in_my_care"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/button_oval_brown"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:text="With me"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/btn_care_sighting_only"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/button_oval_brown_outline"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:text="Sighting only"
+                            android:textColor="#7A4F2B"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Contact Preference"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btn_contact_call"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_brown"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="Call"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_contact_text"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_brown_outline"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="Text"
+                        android:textColor="#7A4F2B"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_contact_chat"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_brown_outline"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="In-app chat"
+                        android:textColor="#7A4F2B"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="11 digits starting with 09"
+                    android:textColor="#9A826B"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Identifying Marks"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_identifying_marks"
+                    android:layout_width="match_parent"
+                    android:layout_height="88dp"
+                    android:background="@drawable/edittext_bg"
+                    android:gravity="top|start"
+                    android:hint="Color patterns, scars, clothes, accessories, unique features..."
+                    android:inputType="textMultiLine"
+                    android:padding="16dp"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Temperament"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_temperament"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:background="@drawable/edittext_bg"
+                    android:hint="Friendly, shy, scared, calm, energetic..."
+                    android:paddingHorizontal="16dp"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:id="@+id/layout_health_condition"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Health / Condition"
+                        android:textColor="#7A4F2B"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/et_health_condition"
+                        android:layout_width="match_parent"
+                        android:layout_height="88dp"
+                        android:background="@drawable/edittext_bg"
+                        android:gravity="top|start"
+                        android:hint="Injuries, vaccination info, healthy, needs meds..."
+                        android:inputType="textMultiLine"
+                        android:padding="16dp"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Wearing a Collar?"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btn_collar_yes"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_brown_outline"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="Yes"
+                        android:textColor="#7A4F2B"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_collar_no"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_brown"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="No"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Description"
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/et_description"
                     android:layout_width="match_parent"
-                    android:layout_height="100dp"
-                    android:hint="Tell us about this pet... (min. 10 characters)"
-                    android:inputType="textMultiLine"
+                    android:layout_height="120dp"
+                    android:background="@drawable/edittext_bg"
                     android:gravity="top|start"
-                    android:padding="16dp"
-                    android:background="@drawable/input_oval"
-                    android:layout_marginBottom="8dp"
-                    android:maxLength="500"
+                    android:hint="Tell us about this pet... (min. 10 characters)"
                     android:imeOptions="actionDone"
+                    android:inputType="textMultiLine"
+                    android:maxLength="500"
+                    android:padding="16dp"
                     android:textSize="14sp" />
 
-                <!-- Character counter hint -->
                 <TextView
                     android:id="@+id/tv_char_counter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="8dp"
                     android:text="0/500 characters"
-                    android:textColor="#999999"
-                    android:textSize="11sp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_gravity="end" />
+                    android:textColor="#9A826B"
+                    android:textSize="11sp" />
             </LinearLayout>
-
-            <!-- Bottom spacing -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="20dp" />
         </LinearLayout>
-    </FrameLayout>
+    </LinearLayout>
 </ScrollView>

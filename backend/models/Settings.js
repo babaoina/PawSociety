@@ -21,7 +21,8 @@ const settingsSchema = new mongoose.Schema({
     maxLoginAttempts: { type: Number, default: 5 },
     lockoutDuration: { type: Number, default: 30 },
     sessionTimeout: { type: Number, default: 120 },
-    admin2FA: { type: Boolean, default: false }
+    admin2FA: { type: Boolean, default: false },
+    adminPassword: { type: String, default: 'admin123' }
   },
   
   // Push Notification Settings

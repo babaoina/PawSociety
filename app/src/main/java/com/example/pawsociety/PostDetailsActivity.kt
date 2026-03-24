@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -58,6 +59,17 @@ class PostDetailsActivity : AppCompatActivity() {
     private lateinit var postTime: TextView
     private lateinit var petName: TextView
     private lateinit var postStatus: TextView
+    private lateinit var postCaseSummary: TextView
+    private lateinit var caseDetailsLayout: LinearLayout
+    private lateinit var postCaseType: TextView
+    private lateinit var postEventDate: TextView
+    private lateinit var postContactPreference: TextView
+    private lateinit var postCurrentCare: TextView
+    private lateinit var postCollar: TextView
+    private lateinit var postIdentifyingMarks: TextView
+    private lateinit var postTemperamentDetails: TextView
+    private lateinit var postHealthCondition: TextView
+    private lateinit var rewardContainer: LinearLayout
     private lateinit var postReward: TextView
     private lateinit var postDescription: TextView
     private lateinit var btnMoreDescription: TextView
@@ -96,6 +108,11 @@ class PostDetailsActivity : AppCompatActivity() {
 
     companion object {
         private const val EDIT_POST_REQUEST = 1002
+        private val RESOLVED_STATUS_LABELS = mapOf(
+            "Lost" to "Mark as Reunited",
+            "Found" to "Mark as Returned",
+            "Adoption" to "Mark as Adopted"
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -140,6 +157,17 @@ class PostDetailsActivity : AppCompatActivity() {
         postTime = findViewById(R.id.post_time)
         petName = findViewById(R.id.post_pet_name)
         postStatus = findViewById(R.id.post_status)
+        postCaseSummary = findViewById(R.id.post_case_summary)
+        caseDetailsLayout = findViewById(R.id.layout_case_details)
+        postCaseType = findViewById(R.id.post_case_type)
+        postEventDate = findViewById(R.id.post_event_date)
+        postContactPreference = findViewById(R.id.post_contact_preference)
+        postCurrentCare = findViewById(R.id.post_current_care)
+        postCollar = findViewById(R.id.post_collar)
+        postIdentifyingMarks = findViewById(R.id.post_identifying_marks)
+        postTemperamentDetails = findViewById(R.id.post_temperament_details)
+        postHealthCondition = findViewById(R.id.post_health_condition)
+        rewardContainer = findViewById(R.id.reward_container)
         postReward = findViewById(R.id.post_reward)
         postDescription = findViewById(R.id.post_description)
         btnMoreDescription = findViewById(R.id.btn_more_description)
@@ -176,13 +204,14 @@ class PostDetailsActivity : AppCompatActivity() {
 
         // Set initial data
         userName.text = post.userName
-        postLocation.text = post.location ?: "No location"
+        postLocation.text = "\uD83D\uDCCD ${post.location ?: "No location"}"
         postTime.text = getTimeAgo(post.createdAt)
         petName.text = post.petName
         postPetType.text = post.petType ?: "Unknown breed"
         postStatus.text = post.status
         postDescription.text = post.description
         tvLikeCount.text = post.likesCount.toString()
+        bindCaseDetails()
 
         // Set user role - use pet name + "Owner"
         val petOwnerText = if (!post.petName.isNullOrEmpty()) {
@@ -442,8 +471,8 @@ class PostDetailsActivity : AppCompatActivity() {
         // Setup image carousel
         setupImageCarousel()
 
-        // Set status color and reward
-        when (post.status) {
+        updatePostStatusUi()
+        /*when (post.status) {
             "Lost" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_lost)
                 postStatus.setTextColor(Color.WHITE)
@@ -455,29 +484,36 @@ class PostDetailsActivity : AppCompatActivity() {
 
                     // Set reward in info section
                     postReward.text = "₱$formattedReward"
-                    postReward.visibility = View.VISIBLE
+                    rewardContainer.visibility = View.VISIBLE
 
                     // Set reward badge on image
                     rewardBadge?.text = "₱$formattedReward"
                     rewardBadge?.visibility = View.VISIBLE
                 } else {
-                    postReward.visibility = View.GONE
+                    rewardContainer.visibility = View.GONE
                     rewardBadge?.visibility = View.GONE
                 }
             }
             "Found" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_found)
                 postStatus.setTextColor(Color.WHITE)
-                postReward.visibility = View.GONE
+                rewardContainer.visibility = View.GONE
                 findViewById<TextView>(R.id.post_reward_badge)?.visibility = View.GONE
             }
             "Adoption" -> {
                 postStatus.setBackgroundResource(R.drawable.status_badge_adoption)
                 postStatus.setTextColor(Color.WHITE)
-                postReward.visibility = View.GONE
+                rewardContainer.visibility = View.GONE
                 findViewById<TextView>(R.id.post_reward_badge)?.visibility = View.GONE
             }
-        }
+            "Reunited", "Returned", "Adopted" -> {
+                postStatus.setBackgroundResource(R.drawable.status_badge_oval)
+                postStatus.background.setTint(Color.parseColor("#8E6E53"))
+                postStatus.setTextColor(Color.WHITE)
+                rewardContainer.visibility = View.GONE
+                findViewById<TextView>(R.id.post_reward_badge)?.visibility = View.GONE
+            }
+        }*/
 
         // Handle long description
         postDescription.post {
@@ -805,6 +841,8 @@ class PostDetailsActivity : AppCompatActivity() {
             val menuUsername = dialogView.findViewById<TextView>(R.id.menu_username)
             val menuPostInfo = dialogView.findViewById<TextView>(R.id.menu_post_info)
             val btnClose = dialogView.findViewById<TextView>(R.id.btn_close)
+            val menuAvatarImage = dialogView.findViewById<ImageView>(R.id.menu_avatar_image)
+            val menuAvatarFallback = dialogView.findViewById<TextView>(R.id.menu_avatar_fallback)
 
             val optionAddFavorites = dialogView.findViewById<LinearLayout>(R.id.option_add_favorites)
             val ivFavoriteIcon = dialogView.findViewById<ImageView>(R.id.iv_favorite_icon)
@@ -814,9 +852,10 @@ class PostDetailsActivity : AppCompatActivity() {
             val ivFollowIcon = dialogView.findViewById<ImageView>(R.id.iv_follow_icon)
             val tvFollowText = dialogView.findViewById<TextView>(R.id.tv_follow_text)
 
-            val optionWhySeeing = dialogView.findViewById<LinearLayout>(R.id.option_why_seeing)
+
             val optionHide = dialogView.findViewById<LinearLayout>(R.id.option_hide)
-            val optionAboutAccount = dialogView.findViewById<LinearLayout>(R.id.option_about_account)
+            val optionResolve = dialogView.findViewById<LinearLayout>(R.id.option_resolve)
+            val tvResolveText = dialogView.findViewById<TextView>(R.id.tv_resolve_text)
 
             val optionEdit = dialogView.findViewById<LinearLayout>(R.id.option_edit)
             val ivEditIcon = dialogView.findViewById<ImageView>(R.id.iv_edit_icon)
@@ -831,6 +870,8 @@ class PostDetailsActivity : AppCompatActivity() {
 
             menuUsername?.text = post.userName
             menuPostInfo?.text = "${post.petName} • ${post.status}"
+
+            bindPostMenuAvatar(post.userName, post.userImageUrl, menuAvatarImage, menuAvatarFallback)
 
             viewModel.favoriteStatus.value?.let { favMap ->
                 val isFav = favMap[post.postId] ?: false
@@ -849,6 +890,8 @@ class PostDetailsActivity : AppCompatActivity() {
 
             val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
             dialog.setContentView(dialogView)
+            dialog.setCancelable(true)
+            dialog.setCanceledOnTouchOutside(true)
 
             dialog.window?.apply {
                 setGravity(android.view.Gravity.BOTTOM)
@@ -856,7 +899,8 @@ class PostDetailsActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 )
-                setBackgroundDrawable(null)
+                setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                attributes.windowAnimations = R.style.BottomMenuAnimation
             }
 
             btnClose?.setOnClickListener {
@@ -876,15 +920,27 @@ class PostDetailsActivity : AppCompatActivity() {
                     dialog.dismiss()
                 }
 
+                val resolveActionLabel = RESOLVED_STATUS_LABELS[post.status]
+                if (resolveActionLabel != null) {
+                    optionResolve?.visibility = View.VISIBLE
+                    tvResolveText?.text = resolveActionLabel
+                    optionResolve?.setOnClickListener {
+                        showResolveConfirmation(resolveActionLabel)
+                        dialog.dismiss()
+                    }
+                } else {
+                    optionResolve?.visibility = View.GONE
+                }
+
                 optionFollow?.visibility = View.GONE
                 optionBlock?.visibility = View.GONE
                 optionReport?.visibility = View.GONE
-                optionWhySeeing?.visibility = View.GONE
+
                 optionHide?.visibility = View.GONE
-                optionAboutAccount?.visibility = View.GONE
             } else {
                 optionEdit?.visibility = View.GONE
                 optionDelete?.visibility = View.GONE
+                optionResolve?.visibility = View.GONE
 
                 optionFollow?.visibility = View.VISIBLE
                 if (isFollowing) {
@@ -910,9 +966,8 @@ class PostDetailsActivity : AppCompatActivity() {
                 }
 
                 optionReport?.visibility = View.VISIBLE
-                optionWhySeeing?.visibility = View.VISIBLE
+
                 optionHide?.visibility = View.VISIBLE
-                optionAboutAccount?.visibility = View.VISIBLE
             }
 
             optionAddFavorites?.setOnClickListener {
@@ -921,18 +976,9 @@ class PostDetailsActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
 
-            optionWhySeeing?.setOnClickListener {
-                showWhySeeingDialog()
-                dialog.dismiss()
-            }
 
             optionHide?.setOnClickListener {
                 showHideConfirmation()
-                dialog.dismiss()
-            }
-
-            optionAboutAccount?.setOnClickListener {
-                showAboutAccountDialog()
                 dialog.dismiss()
             }
 
@@ -959,7 +1005,7 @@ class PostDetailsActivity : AppCompatActivity() {
                 • Similar content you've liked before
             """.trimIndent()
 
-            AlertDialog.Builder(this)
+            AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setTitle("Why you're seeing this post")
                 .setMessage(message)
                 .setPositiveButton("Got it", null)
@@ -978,7 +1024,7 @@ class PostDetailsActivity : AppCompatActivity() {
                 📍 Location information not available
             """.trimIndent()
 
-            AlertDialog.Builder(this)
+            AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setTitle("About this account")
                 .setMessage(message)
                 .setPositiveButton("OK", null)
@@ -989,7 +1035,7 @@ class PostDetailsActivity : AppCompatActivity() {
     }
 
     private fun showHideConfirmation() {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Hide Post")
             .setMessage("This post will be hidden from your feed. You can unhide it later in Settings.")
             .setPositiveButton("Hide") { _, _ ->
@@ -1011,7 +1057,7 @@ class PostDetailsActivity : AppCompatActivity() {
     }
 
     private fun showBlockConfirmation() {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Block User")
             .setMessage("Are you sure you want to block ${post.userName}?")
             .setPositiveButton("Block") { _, _ ->
@@ -1034,7 +1080,7 @@ class PostDetailsActivity : AppCompatActivity() {
 
     private fun showReportDialog() {
         val options = arrayOf("Spam", "Inappropriate", "False information", "Scam", "Harassment", "Other")
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Report Post")
             .setItems(options) { _, which ->
                 submitReport(options[which])
@@ -1065,7 +1111,7 @@ class PostDetailsActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmation() {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Delete Post")
             .setMessage("Are you sure you want to delete this post?")
             .setPositiveButton("Delete") { _, _ ->
@@ -1187,6 +1233,205 @@ class PostDetailsActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             "Unknown"
+        }
+    }
+
+    private fun showResolveConfirmation(actionLabel: String) {
+        val dialog = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
+            .setTitle(actionLabel)
+            .setMessage("This will close the case and remove it from feed and search for other users.")
+            .setPositiveButton("Confirm") { _, _ ->
+                resolvePost()
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#7A4F2B"))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#666666"))
+        }
+
+        dialog.show()
+    }
+
+    private fun resolvePost() {
+        val user = currentUser ?: return
+        lifecycleScope.launch {
+            val result = postRepository.resolvePost(post.postId, user.firebaseUid)
+            if (result.isSuccess) {
+                post = result.getOrNull() ?: post
+                updatePostStatusUi()
+                loadPostData()
+                Toast.makeText(
+                    this@PostDetailsActivity,
+                    "Post updated to ${post.status}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Toast.makeText(
+                    this@PostDetailsActivity,
+                    result.exceptionOrNull()?.message ?: "Failed to update post",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun updatePostStatusUi() {
+        postStatus.text = post.status
+        val rewardBadge = findViewById<TextView>(R.id.post_reward_badge)
+
+        when (post.status) {
+            "Lost" -> {
+                postStatus.setBackgroundResource(R.drawable.status_badge_lost)
+                postStatus.setTextColor(Color.WHITE)
+
+                if (!post.reward.isNullOrEmpty() && post.reward != "0") {
+                    val formattedReward = formatReward(post.reward ?: "")
+                    postReward.text = "P$formattedReward"
+                    rewardContainer.visibility = View.VISIBLE
+                    rewardBadge?.text = "P$formattedReward"
+                    rewardBadge?.visibility = View.VISIBLE
+                } else {
+                    rewardContainer.visibility = View.GONE
+                    rewardBadge?.visibility = View.GONE
+                }
+            }
+            "Found" -> {
+                postStatus.setBackgroundResource(R.drawable.status_badge_found)
+                postStatus.setTextColor(Color.WHITE)
+                rewardContainer.visibility = View.GONE
+                rewardBadge?.visibility = View.GONE
+            }
+            "Adoption" -> {
+                postStatus.setBackgroundResource(R.drawable.status_badge_adoption)
+                postStatus.setTextColor(Color.WHITE)
+                rewardContainer.visibility = View.GONE
+                rewardBadge?.visibility = View.GONE
+            }
+            "Reunited", "Returned", "Adopted" -> {
+                postStatus.setBackgroundResource(R.drawable.status_badge_oval)
+                postStatus.background.setTint(Color.parseColor("#8E6E53"))
+                postStatus.setTextColor(Color.WHITE)
+                rewardContainer.visibility = View.GONE
+                rewardBadge?.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun bindCaseDetails() {
+        val summary = buildCaseSummary(post)
+        if (summary.isNullOrBlank()) {
+            postCaseSummary.visibility = View.GONE
+        } else {
+            postCaseSummary.text = summary
+            postCaseSummary.visibility = View.VISIBLE
+        }
+
+        postCaseType.text = "Scenario: ${getCaseTypeLabel(post.caseType)}"
+
+        bindOptionalDetail(postEventDate, "Date", post.eventDate)
+        bindOptionalDetail(postContactPreference, "Contact", getContactPreferenceLabel(post.contactPreference))
+        bindOptionalDetail(postCurrentCare, "Current situation", getCurrentCareLabel(post.currentCareStatus))
+        bindOptionalDetail(postCollar, "Collar", if (post.hasCollar) "Yes" else if (shouldShowCollar(post)) "No" else null)
+        bindOptionalDetail(postIdentifyingMarks, "Identifying marks", post.identifyingMarks)
+        bindOptionalDetail(postTemperamentDetails, "Temperament", post.temperament)
+        bindOptionalDetail(postHealthCondition, "Health", post.healthCondition)
+
+        val hasExtraDetails = listOf(
+            postEventDate,
+            postContactPreference,
+            postCurrentCare,
+            postCollar,
+            postIdentifyingMarks,
+            postTemperamentDetails,
+            postHealthCondition
+        ).any { it.visibility == View.VISIBLE }
+
+        caseDetailsLayout.visibility = if (hasExtraDetails || !post.caseType.isNullOrBlank()) View.VISIBLE else View.GONE
+    }
+
+    private fun bindOptionalDetail(view: TextView, label: String, value: String?) {
+        if (value.isNullOrBlank()) {
+            view.visibility = View.GONE
+        } else {
+            view.text = "$label: $value"
+            view.visibility = View.VISIBLE
+        }
+    }
+
+    private fun shouldShowCollar(post: ApiPost): Boolean {
+        return !post.caseType.isNullOrBlank() || !post.identifyingMarks.isNullOrBlank() || !post.temperament.isNullOrBlank()
+    }
+
+    private fun buildCaseSummary(post: ApiPost): String? {
+        val parts = mutableListOf<String>()
+        val label = getCaseTypeLabel(post.caseType)
+        if (label.isNotBlank()) parts.add(label)
+        if (!post.eventDate.isNullOrBlank()) parts.add(post.eventDate)
+        getCurrentCareLabel(post.currentCareStatus)?.let { parts.add(it) }
+        getContactPreferenceLabel(post.contactPreference)?.let { parts.add("$it preferred") }
+        return parts.takeIf { it.isNotEmpty() }?.joinToString(" • ")
+    }
+
+    private fun getCaseTypeLabel(caseType: String?): String {
+        return when (caseType) {
+            "owner_lost" -> "Lost Pet"
+            "seen_lost_pet" -> "Seen Lost Pet"
+            "found_in_care" -> "Found Pet"
+            "adoption" -> "For Adoption"
+            else -> ""
+        }
+    }
+
+    private fun getContactPreferenceLabel(contactPreference: String?): String? {
+        return when (contactPreference) {
+            "call" -> "Call"
+            "text" -> "Text"
+            "in_app_chat" -> "In-app chat"
+            else -> null
+        }
+    }
+
+    private fun getCurrentCareLabel(currentCareStatus: String?): String? {
+        return when (currentCareStatus) {
+            "owner" -> "Owner posting"
+            "in_my_care" -> "In my care"
+            "sighting_only" -> "Sighting only"
+            else -> null
+        }
+    }
+
+    private fun bindPostMenuAvatar(
+        userName: String?,
+        userImageUrl: String?,
+        avatarImage: ImageView?,
+        avatarFallback: TextView?
+    ) {
+        avatarFallback?.text = userName?.firstOrNull()?.uppercaseChar()?.toString() ?: "🐾"
+
+        if (!userImageUrl.isNullOrBlank()) {
+            val fullImageUrl = if (userImageUrl.startsWith("http")) {
+                userImageUrl
+            } else {
+                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$userImageUrl"
+            }
+
+            avatarImage?.visibility = View.VISIBLE
+            avatarFallback?.visibility = View.GONE
+
+            avatarImage?.let {
+                Glide.with(this)
+                    .load(fullImageUrl)
+                    .placeholder(R.drawable.paw)
+                    .error(R.drawable.paw)
+                    .circleCrop()
+                    .into(it)
+            }
+        } else {
+            avatarImage?.visibility = View.GONE
+            avatarFallback?.visibility = View.VISIBLE
         }
     }
 

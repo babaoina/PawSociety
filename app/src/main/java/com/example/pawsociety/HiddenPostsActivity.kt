@@ -236,7 +236,7 @@ class HiddenPostsActivity : AppCompatActivity() {
     }
 
     private fun showUnhideConfirmation(post: ApiPost) {
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Unhide Post")
             .setMessage("Do you want to unhide this post? It will appear in your feed again.")
             .setPositiveButton("Unhide") { _, _ ->
@@ -244,6 +244,9 @@ class HiddenPostsActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+        
+        // Make dialog content visible
+        dialog.window?.setBackgroundDrawableResource(android.R.color.white)
     }
 
     private fun unhidePost(post: ApiPost) {

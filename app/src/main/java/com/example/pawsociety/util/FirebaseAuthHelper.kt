@@ -1,5 +1,6 @@
 package com.example.pawsociety.util
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -33,10 +34,19 @@ object FirebaseAuthHelper {
      */
     suspend fun loginWithEmail(email: String, password: String): Result<FirebaseUser> {
         return try {
+            Log.d("FirebaseAuthHelper", "🔐 Attempting login for: $email")
             val authResult = auth.signInWithEmailAndPassword(email, password).await()
-            val user = authResult.user ?: return Result.failure(Exception("User is null"))
-            Result.success(user)
+            val user = authResult.user
+            if (user != null) {
+                Log.d("FirebaseAuthHelper", "✅ Login successful for: ${user.email}")
+                Result.success(user)
+            } else {
+                Log.e("FirebaseAuthHelper", "❌ Login succeeded but user is null")
+                Result.failure(Exception("User is null after login"))
+            }
         } catch (e: Exception) {
+            Log.e("FirebaseAuthHelper", "❌ Login failed for: $email - Error: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }
@@ -101,15 +111,31 @@ object FirebaseAuthHelper {
     suspend fun isUserValid(): Boolean {
         val user = currentUser ?: return false
         return try {
-            // Force a token refresh to check with the server
-            user.getIdToken(true).await()
-            true // Token refresh successful, user is valid
+            // Reload is less aggressive than forcing a token refresh and avoids
+            // false "account unavailable" logouts on fresh sessions.
+            user.reload().await()
+            true
         } catch (e: Exception) {
-            // Failed to refresh token. User is likely deleted/disabled
-            println("⚠️ User token refresh failed: ${e.message}")
-            // Sign out locally to clear bad cache
-            signOut()
-            false
+            val message = e.message?.lowercase().orEmpty()
+            val isDefinitelyInvalid = listOf(
+                "user token has expired",
+                "user disabled",
+                "invalid user token",
+                "no user record",
+                "user-not-found",
+                "requires recent login"
+            ).any { message.contains(it) }
+
+            println("User validation check failed: ${e.message}")
+
+            if (isDefinitelyInvalid) {
+                signOut()
+                false
+            } else {
+                // Treat transient Firebase/network issues as inconclusive so we
+                // do not incorrectly kick out valid users.
+                true
+            }
         }
     }
 
@@ -167,6 +193,20 @@ object FirebaseAuthHelper {
     }
 
     /**
+     * Delete currently signed-in Firebase user.
+     * Used as rollback if registration only partially succeeds.
+     */
+    suspend fun deleteCurrentUser(): Result<Unit> {
+        return try {
+            val user = currentUser ?: return Result.success(Unit)
+            user.delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Update current user profile
      */
     suspend fun updateUserProfile(
@@ -190,6 +230,36 @@ object FirebaseAuthHelper {
 
             Result.success(Unit)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 🔥 NEW: Check if current user's email is verified
+     */
+    suspend fun isEmailVerified(): Boolean {
+        return try {
+            // Reload user to get latest email verification status
+            currentUser?.reload()?.await()
+            currentUser?.isEmailVerified ?: false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * 🔥 NEW: Confirm password reset with oobCode from email link
+     * This is used when user clicks the reset link in their email
+     */
+    suspend fun confirmPasswordReset(oobCode: String, newPassword: String): Result<Unit> {
+        return try {
+            Log.d("FirebaseAuthHelper", "🔐 Confirming password reset with oobCode: ${oobCode.substring(0, 10)}...")
+            auth.confirmPasswordReset(oobCode, newPassword).await()
+            Log.d("FirebaseAuthHelper", "✅ Password reset confirmed successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthHelper", "❌ Password reset confirmation failed: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }

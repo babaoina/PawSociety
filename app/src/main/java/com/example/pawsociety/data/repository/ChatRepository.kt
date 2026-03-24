@@ -340,15 +340,16 @@ class ChatRepository {
                     Result.success(mutedUsers)
                 } else {
                     println("❌ Get muted users failed: ${body?.message}")
-                    Result.success(emptyList())
+                    Result.failure(Exception(body?.message ?: "Failed to get muted users"))
                 }
             } else {
-                println("❌ Get muted users error: ${response.errorBody()?.string()}")
-                Result.success(emptyList())
+                val errorBody = response.errorBody()?.string()
+                println("❌ Get muted users error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Failed to get muted users"))
             }
         } catch (e: Exception) {
             println("❌ Get muted users exception: ${e.message}")
-            Result.success(emptyList())
+            Result.failure(e)
         }
     }
 

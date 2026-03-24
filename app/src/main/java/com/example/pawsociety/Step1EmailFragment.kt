@@ -3,6 +3,7 @@ package com.example.pawsociety.fragments
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.graphics.Color
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -163,11 +164,13 @@ class Step1EmailFragment : Fragment() {
         val isEmailValid = email.isNotEmpty() &&
                 android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 
-        val isPasswordValid = password.length >= 6
+        val isPasswordValid = isPasswordStrong(password)
 
         val isConfirmValid = password.isNotEmpty() &&
                 confirmPassword.isNotEmpty() &&
                 password == confirmPassword
+
+        updatePasswordHint(password)
 
         val allValid = isEmailValid && isPasswordValid && isConfirmValid
 
@@ -201,8 +204,8 @@ class Step1EmailFragment : Fragment() {
             tvPasswordError.text = "Password is required"
             tvPasswordError.visibility = View.VISIBLE
             isValid = false
-        } else if (password.length < 6) {
-            tvPasswordError.text = "Password must be at least 6 characters"
+        } else if (!isPasswordStrong(password)) {
+            tvPasswordError.text = "Use at least 6 characters, 1 uppercase letter, and 1 number"
             tvPasswordError.visibility = View.VISIBLE
             isValid = false
         }
@@ -220,6 +223,37 @@ class Step1EmailFragment : Fragment() {
         return isValid
     }
 
+    private fun isPasswordStrong(password: String): Boolean {
+        val hasMinimumLength = password.length >= 6
+        val hasUppercase = password.any { it.isUpperCase() }
+        val hasDigit = password.any { it.isDigit() }
+        return hasMinimumLength && hasUppercase && hasDigit
+    }
+
+    private fun updatePasswordHint(password: String) {
+        val hintMessage = if (password.isEmpty() || isPasswordStrong(password)) {
+            "Use at least 6 characters, 1 uppercase letter, and 1 number"
+        } else {
+            buildString {
+                append("Missing: ")
+                val missing = mutableListOf<String>()
+                if (password.length < 6) missing.add("6 characters")
+                if (!password.any { it.isUpperCase() }) missing.add("uppercase letter")
+                if (!password.any { it.isDigit() }) missing.add("number")
+                append(missing.joinToString(", "))
+            }
+        }
+
+        tvPasswordHint.text = hintMessage
+        tvPasswordHint.setTextColor(
+            if (password.isNotEmpty() && !isPasswordStrong(password)) {
+                Color.parseColor("#F44336")
+            } else {
+                Color.parseColor("#999999")
+            }
+        )
+    }
+
     private fun showVerificationDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_verify_email, null)
         val tvEmail = dialogView.findViewById<TextView>(R.id.tv_email)
@@ -228,7 +262,7 @@ class Step1EmailFragment : Fragment() {
 
         tvEmail.text = "Verification sent to:\n${viewModel.email.value}"
 
-        verificationDialog = AlertDialog.Builder(requireContext())
+        verificationDialog = AlertDialog.Builder(requireContext(), R.style.Theme_PawSociety_Dialog)
             .setView(dialogView)
             .setCancelable(false)
             .create()

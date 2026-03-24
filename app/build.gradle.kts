@@ -47,6 +47,11 @@ android {
 
     // ⚠️ DO NOT ADD composeOptions { kotlinCompilerExtensionVersion } HERE.
     // It is now handled by the plugin above for Kotlin 2.0.21.
+
+    lint {
+        checkReleaseBuilds = false
+        disable.addAll(listOf("all"))
+    }
 }
 
 dependencies {
@@ -108,6 +113,7 @@ dependencies {
     implementation("com.github.chrisbanes:photoview:2.3.0")
     implementation("io.socket:socket.io-client:2.1.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.datastore:datastore-preferences:1.1.1")

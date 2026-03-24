@@ -77,7 +77,53 @@
 
         <activity
             android:name=".LoginActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ForgotPasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ResetPasswordConfirmActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            
+            <!-- App Links (NEW - standard Android approach, no user confirmation needed) -->
+            <!-- Handles: https://yourbackend.com/auth/reset-password?oobCode=XXX -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Replace YOUR_BACKEND_DOMAIN with your actual domain -->
+                <data
+                    android:scheme="https"
+                    android:host="YOUR_BACKEND_DOMAIN"
+                    android:pathPrefix="/auth/reset-password" />
+            </intent-filter>
+            
+            <!-- Custom scheme (instant deeplink without requiring assetlinks.json) -->
+            <!-- Handles: pawsociety://reset-password?oobCode=XXX -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="pawsociety"
+                    android:host="reset-password" />
+            </intent-filter>
+            
+            <!-- Dynamic Links (DEPRECATED - kept for backward compatibility) -->
+            <!-- Handles: https://pawsociety.page.link/resetPassword?oobCode=XXX -->
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="pawsociety.page.link"
+                    android:pathPrefix="/resetPassword" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".RegisterActivity"
             android:exported="false" />
@@ -94,14 +140,19 @@
             android:name=".FindActivity"
             android:exported="false" />
         <activity
+            android:name=".NearbyPetsMapActivity"
+            android:exported="false" />
+        <activity
             android:name=".InboxActivity"
             android:exported="false" />
         <activity
             android:name=".ChatActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".CreatePostActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".NotificationsActivity"
             android:exported="false" />
@@ -120,10 +171,12 @@
             android:theme="@style/Theme.AppCompat.NoActionBar" />
         <activity
             android:name=".EditPostActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".DeleteAccountActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".BlockedUsersActivity"
             android:exported="false" />
@@ -138,7 +191,9 @@
 
 
 
-        <activity android:name=".EditProfileActivity" />
+        <activity
+            android:name=".EditProfileActivity"
+            android:windowSoftInputMode="adjustResize" />
         <activity android:name=".HiddenPostsActivity" />
         <activity android:name=".NotificationsSettingsActivity" />
         <activity android:name=".PrivacyActivity" />
@@ -147,6 +202,15 @@
         <activity android:name=".AboutActivity" />
         <activity android:name=".WebViewActivity" />
 
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyA8CoDD1fBOCOB40tifAJjJuIwKJAjp-bo" />
+
+        <!-- Suppress Firebase Dynamic Links deprecation warning (temporary while migrating) -->
+        <meta-data
+            android:name="com.firebase.suppress_dynamic_links_deprecation_warning"
+            android:value="true" />
 
     </application>
 

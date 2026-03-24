@@ -88,6 +88,27 @@ class HidePostRepository {
         }
     }
 
+    suspend fun getHiddenPostIds(userUid: String): Result<Set<String>> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.getHiddenPosts(userUid)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body?.success == true) {
+                    val posts = body.data?.filterNotNull() ?: emptyList()
+                    val ids = posts.map { it.postId }.toSet()
+                    Result.success(ids)
+                } else {
+                    Result.success(emptySet())
+                }
+            } else {
+                Result.success(emptySet())
+            }
+        } catch (e: Exception) {
+            Result.success(emptySet())
+        }
+    }
+
     suspend fun getHiddenCount(userUid: String): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getHiddenCount(userUid)

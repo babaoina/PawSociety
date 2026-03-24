@@ -71,7 +71,7 @@ class AboutActivity : AppCompatActivity() {
     }
 
     private fun showOpenSourceLicenses() {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Open Source Licenses")
             .setMessage("PawSociety uses the following open source libraries:\n\n" +
                     "- Retrofit (Apache 2.0)\n" +

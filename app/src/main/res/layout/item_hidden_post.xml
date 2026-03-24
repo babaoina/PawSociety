@@ -86,6 +86,7 @@
             android:id="@+id/btn_unhide"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
+            android:layout_gravity="center_vertical"
             android:gravity="center"
             android:text="Unhide"
             android:textColor="#FFFFFF"
@@ -94,6 +95,7 @@
             android:background="@drawable/button_oval_brown"
             android:paddingHorizontal="16dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"
+            android:visibility="visible" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

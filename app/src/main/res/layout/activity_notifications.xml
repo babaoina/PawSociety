@@ -32,18 +32,20 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <!-- Optional: Settings/More button (can be added later) -->
-        <ImageView
-            android:id="@+id/btn_more"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+        <!-- Clear All Button -->
+        <TextView
+            android:id="@+id/btn_clear_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:layout_marginEnd="16dp"
-            android:src="@drawable/ic_more_vert"
-            android:tint="#000000"
-            android:visibility="gone"
-            android:contentDescription="More" />
+            android:text="Clear"
+            android:textColor="#7A4F2B"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:contentDescription="Clear all notifications" />
     </RelativeLayout>
 
     <!-- Divider Line -->

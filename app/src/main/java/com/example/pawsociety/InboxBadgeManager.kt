@@ -72,7 +72,7 @@ object InboxBadgeManager {
         badgeViews.forEach { badge ->
             badge.post {
                 if (count > 0) {
-                    badge.text = if (count > 9) "9+" else count.toString()
+                    badge.text = if (count > 99) "99+" else count.toString()
                     badge.visibility = View.VISIBLE
                 } else {
                     badge.visibility = View.GONE

@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -25,9 +26,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
-import com.example.pawsociety.api.ApiHighlight
 import com.example.pawsociety.api.ApiPost
 import com.example.pawsociety.api.ApiUser
+import com.example.pawsociety.data.repository.PostRepository
 import com.example.pawsociety.data.repository.UploadRepository
 import com.example.pawsociety.util.FileHelper
 import com.example.pawsociety.util.PermissionHelper
@@ -46,9 +47,9 @@ class ProfileActivity : BaseNavigationActivity() {
     private lateinit var viewModel: ProfileViewModel
 
     private val uploadRepository = UploadRepository()
+    private val postRepository = PostRepository()
     private var currentUser: ApiUser? = null
     private var selectedProfileImageUri: Uri? = null
-    private var selectedHighlightImageUri: Uri? = null
     private var currentDialogView: View? = null
     private var currentPhotoPath: String? = null
     private var isUploading = false
@@ -57,6 +58,13 @@ class ProfileActivity : BaseNavigationActivity() {
     companion object {
         private const val EDIT_PROFILE_REQUEST = 1001
         private const val CREATE_POST_REQUEST = 1002
+        private const val STATE_CURRENT_IMAGE_URI = "state_current_image_uri"
+        private const val STATE_CURRENT_PHOTO_PATH = "state_current_photo_path"
+        private val PROFILE_RESOLVED_LABELS = mapOf(
+            "Lost" to "Mark as Reunited",
+            "Found" to "Mark as Returned",
+            "Adoption" to "Mark as Adopted"
+        )
     }
 
     // Gallery launcher for picking images
@@ -108,13 +116,12 @@ class ProfileActivity : BaseNavigationActivity() {
     // Camera launcher
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
-            currentPhotoPath?.let { path ->
-                val file = File(path)
-                if (file.exists()) {
-                    val uri = Uri.fromFile(file)
-                    selectedProfileImageUri = uri
-                    startCrop(uri)
-                }
+            val capturedUri = resolveCapturedImageUri()
+            if (capturedUri != null) {
+                selectedProfileImageUri = capturedUri
+                startCrop(capturedUri)
+            } else {
+                Toast.makeText(this, "Captured image could not be found", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -147,21 +154,13 @@ class ProfileActivity : BaseNavigationActivity() {
         pendingPermissionAction = ""
     }
 
-    private val highlightImagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            selectedHighlightImageUri = it
-            currentDialogView?.findViewById<ImageView>(R.id.highlight_image_preview)?.let { imageView ->
-                imageView.setImageURI(it)
-                imageView.visibility = View.VISIBLE
-            }
-        }
-    }
-
     private var currentTab = "posts"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
+        selectedProfileImageUri = savedInstanceState?.getParcelable(STATE_CURRENT_IMAGE_URI)
+        currentPhotoPath = savedInstanceState?.getString(STATE_CURRENT_PHOTO_PATH)
 
         // 🔥 ADD THIS LINE - Register badge for this activity
         try {
@@ -209,11 +208,6 @@ class ProfileActivity : BaseNavigationActivity() {
                     updateProfileWithUserData(user)
                     setupAllClickListeners()
                 }
-            }
-
-            viewModel.highlights.observe(this) { highlights ->
-                println("📱 ProfileActivity - Highlights received: ${highlights.size}")
-                updateHighlightsDisplay(highlights)
             }
 
             viewModel.userPosts.observe(this) { posts ->
@@ -289,6 +283,18 @@ class ProfileActivity : BaseNavigationActivity() {
         ).apply {
             currentPhotoPath = absolutePath
         }
+    }
+
+    private fun resolveCapturedImageUri(): Uri? {
+        selectedProfileImageUri?.let { return it }
+
+        val photoPath = currentPhotoPath ?: return null
+        val file = File(photoPath)
+        if (!file.exists() || file.length() == 0L) {
+            return null
+        }
+
+        return Uri.fromFile(file)
     }
 
     private fun startCrop(sourceUri: Uri) {
@@ -375,7 +381,7 @@ class ProfileActivity : BaseNavigationActivity() {
     private fun showImageSourceDialog() {
         val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Change Profile Picture")
             .setItems(options) { _, which ->
                 when (which) {
@@ -753,185 +759,6 @@ class ProfileActivity : BaseNavigationActivity() {
         return Color.parseColor(colors[index])
     }
 
-    private fun updateHighlightsDisplay(highlights: List<ApiHighlight>) {
-        try {
-            val highlightsContainer = findViewById<LinearLayout>(R.id.highlights_container)
-            highlightsContainer?.removeAllViews()
-            addNewHighlightButton(highlightsContainer)
-            for (highlight in highlights) {
-                addHighlightView(highlightsContainer, highlight)
-            }
-        } catch (e: Exception) {
-            println("❌ Error in updateHighlightsDisplay: ${e.message}")
-        }
-    }
-
-    private fun addNewHighlightButton(container: LinearLayout?) {
-        if (container == null) return
-        try {
-            val newHighlightView = layoutInflater.inflate(R.layout.item_highlight_new, container, false)
-            newHighlightView.setOnClickListener { view ->
-                view.animate().scaleX(0.8f).scaleY(0.8f).setDuration(150).withEndAction {
-                    view.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
-                }.start()
-                showCreateHighlightDialog()
-            }
-            container.addView(newHighlightView)
-        } catch (e: Exception) {
-            println("❌ Error in addNewHighlightButton: ${e.message}")
-        }
-    }
-
-    private fun addHighlightView(container: LinearLayout?, highlight: ApiHighlight) {
-        if (container == null) return
-        try {
-            val highlightView = layoutInflater.inflate(R.layout.item_highlight, container, false)
-
-            val circleBackground = highlightView.findViewById<View>(R.id.highlight_circle_background)
-            val circleImage = highlightView.findViewById<ImageView>(R.id.highlight_circle_image)
-            val circleText = highlightView.findViewById<TextView>(R.id.highlight_circle_text)
-            val titleText = highlightView.findViewById<TextView>(R.id.highlight_title)
-
-            if (!highlight.imageUrl.isNullOrEmpty()) {
-                circleImage.visibility = View.VISIBLE
-                circleText.visibility = View.GONE
-                circleBackground.visibility = View.GONE
-
-                val fullImageUrl = if (highlight.imageUrl.startsWith("http")) {
-                    highlight.imageUrl
-                } else {
-                    "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}${highlight.imageUrl}"
-                }
-
-                Glide.with(this)
-                    .load(fullImageUrl)
-                    .circleCrop()
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .into(circleImage)
-            } else {
-                circleImage.visibility = View.GONE
-                circleText.visibility = View.VISIBLE
-                circleBackground.visibility = View.VISIBLE
-
-                val backgroundDrawable = ContextCompat.getDrawable(this, R.drawable.circle_solid_highlight)
-                backgroundDrawable?.setColorFilter(Color.parseColor(highlight.color), PorterDuff.Mode.SRC_ATOP)
-                circleBackground?.background = backgroundDrawable
-
-                circleText?.text = highlight.emoji
-            }
-
-            titleText?.text = highlight.name
-
-            highlightView.setOnClickListener { view ->
-                view.animate().scaleX(0.8f).scaleY(0.8f).setDuration(150).withEndAction {
-                    view.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
-                }.start()
-                Toast.makeText(this, "Viewing ${highlight.name} highlight", Toast.LENGTH_SHORT).show()
-            }
-            container.addView(highlightView)
-        } catch (e: Exception) {
-            println("❌ Error in addHighlightView: ${e.message}")
-        }
-    }
-
-    private fun showCreateHighlightDialog() {
-        try {
-            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_highlight, null)
-            currentDialogView = dialogView
-
-            val etName = dialogView.findViewById<EditText>(R.id.et_highlight_name)
-            val btnSelectImage = dialogView.findViewById<LinearLayout>(R.id.btn_select_image)
-            val highlightImagePreview = dialogView.findViewById<ImageView>(R.id.highlight_image_preview)
-            val postsContainer = dialogView.findViewById<LinearLayout>(R.id.posts_container)
-
-            if (selectedHighlightImageUri != null) {
-                highlightImagePreview?.setImageURI(selectedHighlightImageUri)
-                highlightImagePreview?.visibility = View.VISIBLE
-            }
-
-            btnSelectImage?.setOnClickListener {
-                highlightImagePickerLauncher.launch("image/*")
-            }
-
-            loadUserPostsForHighlights(postsContainer)
-
-            val dialog = AlertDialog.Builder(this)
-                .setView(dialogView)
-                .setPositiveButton("Create", null)
-                .setNegativeButton("Cancel", null)
-                .create()
-
-            dialog.setOnShowListener {
-                val button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                button.setOnClickListener {
-                    val name = etName?.text.toString().trim()
-                    if (name.isEmpty()) {
-                        Toast.makeText(this, "Please enter a highlight name", Toast.LENGTH_SHORT).show()
-                        return@setOnClickListener
-                    }
-
-                    val selectedPostIds = emptyList<String>()
-                    viewModel.createHighlight(
-                        name = name,
-                        emoji = "📸",
-                        color = "#FF6B35",
-                        imageUrl = null,
-                        postIds = selectedPostIds
-                    )
-                    dialog.dismiss()
-                }
-            }
-            dialog.show()
-        } catch (e: Exception) {
-            println("❌ Error in showCreateHighlightDialog: ${e.message}")
-            e.printStackTrace()
-            Toast.makeText(this, "Could not create highlight", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun loadUserPostsForHighlights(container: LinearLayout?) {
-        if (container == null) return
-        container.removeAllViews()
-
-        viewModel.userPosts.observe(this) { userPosts ->
-            if (userPosts.isNotEmpty()) {
-                val posts = userPosts.take(5)
-                for (post in posts) {
-                    try {
-                        val postItem = layoutInflater.inflate(R.layout.item_highlight_post, container, false)
-                        val postImage = postItem.findViewById<ImageView>(R.id.post_image)
-
-                        if (!post.imageUrls.isNullOrEmpty() && post.imageUrls.isNotEmpty()) {
-                            val imageUrl = post.imageUrls[0]
-                            val fullImageUrl = if (imageUrl.startsWith("http")) {
-                                imageUrl
-                            } else {
-                                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$imageUrl"
-                            }
-
-                            Glide.with(this@ProfileActivity)
-                                .load(fullImageUrl)
-                                .centerCrop()
-                                .placeholder(android.R.drawable.ic_menu_gallery)
-                                .into(postImage!!)
-                        }
-
-                        postItem.setOnClickListener {
-                            selectedHighlightImageUri = null
-                            Toast.makeText(this@ProfileActivity, "Selected: ${post.petName}", Toast.LENGTH_SHORT).show()
-                            val previewImage = currentDialogView?.findViewById<ImageView>(R.id.highlight_image_preview)
-                            previewImage?.setImageDrawable(postImage?.drawable)
-                            previewImage?.visibility = View.VISIBLE
-                        }
-                        container.addView(postItem)
-                    } catch (e: Exception) {
-                        println("❌ Error loading post for highlight: ${e.message}")
-                    }
-                }
-            }
-        }
-    }
-
     private fun parseFullName(fullName: String): Triple<String, String, String> {
         return try {
             val parts = fullName.split(", ")
@@ -1162,6 +989,24 @@ class ProfileActivity : BaseNavigationActivity() {
                                 statusBadge.background.setTint(Color.parseColor("#2196F3"))
                                 statusBadge.visibility = View.VISIBLE
                             }
+                            "reunited" -> {
+                                statusBadge.text = "REUNITED"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#8E6E53"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            "returned" -> {
+                                statusBadge.text = "RETURNED"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#8E6E53"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            "adopted" -> {
+                                statusBadge.text = "ADOPTED"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#8E6E53"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
                             else -> {
                                 statusBadge.visibility = View.GONE
                             }
@@ -1213,6 +1058,18 @@ class ProfileActivity : BaseNavigationActivity() {
                         intent.putExtra("position", currentPosition)
                         startActivity(intent)
                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                    }
+
+                    postView.setOnLongClickListener {
+                        val isOwnPost = currentTab == "posts" && currentUser?.firebaseUid == post.firebaseUid
+                        val resolveLabel = PROFILE_RESOLVED_LABELS[post.status]
+
+                        if (isOwnPost && resolveLabel != null) {
+                            showProfileResolveDialog(post, resolveLabel)
+                            true
+                        } else {
+                            false
+                        }
                     }
 
                     squareContainer.addView(postView)
@@ -1317,6 +1174,47 @@ class ProfileActivity : BaseNavigationActivity() {
         }
     }
 
+    private fun showProfileResolveDialog(post: ApiPost, resolveLabel: String) {
+        val dialog = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
+            .setTitle(resolveLabel)
+            .setMessage("Do you want to update ${post.petName}'s post status?")
+            .setPositiveButton("Yes") { _, _ ->
+                resolvePostFromProfile(post)
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#7A4F2B"))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#666666"))
+        }
+
+        dialog.show()
+    }
+
+    private fun resolvePostFromProfile(post: ApiPost) {
+        val user = currentUser ?: return
+
+        lifecycleScope.launch {
+            val result = postRepository.resolvePost(post.postId, user.firebaseUid)
+            if (result.isSuccess) {
+                Toast.makeText(
+                    this@ProfileActivity,
+                    "Post updated successfully",
+                    Toast.LENGTH_SHORT
+                ).show()
+                viewModel.loadUserPosts(user.firebaseUid)
+            } else {
+                Toast.makeText(
+                    this@ProfileActivity,
+                    result.exceptionOrNull()?.message ?: "Failed to update post",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
     private fun showEditProfileDialog(user: ApiUser) {
         try {
             val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_profile, null)
@@ -1355,7 +1253,7 @@ class ProfileActivity : BaseNavigationActivity() {
 
             setupValidation(etLastName!!, etFirstName!!, etUsername!!)
 
-            val dialog = AlertDialog.Builder(this)
+            val dialog = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setView(dialogView)
                 .setPositiveButton("Save", null)
                 .setNegativeButton("Cancel", null)
@@ -1489,6 +1387,12 @@ class ProfileActivity : BaseNavigationActivity() {
         } catch (e: Exception) {
             println("❌ Error in onResume: ${e.message}")
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putParcelable(STATE_CURRENT_IMAGE_URI, selectedProfileImageUri)
+        outState.putString(STATE_CURRENT_PHOTO_PATH, currentPhotoPath)
     }
 
     override fun onSupportNavigateUp(): Boolean {

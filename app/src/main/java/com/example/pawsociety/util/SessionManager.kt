@@ -27,6 +27,11 @@ class SessionManager(context: Context) {
         private const val PREFS_NAME = "pawsociety_session"
         private const val KEY_USER = "current_user"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
+        private const val KEY_TEMP_FB_UID = "temp_firebase_uid"
+        private const val KEY_TEMP_EMAIL = "temp_email"
+        private const val KEY_TEMP_USERNAME = "temp_username"
+        private const val KEY_TEMP_FULLNAME = "temp_full_name"
+        private const val KEY_TEMP_PASSWORD = "temp_password"
     }
 
     fun saveUserSession(user: ApiUser) {
@@ -109,6 +114,43 @@ class SessionManager(context: Context) {
         return getCurrentUser()?.username
     }
 
+    fun saveTempRegistrationData(firebaseUid: String, email: String, username: String? = null, fullName: String? = null, password: String) {
+        println("💾 SessionManager: Saving temporary registration data")
+        editor.putString(KEY_TEMP_FB_UID, firebaseUid)
+        editor.putString(KEY_TEMP_EMAIL, email)
+        editor.putString(KEY_TEMP_USERNAME, username ?: "")
+        editor.putString(KEY_TEMP_FULLNAME, fullName ?: "")
+        editor.putString(KEY_TEMP_PASSWORD, password)
+        editor.apply()
+        println("✅ Temporary registration data saved")
+    }
+
+    fun getTempRegistrationData(): Map<String, String>? {
+        val fbUid = prefs.getString(KEY_TEMP_FB_UID, null) ?: return null
+        val email = prefs.getString(KEY_TEMP_EMAIL, "") ?: ""
+        val username = prefs.getString(KEY_TEMP_USERNAME, "") ?: ""
+        val fullName = prefs.getString(KEY_TEMP_FULLNAME, "") ?: ""
+        val password = prefs.getString(KEY_TEMP_PASSWORD, "") ?: ""
+        
+        return mapOf(
+            "firebaseUid" to fbUid,
+            "email" to email,
+            "username" to username,
+            "fullName" to fullName,
+            "password" to password
+        )
+    }
+
+    fun clearTempRegistrationData() {
+        editor.remove(KEY_TEMP_FB_UID)
+        editor.remove(KEY_TEMP_EMAIL)
+        editor.remove(KEY_TEMP_USERNAME)
+        editor.remove(KEY_TEMP_FULLNAME)
+        editor.remove(KEY_TEMP_PASSWORD)
+        editor.apply()
+        println("🧹 Temporary registration data cleared")
+    }
+
     // ===== STATUS CHECKER =====
     private var statusCheckJob: Job? = null
 
@@ -130,6 +172,16 @@ class SessionManager(context: Context) {
 
                     println("🔍 Checking status for user: ${currentUser.firebaseUid}")
 
+                    val isFirebaseValid = FirebaseAuthHelper.isUserValid()
+                    if (!isFirebaseValid) {
+                        println("Firebase account is no longer valid. Forcing logout NOW")
+                        withContext(Dispatchers.Main) {
+                            forceLogout("Your account is no longer available.")
+                        }
+                        isRunning = false
+                        break
+                    }
+
                     // Call the API with proper map
                     val response = ApiClient.apiService.checkUserStatus(mapOf("firebaseUid" to currentUser.firebaseUid))
 
@@ -139,7 +191,14 @@ class SessionManager(context: Context) {
                         val body = response.body()
                         println("📦 Response body: $body")
 
-                        if (body != null && body.success) {
+                        if (body != null && body.status == "deleted") {
+                            println("USER IS DELETED! Forcing logout NOW")
+                            withContext(Dispatchers.Main) {
+                                forceLogout("Your account has been deleted")
+                            }
+                            isRunning = false
+                            break
+                        } else if (body != null && body.success) {
                             println("📊 User status from server: ${body.status}")
 
                             if (body.status == "Suspended") {

@@ -130,7 +130,7 @@ class BlockedUsersActivity : AppCompatActivity() {
         val userInfo = userMap[block.blockedUid]
         val username = userInfo?.username ?: "this user"
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Unblock User")
             .setMessage("Are you sure you want to unblock $username?")
             .setPositiveButton("Unblock") { _, _ ->

@@ -46,7 +46,14 @@ async function sendNotificationToReporter(userId, message, type, reportId, postI
 // GET all posts with reports
 router.get('/', async (req, res) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 }).lean();
+    const { status } = req.query;
+    const query = {};
+
+    if (status) {
+      query.status = status;
+    }
+
+    const posts = await Post.find(query).sort({ createdAt: -1 }).lean();
     const reports = await Report.find().lean();
     
     const reportsByPost = {};
@@ -67,6 +74,8 @@ router.get('/', async (req, res) => {
       age: post.age,
       weight: post.weight,
       status: post.status,
+      resolvedStatus: post.resolvedStatus || '',
+      isResolved: !!post.isResolved,
       userName: post.userName,
       location: post.location,
       description: post.description,

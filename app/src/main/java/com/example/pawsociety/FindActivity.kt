@@ -11,6 +11,7 @@ import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.core.app.ActivityCompat
@@ -80,6 +81,7 @@ class FindActivity : BaseNavigationActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var currentLocation: Location? = null
     private val locationRequestCode = 1001
+    private var currentLocationField: EditText? = null  // Store reference to location EditText
 
     // Sort options
     private var currentSort = "newest" // newest, oldest, most_liked
@@ -201,6 +203,21 @@ class FindActivity : BaseNavigationActivity() {
                 searchHandler.postDelayed(searchRunnable!!, 300)
             }
         })
+        
+        // Keyboard scroll handling for search input
+        searchInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                searchInput.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        searchInput.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        // Scroll search input to top when focused
+                        recyclerView.post {
+                            recyclerView.scrollToPosition(0)
+                        }
+                    }
+                })
+            }
+        }
 
         // Handle search action from keyboard
         searchInput.setOnEditorActionListener { _, actionId, _ ->
@@ -325,6 +342,13 @@ class FindActivity : BaseNavigationActivity() {
                 applyFiltersAndSort()
             }
         }
+
+        // GPS Floating Action Button
+        val fabGpsMap = findViewById<View>(R.id.fab_gps_map)
+        fabGpsMap.setOnClickListener {
+            val intent = Intent(this, NearbyPetsMapActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun showFilterDialog() {
@@ -333,9 +357,8 @@ class FindActivity : BaseNavigationActivity() {
         val rgSortBy = dialogView.findViewById<RadioGroup>(R.id.rg_sort_by)
         val rgTimeRange = dialogView.findViewById<RadioGroup>(R.id.rg_time_range)
         val etLocation = dialogView.findViewById<EditText>(R.id.et_location)
-        val btnNearby = dialogView.findViewById<Button>(R.id.btn_nearby)
-        val btnApply = dialogView.findViewById<Button>(R.id.btn_apply_filter)  // Make sure this ID matches your XML
-        val btnCancel = dialogView.findViewById<Button>(R.id.btn_cancel_filter)  // Make sure this ID matches your XML
+        val btnApply = dialogView.findViewById<Button>(R.id.btn_apply_filter)
+        val btnCancel = dialogView.findViewById<Button>(R.id.btn_cancel_filter)
 
         // Check if views exist before using them
         if (rgSortBy == null || rgTimeRange == null || etLocation == null) {
@@ -359,14 +382,7 @@ class FindActivity : BaseNavigationActivity() {
 
         etLocation.setText(currentLocationFilter)
 
-        // Set up nearby button if it exists
-        btnNearby?.setOnClickListener {
-            checkLocationPermissionAndSearch()
-            // Dismiss dialog - you'll need a reference to the dialog
-        }
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Filter & Sort")
+        val dialog = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setView(dialogView)
             .setCancelable(false)
             .create()
@@ -396,7 +412,7 @@ class FindActivity : BaseNavigationActivity() {
             dialog.dismiss()
         }
 
-        // Set up cancel button
+        // Set up cancel button - make sure text is visible
         btnCancel?.setOnClickListener {
             dialog.dismiss()
         }
@@ -404,7 +420,8 @@ class FindActivity : BaseNavigationActivity() {
         dialog.show()
     }
 
-    private fun checkLocationPermissionAndSearch() {
+    private fun checkLocationPermissionAndSearch(etLocation: EditText) {
+        currentLocationField = etLocation  // Store reference
         if (PermissionHelper.hasLocationPermission(this)) {
             getCurrentLocation()
         } else {
@@ -421,42 +438,38 @@ class FindActivity : BaseNavigationActivity() {
         progressBar.visibility = View.VISIBLE
         Toast.makeText(this, "Getting your location...", Toast.LENGTH_SHORT).show()
 
-        fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
-            progressBar.visibility = View.GONE
-            if (location != null) {
-                currentLocation = location
-                searchNearby(location)
-            } else {
-                Toast.makeText(this, "Could not get location. Please try again.", Toast.LENGTH_SHORT).show()
-            }
-        }.addOnFailureListener {
-            progressBar.visibility = View.GONE
-            Toast.makeText(this, "Failed to get location", Toast.LENGTH_SHORT).show()
+        // Request real-time location updates instead of just lastLocation
+        val locationRequest = LocationRequest.create().apply {
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            interval = 1000 // 1 second
+            fastestInterval = 500
+            numUpdates = 1 // Just get one update
         }
-    }
 
-    private fun searchNearby(location: Location) {
-        progressBar.visibility = View.VISIBLE
-        lifecycleScope.launch {
-            try {
-                // In a real app, you'd send lat/lng to backend
-                // For now, just filter by location string if available
-                val result = withContext(Dispatchers.IO) {
-                    postRepository.getPosts(limit = 100)
-                }
-
-                if (result.isSuccess) {
-                    allPosts = result.getOrNull() ?: emptyList()
-                    // Filter posts near this location (simplified)
-                    // In real app, backend would handle proximity search
-                    Toast.makeText(this@FindActivity, "Showing nearby pets", Toast.LENGTH_SHORT).show()
-                    applyFiltersAndSort()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                super.onLocationResult(locationResult)
                 progressBar.visibility = View.GONE
+
+                val location = locationResult.lastLocation
+                if (location != null) {
+                    currentLocation = location
+                    // Update location field with coordinates
+                    currentLocationField?.setText(String.format("%.4f, %.4f", location.latitude, location.longitude))
+                    Toast.makeText(this@FindActivity, "Location updated: ${currentLocationField?.text}", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@FindActivity, "Could not get location", Toast.LENGTH_SHORT).show()
+                }
+
+                fusedLocationClient.removeLocationUpdates(this)
             }
+        }
+
+        try {
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        } catch (e: Exception) {
+            progressBar.visibility = View.GONE
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -518,12 +531,83 @@ class FindActivity : BaseNavigationActivity() {
             }
         }
 
-        // Filter by location (simple contains match)
-        if (currentLocationFilter.isNotEmpty()) {
+        // Filter by location (proximity-based if user location available)
+        if (currentLocationFilter.isNotEmpty() && currentLocation != null) {
+            // If we have GPS coordinates, use proximity filtering (5km radius)
+            val coordinates = currentLocationFilter.split(",")
+            if (coordinates.size == 2) {
+                try {
+                    val userLat = coordinates[0].trim().toDouble()
+                    val userLon = coordinates[1].trim().toDouble()
+                    
+                    filteredPosts = filteredPosts.filter { post ->
+                        // Try to extract coordinates from post location or use proximity fallback
+                        isPostNearby(post, userLat, userLon)
+                    }
+                } catch (e: Exception) {
+                    // Fallback to text search if coordinate parsing fails
+                    filteredPosts = filteredPosts.filter {
+                        it.location?.contains(currentLocationFilter, ignoreCase = true) == true
+                    }
+                }
+            } else {
+                // Fallback to text search
+                filteredPosts = filteredPosts.filter {
+                    it.location?.contains(currentLocationFilter, ignoreCase = true) == true
+                }
+            }
+        } else if (currentLocationFilter.isNotEmpty()) {
+            // Text-based location search as fallback
             filteredPosts = filteredPosts.filter {
                 it.location?.contains(currentLocationFilter, ignoreCase = true) == true
             }
         }
+    }
+
+    /**
+     * Check if a post is within 5km of user location
+     * Uses Haversine formula for accurate distance calculation
+     */
+    private fun isPostNearby(post: ApiPost, userLat: Double, userLon: Double): Boolean {
+        // Try to extract coordinates from post location string
+        // Format could be: "14.5995, 120.9842" or just a city name
+        val postCoordinates = post.location?.split(",")
+        
+        if (postCoordinates?.size == 2) {
+            try {
+                val postLat = postCoordinates[0].trim().toDouble()
+                val postLon = postCoordinates[1].trim().toDouble()
+                
+                // Calculate distance using Haversine formula
+                val distanceKm = calculateDistance(userLat, userLon, postLat, postLon)
+                
+                // Show posts within 5km radius
+                return distanceKm <= 5.0
+            } catch (e: Exception) {
+                // If parsing fails, include the post anyway
+                return true
+            }
+        }
+        
+        // If post location is not in coordinate format, include it
+        return true
+    }
+
+    /**
+     * Calculate distance between two GPS coordinates using Haversine formula
+     * Returns distance in kilometers
+     */
+    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val R = 6371 // Earth's radius in kilometers
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        
+        val c = 2 * Math.asin(Math.sqrt(a))
+        return R * c
     }
 
     private fun parseDate(dateString: String): Date? {
@@ -576,7 +660,12 @@ class FindActivity : BaseNavigationActivity() {
             try {
                 val status = if (currentFilter != "All") currentFilter else null
                 val result = withContext(Dispatchers.IO) {
-                    searchRepository.searchPosts(query, status, limit = 100)
+                    searchRepository.searchPosts(
+                        query,
+                        status,
+                        sessionManager.getCurrentUser()?.firebaseUid,
+                        limit = 100
+                    )
                 }
 
                 if (result.isSuccess) {
@@ -618,7 +707,7 @@ class FindActivity : BaseNavigationActivity() {
         lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    postRepository.getPosts(limit = 100)
+                    postRepository.getPosts(limit = 100, viewerUid = sessionManager.getCurrentUser()?.firebaseUid)
                 }
 
                 if (result.isSuccess) {
@@ -656,12 +745,44 @@ class FindActivity : BaseNavigationActivity() {
             recyclerView.visibility = View.VISIBLE
             emptyState.visibility = View.GONE
 
-            val adapter = FindAdapter(filteredPosts) { post ->
-                val intent = Intent(this, PostDetailsActivity::class.java)
-                intent.putExtra("post", post)
-                startActivity(intent)
+            // 🔥 APPLY POST FILTERING UTILITY - Filter by hidden posts AND blocked users
+            lifecycleScope.launch {
+                try {
+                    val currentUser = sessionManager.getCurrentUser()
+                    if (currentUser != null) {
+                        val filteredByUserPrefs = com.example.pawsociety.util.PostFilteringUtil.filterPosts(
+                            filteredPosts,
+                            currentUser.firebaseUid
+                        )
+                        
+                        val adapter = FindAdapter(filteredByUserPrefs) { post ->
+                            val intent = Intent(this@FindActivity, PostDetailsActivity::class.java)
+                            intent.putExtra("post", post)
+                            startActivity(intent)
+                        }
+                        recyclerView.adapter = adapter
+                        
+                        android.util.Log.d("FindActivity", "Displayed ${filteredByUserPrefs.size} posts after filtering")
+                    } else {
+                        // Fallback if no current user
+                        val adapter = FindAdapter(filteredPosts) { post ->
+                            val intent = Intent(this@FindActivity, PostDetailsActivity::class.java)
+                            intent.putExtra("post", post)
+                            startActivity(intent)
+                        }
+                        recyclerView.adapter = adapter
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("FindActivity", "Error filtering posts: ${e.message}", e)
+                    // Fallback: display without advanced filtering
+                    val adapter = FindAdapter(filteredPosts) { post ->
+                        val intent = Intent(this@FindActivity, PostDetailsActivity::class.java)
+                        intent.putExtra("post", post)
+                        startActivity(intent)
+                    }
+                    recyclerView.adapter = adapter
+                }
             }
-            recyclerView.adapter = adapter
         }
     }
 

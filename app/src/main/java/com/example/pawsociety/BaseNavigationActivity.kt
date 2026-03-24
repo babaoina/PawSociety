@@ -1,6 +1,8 @@
 package com.example.pawsociety
 
 import android.content.Intent
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -12,14 +14,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
+import com.example.pawsociety.util.FirebaseAuthHelper
 import com.example.pawsociety.util.InboxBadgeManager
 import com.example.pawsociety.util.SessionManager
-import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
+import com.example.pawsociety.util.SocketManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import com.example.pawsociety.HomeViewModel
-import androidx.lifecycle.ViewModelProvider
 
 abstract class BaseNavigationActivity : AppCompatActivity() {
 
@@ -86,36 +86,77 @@ abstract class BaseNavigationActivity : AppCompatActivity() {
             resetAllTabs()
 
             findViewById<View>(R.id.nav_home)?.setOnClickListener {
+                animateNavTabPress(
+                    container = findViewById(R.id.nav_home),
+                    icon = findViewById(R.id.nav_home_icon),
+                    label = findViewById(R.id.nav_home_text)
+                )
                 if (this !is HomeActivity) {
-                    navigateTo(HomeActivity::class.java)
+                    findViewById<View>(R.id.nav_home)?.postDelayed({
+                        navigateTo(HomeActivity::class.java)
+                    }, 110)
                 }
             }
 
             findViewById<View>(R.id.nav_inbox)?.setOnClickListener {
+                animateNavTabPress(
+                    container = findViewById(R.id.nav_inbox),
+                    icon = findViewById(R.id.nav_inbox_icon),
+                    label = findViewById(R.id.nav_inbox_text)
+                )
                 if (this !is InboxActivity) {
-                    navigateTo(InboxActivity::class.java)
+                    findViewById<View>(R.id.nav_inbox)?.postDelayed({
+                        navigateTo(InboxActivity::class.java)
+                    }, 110)
                 } else {
                     // If already in inbox, mark as read when opened
-                    updateInboxBadge(0)
+                    findViewById<View>(R.id.nav_inbox)?.postDelayed({
+                        updateInboxBadge(0)
+                    }, 110)
                 }
             }
 
             findViewById<View>(R.id.nav_find)?.setOnClickListener {
+                animateNavTabPress(
+                    container = findViewById(R.id.nav_find),
+                    icon = findViewById(R.id.nav_find_icon),
+                    label = findViewById(R.id.nav_find_text)
+                )
                 if (this !is FindActivity) {
-                    navigateTo(FindActivity::class.java)
+                    findViewById<View>(R.id.nav_find)?.postDelayed({
+                        navigateTo(FindActivity::class.java)
+                    }, 110)
                 }
             }
 
             findViewById<View>(R.id.nav_profile)?.setOnClickListener {
+                animateNavTabPress(
+                    container = findViewById(R.id.nav_profile),
+                    icon = findViewById(R.id.nav_profile_icon),
+                    label = findViewById(R.id.nav_profile_text)
+                )
                 if (this !is ProfileActivity) {
-                    navigateTo(ProfileActivity::class.java)
+                    findViewById<View>(R.id.nav_profile)?.postDelayed({
+                        navigateTo(ProfileActivity::class.java)
+                    }, 110)
                 }
             }
 
             findViewById<View>(R.id.nav_paw_post)?.setOnClickListener {
-                val intent = Intent(this, CreatePostActivity::class.java)
-                startActivity(intent)
-                overridePendingTransition(0, 0)
+                animatePawPress()
+                findViewById<View>(R.id.nav_paw_post)?.postDelayed({
+                    val intent = Intent(this, CreatePostActivity::class.java)
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                }, 140)
+            }
+
+            findViewById<View>(R.id.fab_gps_map)?.setOnClickListener {
+                if (this !is NearbyPetsMapActivity) {
+                    val intent = Intent(this, NearbyPetsMapActivity::class.java)
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                }
             }
 
             highlightCurrentTab()
@@ -134,25 +175,42 @@ abstract class BaseNavigationActivity : AppCompatActivity() {
     private fun highlightCurrentTab() {
         resetAllTabs()
         val highlightColor = "#B88B4A"
+        val defaultColor = "#666666"
 
         when (this) {
             is HomeActivity -> {
-                findViewById<ImageView>(R.id.nav_home_icon)?.setColorFilter(Color.parseColor(highlightColor))
-                findViewById<TextView>(R.id.nav_home_text)?.setTextColor(Color.parseColor(highlightColor))
+                animateTabSelection(
+                    icon = findViewById(R.id.nav_home_icon),
+                    label = findViewById(R.id.nav_home_text),
+                    fromColor = defaultColor,
+                    toColor = highlightColor
+                )
             }
             is InboxActivity -> {
-                findViewById<ImageView>(R.id.nav_inbox_icon)?.setColorFilter(Color.parseColor(highlightColor))
-                findViewById<TextView>(R.id.nav_inbox_text)?.setTextColor(Color.parseColor(highlightColor))
+                animateTabSelection(
+                    icon = findViewById(R.id.nav_inbox_icon),
+                    label = findViewById(R.id.nav_inbox_text),
+                    fromColor = defaultColor,
+                    toColor = highlightColor
+                )
                 // Clear badge when viewing inbox
                 updateInboxBadge(0)
             }
             is FindActivity -> {
-                findViewById<ImageView>(R.id.nav_find_icon)?.setColorFilter(Color.parseColor(highlightColor))
-                findViewById<TextView>(R.id.nav_find_text)?.setTextColor(Color.parseColor(highlightColor))
+                animateTabSelection(
+                    icon = findViewById(R.id.nav_find_icon),
+                    label = findViewById(R.id.nav_find_text),
+                    fromColor = defaultColor,
+                    toColor = highlightColor
+                )
             }
             is ProfileActivity -> {
-                findViewById<ImageView>(R.id.nav_profile_icon)?.setColorFilter(Color.parseColor(highlightColor))
-                findViewById<TextView>(R.id.nav_profile_text)?.setTextColor(Color.parseColor(highlightColor))
+                animateTabSelection(
+                    icon = findViewById(R.id.nav_profile_icon),
+                    label = findViewById(R.id.nav_profile_text),
+                    fromColor = defaultColor,
+                    toColor = highlightColor
+                )
             }
         }
 
@@ -186,12 +244,140 @@ abstract class BaseNavigationActivity : AppCompatActivity() {
         findViewById<ImageView>(R.id.nav_paw_icon)?.setColorFilter(null)
     }
 
+    private fun animateNavTabPress(container: View?, icon: ImageView?, label: TextView?) {
+        container ?: return
+
+        container.animate()
+            .scaleX(0.94f)
+            .scaleY(0.94f)
+            .translationY((-3).toFloat())
+            .setDuration(70)
+            .withEndAction {
+                container.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .translationY(0f)
+                    .setDuration(140)
+                    .start()
+            }
+            .start()
+
+        icon?.let { navIcon ->
+            navIcon.animate()
+                .scaleX(1.16f)
+                .scaleY(1.16f)
+                .setDuration(80)
+                .withEndAction {
+                    navIcon.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(140)
+                        .start()
+                }
+                .start()
+        }
+
+        label?.let { navLabel ->
+            navLabel.animate()
+                .translationY((-2).toFloat())
+                .setDuration(80)
+                .withEndAction {
+                    navLabel.animate()
+                        .translationY(0f)
+                        .setDuration(140)
+                        .start()
+                }
+                .start()
+        }
+    }
+
+    private fun animatePawPress() {
+        val pawContainer = findViewById<View>(R.id.nav_paw_post) ?: return
+        val pawIcon = findViewById<ImageView>(R.id.nav_paw_icon)
+
+        pawContainer.animate()
+            .scaleX(0.9f)
+            .scaleY(0.9f)
+            .translationY((-4).toFloat())
+            .setDuration(75)
+            .withEndAction {
+                pawContainer.animate()
+                    .scaleX(1.14f)
+                    .scaleY(1.14f)
+                    .translationY((-10).toFloat())
+                    .setDuration(120)
+                    .withEndAction {
+                        pawContainer.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .translationY(0f)
+                            .setDuration(160)
+                            .start()
+                    }
+                    .start()
+            }
+            .start()
+
+        pawIcon?.animate()
+            ?.rotationBy(6f)
+            ?.setDuration(90)
+            ?.withEndAction {
+                pawIcon.animate()
+                    .rotation(0f)
+                    .setDuration(180)
+                    .start()
+            }
+            ?.start()
+    }
+
+    private fun animateTabSelection(icon: ImageView?, label: TextView?, fromColor: String, toColor: String) {
+        val start = Color.parseColor(fromColor)
+        val end = Color.parseColor(toColor)
+        val animator = ValueAnimator.ofObject(ArgbEvaluator(), start, end)
+
+        animator.duration = 180
+        animator.addUpdateListener { valueAnimator ->
+            val color = valueAnimator.animatedValue as Int
+            icon?.setColorFilter(color)
+            label?.setTextColor(color)
+        }
+        animator.start()
+
+        icon?.animate()
+            ?.scaleX(1.14f)
+            ?.scaleY(1.14f)
+            ?.setDuration(90)
+            ?.withEndAction {
+                icon.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(140)
+                    .start()
+            }
+            ?.start()
+    }
+
     fun updateInboxBadge(count: Int) {
         InboxBadgeManager.updateBadgeManually(count)
     }
 
     override fun onResume() {
         super.onResume()
+        lifecycleScope.launch {
+            if (sessionManager.isLoggedIn() && !FirebaseAuthHelper.isUserValid()) {
+                sessionManager.clearSession()
+                SocketManager.disconnect()
+
+                val intent = Intent(this@BaseNavigationActivity, LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    putExtra("force_logout", true)
+                    putExtra("logout_reason", "Your account is no longer available.")
+                }
+                startActivity(intent)
+                finish()
+                return@launch
+            }
+        }
         try {
             inboxBadge = findViewById(R.id.inbox_badge)
             InboxBadgeManager.registerBadge(inboxBadge)

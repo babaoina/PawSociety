@@ -9,13 +9,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#FFFFFF">
+        android:background="#FAF0E6">
 
         <!-- Top Bar - Instagram Style -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="#FFFFFF"
+            android:background="#FAF0E6"
             android:elevation="0dp">
 
             <TextView
@@ -29,7 +29,8 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
-            <!-- New Message Icon -->
+            <!-- New Message Icon - REMOVED per user request -->
+            <!--
             <ImageButton
                 android:id="@+id/btn_new_message"
                 android:layout_width="24dp"
@@ -41,6 +42,7 @@
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:contentDescription="New Message"
                 android:tint="#262626" />
+            -->
         </RelativeLayout>
 
         <!-- Search Bar - Instagram Style -->
@@ -51,7 +53,7 @@
             android:orientation="horizontal"
             android:paddingHorizontal="16dp"
             android:paddingBottom="8dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="#FAF0E6"
             android:clickable="true"
             android:focusable="true">
 
@@ -123,7 +125,7 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:orientation="horizontal"
-            android:background="#FFFFFF">
+            android:background="#FAF0E6">
 
             <!-- Messages Tab -->
             <RelativeLayout
@@ -206,12 +208,12 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:background="#FFFFFF">
+            android:background="#FAF0E6">
 
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#FFFFFF"
+                android:background="#FAF0E6"
                 android:paddingBottom="80dp">
 
                 <!-- Messages RecyclerView -->
@@ -219,7 +221,7 @@
                     android:id="@+id/inbox_recycler_view"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="#FFFFFF"
+                    android:background="#FAF0E6"
                     android:visibility="gone" />
 
                 <!-- Requests RecyclerView -->
@@ -227,7 +229,7 @@
                     android:id="@+id/requests_recycler_view"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="#FFFFFF"
+                    android:background="#FAF0E6"
                     android:visibility="gone" />
 
                 <!-- Empty State -->
@@ -239,7 +241,7 @@
                     android:gravity="center"
                     android:padding="32dp"
                     android:visibility="visible"
-                    android:background="#FFFFFF">
+                    android:background="#FAF0E6">
 
                     <ImageView
                         android:layout_width="80dp"
@@ -301,7 +303,22 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/paw"
-                android:layout_gravity="center" />
+            android:layout_gravity="center" />
         </FrameLayout>
     </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/fab_gps_map"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="88dp"
+        android:background="@drawable/bg_pawgps_button"
+        android:contentDescription="Open map view"
+        android:elevation="10dp"
+        android:padding="9dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/pawgps"
+        android:tint="#000000" />
 </FrameLayout>

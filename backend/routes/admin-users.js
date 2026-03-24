@@ -16,8 +16,17 @@ const ChatClear = require('../models/ChatClear');
 const ChatDelete = require('../models/ChatDelete');
 const adminAuth = require('../middleware/adminAuth');
 const admin = require('firebase-admin');
+const PRIMARY_ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'markdeverauwu143@gmail.com').toLowerCase();
 
 router.use(adminAuth);
+
+function getEffectiveRole(user) {
+  if (!user) return 'user';
+  if (user.role === 'admin' || String(user.email || '').toLowerCase() === PRIMARY_ADMIN_EMAIL) {
+    return 'admin';
+  }
+  return user.role || 'user';
+}
 
 // Helper to send notification
 async function sendNotificationToUser(userId, message, type, io) {
@@ -70,12 +79,22 @@ router.get('/', async (req, res) => {
     
     const formattedUsers = await Promise.all(
       users.map(async (user) => {
-        const reportCount = await Report.countDocuments({ 
-          $or: [
-            { reportedUid: user.firebaseUid },
-            { reporterUid: user.firebaseUid }
-          ]
+        // Get user's posts
+        const userPosts = await Post.find({ firebaseUid: user.firebaseUid }).select('postId').lean();
+        const postIds = userPosts.map(p => p.postId);
+        
+        // Count reports where user was reported (profile reports)
+        const profileReportCount = await Report.countDocuments({ 
+          reportedUid: user.firebaseUid
         });
+        
+        // Count reports on user's posts
+        const postReportCount = await Report.countDocuments({
+          postId: { $in: postIds }
+        });
+        
+        // Total report count (all reports received - both profile and posts)
+        const reportCount = profileReportCount + postReportCount;
         
         const posts = await Post.countDocuments({ firebaseUid: user.firebaseUid });
         
@@ -88,7 +107,8 @@ router.get('/', async (req, res) => {
           status: user.status || 'Active',
           joined: user.createdAt,
           posts: posts,
-          reportCount: reportCount
+          reportCount: reportCount,
+          role: getEffectiveRole(user)
         };
       })
     );
@@ -117,7 +137,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// UPDATE user (no role field)
+// UPDATE user (no role field) - saves to both MongoDB and Firebase
 router.put('/:id', async (req, res) => {
   try {
     const { name, email, status } = req.body;
@@ -135,11 +155,25 @@ router.put('/:id', async (req, res) => {
     if (email) updateData.email = email;
     if (status) updateData.status = status;
     
+    // Update in MongoDB
     const updatedUser = await User.findByIdAndUpdate(
       user._id,
       updateData,
       { new: true }
     );
+    
+    // Update in Firebase Auth if email changed
+    if (email && email !== user.email) {
+      try {
+        await admin.auth().updateUser(user.firebaseUid, {
+          email: email
+        });
+        console.log(`✅ Updated Firebase Auth email for user ${user.firebaseUid}`);
+      } catch (firebaseError) {
+        console.error(`⚠️ Failed to update Firebase Auth email:`, firebaseError.message);
+        // Continue anyway - MongoDB update succeeded
+      }
+    }
     
     // Send notification to user about status change
     if (status && status !== user.status) {
@@ -149,7 +183,7 @@ router.put('/:id', async (req, res) => {
       await sendNotificationToUser(user.firebaseUid, message, 'account_update');
     }
     
-    res.json({ success: true, user: updatedUser });
+    res.json({ success: true, user: updatedUser, message: 'User updated in both MongoDB and Firebase' });
   } catch (error) {
     console.error('Update user error:', error);
     res.status(500).json({ error: error.message });
@@ -284,7 +318,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// GET user reports
+// GET user reports (both profile and post reports)
 router.get('/:userId/reports', async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -298,13 +332,19 @@ router.get('/:userId/reports', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    const reports = await Report.find({ 
+    // Get user's posts
+    const userPosts = await Post.find({ firebaseUid: user.firebaseUid }).select('postId').lean();
+    const postIds = userPosts.map(p => p.postId);
+    
+    // Find reports - both profile reports and reports on user's posts
+    const reports = await Report.find({
       $or: [
-        { reportedUid: user.firebaseUid },
-        { reporterUid: user.firebaseUid }
+        { reportedUid: user.firebaseUid },  // Profile reports
+        { postId: { $in: postIds } }         // Post reports
       ]
     }).sort({ createdAt: -1 }).lean();
     
+    // Enrich reports with reporter information
     for (let report of reports) {
       const reporter = await User.findOne({ firebaseUid: report.reporterUid })
         .select('username email')
@@ -353,11 +393,26 @@ router.get('/:userId/posts', async (req, res) => {
       age: post.age,
       weight: post.weight,
       status: post.status,
+      resolvedStatus: post.resolvedStatus || '',
+      isResolved: !!post.isResolved,
       userName: post.userName,
       location: post.location,
       description: post.description,
+      latitude: post.latitude,
+      longitude: post.longitude,
       contact: post.contactInfo,
+      contactInfo: post.contactInfo,
+      contactPreference: post.contactPreference || '',
       reward: post.reward,
+      caseType: post.caseType || '',
+      eventDate: post.eventDate || '',
+      eventLocation: post.eventLocation || '',
+      currentCareStatus: post.currentCareStatus || '',
+      identifyingMarks: post.identifyingMarks || '',
+      temperament: post.temperament || '',
+      healthCondition: post.healthCondition || '',
+      hasCollar: !!post.hasCollar,
+      likesCount: post.likesCount || 0,
       createdAt: post.createdAt,
       imageUrls: post.imageUrls || []
     }));

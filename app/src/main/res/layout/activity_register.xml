@@ -341,8 +341,8 @@
                     android:text="8+ characters, 1 uppercase, 1 number"
                     android:textColor="#666666"
                     android:textSize="11sp"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="20dp"
                     android:layout_marginStart="4dp" />
 
                 <!-- Confirm Password with Eye Icon -->

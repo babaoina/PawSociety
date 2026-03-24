@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.drawable.ColorDrawable
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
@@ -101,6 +103,7 @@ class HomeActivity : BaseNavigationActivity() {
     private lateinit var chipBirds: ImageView
 
     private var currentCategory = "All"
+    private var currentCategoryPlayer: MediaPlayer? = null
 
     private val postRepository = PostRepository()
     private val blockRepository = BlockRepository()
@@ -224,6 +227,7 @@ class HomeActivity : BaseNavigationActivity() {
         bottomNav = findViewById(R.id.bottom_navigation)
 
         setupBottomNavigationInsets()
+        setupCategorySounds()
         initCategoryFilters()
 
         val bigPlusButton = findViewById<LinearLayout>(R.id.big_plus_button)
@@ -331,7 +335,7 @@ class HomeActivity : BaseNavigationActivity() {
         try {
             println("📱 Showing maintenance dialog with message: $message")
 
-            val dialog = AlertDialog.Builder(this)
+            val dialog = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setTitle("Maintenance Mode")
                 .setMessage(message)
                 .setCancelable(false)
@@ -417,34 +421,147 @@ class HomeActivity : BaseNavigationActivity() {
 
     private fun setupCategoryClickListeners() {
         layoutAll.setOnClickListener {
+            animateCategoryPress(layoutAll, allCircle, textAll, null)
             currentCategory = "All"
             highlightCategory("All")
             viewModel.forceRefreshAndFilter("All")
         }
 
         layoutDogs.setOnClickListener {
+            animateCategoryPress(layoutDogs, dogCircle, textDogs, chipDogs)
+            playCategorySound(R.raw.dog_tap)
             currentCategory = "Dogs"
             highlightCategory("Dogs")
             viewModel.forceRefreshAndFilter("Dogs")
         }
 
         layoutCats.setOnClickListener {
+            animateCategoryPress(layoutCats, catCircle, textCats, chipCats)
+            playCategorySound(R.raw.cat_tap)
             currentCategory = "Cats"
             highlightCategory("Cats")
             viewModel.forceRefreshAndFilter("Cats")
         }
 
         layoutFish.setOnClickListener {
+            animateCategoryPress(layoutFish, fishCircle, textFish, chipFish)
+            playCategorySound(R.raw.fish_tap)
             currentCategory = "Fish"
             highlightCategory("Fish")
             viewModel.forceRefreshAndFilter("Fish")
         }
 
         layoutBirds.setOnClickListener {
+            animateCategoryPress(layoutBirds, birdCircle, textBirds, chipBirds)
+            playCategorySound(R.raw.bird_tap)
             currentCategory = "Birds"
             highlightCategory("Birds")
             viewModel.forceRefreshAndFilter("Birds")
         }
+    }
+
+    private fun setupCategorySounds() {
+        releaseCategorySound()
+    }
+
+    private fun playCategorySound(soundResId: Int) {
+        releaseCategorySound()
+
+        currentCategoryPlayer = MediaPlayer.create(this, soundResId)?.apply {
+            setVolume(0.95f, 0.95f)
+            setOnCompletionListener { player ->
+                player.release()
+                if (currentCategoryPlayer === player) {
+                    currentCategoryPlayer = null
+                }
+            }
+            setOnErrorListener { player, _, _ ->
+                player.release()
+                if (currentCategoryPlayer === player) {
+                    currentCategoryPlayer = null
+                }
+                true
+            }
+            start()
+        }
+    }
+
+    private fun releaseCategorySound() {
+        currentCategoryPlayer?.let { player ->
+            try {
+                if (player.isPlaying) {
+                    player.stop()
+                }
+            } catch (_: Exception) {
+            }
+            player.release()
+        }
+        currentCategoryPlayer = null
+    }
+
+    private fun animateCategoryPress(
+        container: View,
+        circle: View,
+        label: TextView,
+        icon: ImageView?
+    ) {
+        container.animate()
+            .scaleX(0.96f)
+            .scaleY(0.96f)
+            .setDuration(70)
+            .withEndAction {
+                container.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(150)
+                    .start()
+            }
+            .start()
+
+        circle.animate()
+            .scaleX(0.92f)
+            .scaleY(0.92f)
+            .translationY((-3).toFloat())
+            .setDuration(80)
+            .withEndAction {
+                circle.animate()
+                    .scaleX(1.08f)
+                    .scaleY(1.08f)
+                    .translationY((-5).toFloat())
+                    .setDuration(110)
+                    .withEndAction {
+                        circle.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .translationY(0f)
+                            .setDuration(150)
+                            .start()
+                    }
+                    .start()
+            }
+            .start()
+
+        label.animate()
+            .translationY((-2).toFloat())
+            .setDuration(90)
+            .withEndAction {
+                label.animate()
+                    .translationY(0f)
+                    .setDuration(150)
+                    .start()
+            }
+            .start()
+
+        icon?.animate()
+            ?.rotationBy(4f)
+            ?.setDuration(90)
+            ?.withEndAction {
+                icon.animate()
+                    .rotation(0f)
+                    .setDuration(160)
+                    .start()
+            }
+            ?.start()
     }
 
     private fun highlightCategory(category: String) {
@@ -652,6 +769,7 @@ class HomeActivity : BaseNavigationActivity() {
             userImageUrl = json.optString("userImageUrl", ""),
             petName = json.optString("petName", ""),
             petType = json.optString("petType", ""),
+            category = json.optString("category", null),
             age = json.optString("age", ""),
             weight = json.optString("weight", ""),
             gender = json.optString("gender", "Unknown"),
@@ -659,6 +777,17 @@ class HomeActivity : BaseNavigationActivity() {
             description = json.optString("description", ""),
             location = json.optString("location", ""),
             reward = json.optString("reward", ""),
+            caseType = json.optString("caseType", ""),
+            resolvedStatus = json.optString("resolvedStatus", ""),
+            isResolved = json.optBoolean("isResolved", false),
+            eventDate = json.optString("eventDate", ""),
+            eventLocation = json.optString("eventLocation", ""),
+            currentCareStatus = json.optString("currentCareStatus", ""),
+            identifyingMarks = json.optString("identifyingMarks", ""),
+            temperament = json.optString("temperament", ""),
+            healthCondition = json.optString("healthCondition", ""),
+            hasCollar = json.optBoolean("hasCollar", false),
+            contactPreference = json.optString("contactPreference", "call"),
             contactInfo = json.optString("contactInfo", ""),
             imageUrls = json.optJSONArray("imageUrls")?.let {
                 (0 until it.length()).map { i -> it.getString(i) }
@@ -740,14 +869,19 @@ class HomeActivity : BaseNavigationActivity() {
         viewModel.posts.observe(this, Observer { posts ->
             Log.d("HomeActivity", "📊 Received ${posts.size} posts for category: $currentCategory")
 
-            val isLikeUpdate = posts.size == postsContainer.childCount &&
-                    posts.all { post ->
-                        postsContainer.findViewWithTag<View>(post.postId) != null
+            // 🔥 IMPROVED: Better detection of like-only updates
+            // Check if this is just a like count update (all posts same, just counts might differ)
+            val isLikeOnlyUpdate = posts.size == postsContainer.childCount && posts.size > 0 &&
+                    posts.all { newPost ->
+                        val existingView = postsContainer.findViewWithTag<View>(newPost.postId)
+                        existingView != null  // Post view exists, so it's just an update
                     }
 
-            if (isLikeUpdate) {
+            if (isLikeOnlyUpdate && posts.size == postsContainer.childCount) {
+                Log.d("HomeActivity", "⚡ LIKE UPDATE ONLY - Updating counts without recreating views")
                 updateLikeCountsOnly(posts)
             } else {
+                Log.d("HomeActivity", "🔄 FULL REFRESH - Posts changed, recreating views")
                 // 🔥 FIXED: Clear and recreate ALL views when posts change
                 postsContainer.removeAllViews()
 
@@ -775,25 +909,44 @@ class HomeActivity : BaseNavigationActivity() {
                     val currentLikeMap = viewModel.likeStatus.value ?: emptyMap()
                     val currentFavMap = viewModel.favoriteStatus.value ?: emptyMap()
 
-                    // 🔥 FIXED: Sort posts to show newest first (MOST RECENT AT TOP)
-                    val sortedPosts = visiblePosts.sortedByDescending { it.createdAt }
+                    // 🔥 APPLY POST FILTERING UTILITY - Filter by hidden posts AND blocked users
+                    lifecycleScope.launch {
+                        try {
+                            val currentUserUid = currentUser?.firebaseUid ?: return@launch
+                            val filteredPosts = com.example.pawsociety.util.PostFilteringUtil.filterPosts(
+                                visiblePosts,
+                                currentUserUid
+                            )
+                            Log.d("HomeActivity", "📊 After filtering: ${filteredPosts.size} posts (was ${visiblePosts.size})")
 
-                    Log.d("HomeActivity", "📊 Sorted posts - newest first:")
-                    sortedPosts.forEachIndexed { index, post ->
-                        Log.d("HomeActivity", "   [$index] ${post.petName} - Created: ${post.createdAt}")
+                            // 🔥 FIXED: Sort posts to show newest first (MOST RECENT AT TOP)
+                            val sortedPosts = filteredPosts.sortedByDescending { it.createdAt }
+
+                            Log.d("HomeActivity", "📊 Sorted posts - newest first:")
+                            sortedPosts.forEachIndexed { index, post ->
+                                Log.d("HomeActivity", "   [$index] ${post.petName} - Created: ${post.createdAt}")
+                            }
+
+                            // Create views for each post - adding in normal order will put newest at top
+                            // because we're iterating from newest to oldest
+                            for (post in sortedPosts) {
+                                createPostView(post, currentLikeMap, currentFavMap)
+                            }
+
+                            postsContainer.invalidate()
+                            postsContainer.requestLayout()
+
+                            // Debug the final order
+                            debugPostOrder()
+                        } catch (e: Exception) {
+                            Log.e("HomeActivity", "Error filtering posts: ${e.message}", e)
+                            // Fallback: display without advanced filtering
+                            val sortedPosts = visiblePosts.sortedByDescending { it.createdAt }
+                            for (post in sortedPosts) {
+                                createPostView(post, currentLikeMap, currentFavMap)
+                            }
+                        }
                     }
-
-                    // Create views for each post - adding in normal order will put newest at top
-                    // because we're iterating from newest to oldest
-                    for (post in sortedPosts) {
-                        createPostView(post, currentLikeMap, currentFavMap)
-                    }
-
-                    postsContainer.invalidate()
-                    postsContainer.requestLayout()
-
-                    // Debug the final order
-                    debugPostOrder()
                 }
             }
 
@@ -945,6 +1098,11 @@ class HomeActivity : BaseNavigationActivity() {
             val locationText = postView.findViewById<TextView>(R.id.post_location)
             val postDate = postView.findViewById<TextView>(R.id.post_date)
             val btnMore = postView.findViewById<ImageView>(R.id.btn_more)
+            val caseSummaryText = postView.findViewById<TextView>(R.id.post_case_summary)
+            val caseDetailsLayout = postView.findViewById<LinearLayout>(R.id.post_case_details_layout)
+            val caseDetailPrimary = postView.findViewById<TextView>(R.id.post_case_detail_primary)
+            val caseDetailSecondary = postView.findViewById<TextView>(R.id.post_case_detail_secondary)
+            val caseDetailTertiary = postView.findViewById<TextView>(R.id.post_case_detail_tertiary)
             val userRole = postView.findViewById<TextView>(R.id.post_user_role)  // ← I-ADD ITO
 
             val viewPager = postView.findViewById<ViewPager2>(R.id.post_view_pager)
@@ -1036,21 +1194,63 @@ class HomeActivity : BaseNavigationActivity() {
 
             // ===== SET BASIC DATA WITH NULL SAFETY =====
             userNameText?.text = post.userName ?: "Unknown"
-            locationText?.text = post.location ?: "Unknown location"
+            locationText?.text = "\uD83D\uDCCD ${post.location ?: "Unknown location"}"
             postDate?.text = getTimeAgo(post.createdAt)
             petNameText?.text = post.petName ?: "Unnamed Pet"
             petTypeText?.text = post.petType ?: "Unknown breed"
             descriptionText?.text = post.description ?: ""
             tvLikeCount?.text = post.likesCount.toString()
+            val caseSummary = buildCaseSummary(post)
+            if (!caseSummary.isNullOrBlank()) {
+                caseSummaryText?.text = caseSummary
+                caseSummaryText?.visibility = View.VISIBLE
+            } else {
+                caseSummaryText?.visibility = View.GONE
+            }
+
+            val primaryCaseDetail = buildString {
+                getCaseTypeLabel(post.caseType)?.let { append(it) }
+                if (!post.eventDate.isNullOrBlank()) {
+                    if (isNotEmpty()) append(" • ")
+                    append(post.eventDate)
+                }
+            }.ifBlank { null }
+
+            val secondaryCaseDetail = buildString {
+                getCurrentCareLabel(post.currentCareStatus)?.let { append(it) }
+                getContactPreferenceLabel(post.contactPreference)?.let {
+                    if (isNotEmpty()) append(" • ")
+                    append("$it preferred")
+                }
+            }.ifBlank { null }
+
+            val tertiaryCaseDetail = when {
+                !post.identifyingMarks.isNullOrBlank() -> post.identifyingMarks
+                !post.temperament.isNullOrBlank() -> post.temperament
+                !post.healthCondition.isNullOrBlank() -> post.healthCondition
+                !post.eventLocation.isNullOrBlank() && post.eventLocation != post.location -> "Seen at ${post.eventLocation}"
+                post.hasCollar -> "Has a collar"
+                else -> null
+            }
+
+            bindCaseDetail(caseDetailPrimary, "Scenario", primaryCaseDetail)
+            bindCaseDetail(caseDetailSecondary, "Details", secondaryCaseDetail)
+            bindCaseDetail(caseDetailTertiary, "Note", tertiaryCaseDetail)
+            caseDetailsLayout?.visibility = if (
+                !primaryCaseDetail.isNullOrBlank() ||
+                !secondaryCaseDetail.isNullOrBlank() ||
+                !tertiaryCaseDetail.isNullOrBlank()
+            ) View.VISIBLE else View.GONE
 
             // Set contact text - numbers only, no emoji
             val cleanContact = post.contactInfo?.replace("[^0-9]".toRegex(), "") ?: ""
             contactText?.text = if (cleanContact.isNotEmpty()) cleanContact else "No contact"
 
             // ===== SET CATEGORY BADGE - FALLBACK VERSION =====
+            // ===== SET CATEGORY BADGE - FISH FIRST PRIORITY =====
             try {
                 if (categoryBadge != null) {
-                    // First try to get from post.category
+                    // First try to get from post.category (if stored in DB)
                     var category = when (post.category) {
                         "Dogs" -> "DOG"
                         "Cats" -> "CAT"
@@ -1059,72 +1259,12 @@ class HomeActivity : BaseNavigationActivity() {
                         else -> null
                     }
 
-                    // If no category, try to detect from pet type
-                    if (category == null) {
+                    // If no stored category, detect from pet type with FISH FIRST priority
+                    if (category == null && post.petType != null) {
                         val petTypeLower = post.petType.lowercase()
+
                         category = when {
-                            // DOG detection - including unknown/mixed
-                            petTypeLower.contains("dog") ||
-                                    petTypeLower.contains("aspin") ||
-                                    petTypeLower.contains("shih") ||
-                                    petTypeLower.contains("labrador") ||
-                                    petTypeLower.contains("golden") ||
-                                    petTypeLower.contains("german") ||
-                                    petTypeLower.contains("poodle") ||
-                                    petTypeLower.contains("chow") ||
-                                    petTypeLower.contains("pug") ||
-                                    petTypeLower.contains("beagle") ||
-                                    petTypeLower.contains("dachshund") ||
-                                    petTypeLower.contains("rottweiler") ||
-                                    petTypeLower.contains("pomeranian") ||
-                                    petTypeLower.contains("husky") ||
-                                    petTypeLower.contains("corgi") ||
-                                    petTypeLower.contains("maltese") ||
-                                    petTypeLower.contains("chihuahua") ||
-                                    petTypeLower.contains("pitbull") ||
-                                    petTypeLower.contains("bulldog") ||
-                                    petTypeLower.contains("boxer") ||
-                                    petTypeLower.contains("shiba") ||
-                                    petTypeLower.contains("akita") ||
-                                    petTypeLower.contains("samoyed") ||
-                                    petTypeLower.contains("cocker") ||
-                                    petTypeLower.contains("doberman") ||
-                                    petTypeLower.contains("great dane") ||
-                                    petTypeLower.contains("saint bernard") ||
-                                    petTypeLower.contains("siberian") ||
-                                    petTypeLower.contains("jack russell") ||
-                                    petTypeLower.contains("border collie") ||
-                                    petTypeLower.contains("australian shepherd") ||
-                                    petTypeLower.contains("bichon") ||
-                                    petTypeLower.contains("unknown dog") ||  // ← Specific detection
-                                    petTypeLower.contains("other dog") -> "DOG"
-
-                            // CAT detection - including unknown/mixed
-                            petTypeLower.contains("cat") ||
-                                    petTypeLower.contains("puspin") ||
-                                    petTypeLower.contains("persian") ||
-                                    petTypeLower.contains("siamese") ||
-                                    petTypeLower.contains("maine coon") ||
-                                    petTypeLower.contains("bengal") ||
-                                    petTypeLower.contains("sphynx") ||
-                                    petTypeLower.contains("ragdoll") ||
-                                    petTypeLower.contains("british shorthair") ||
-                                    petTypeLower.contains("scottish fold") ||
-                                    petTypeLower.contains("abyssinian") ||
-                                    petTypeLower.contains("burmese") ||
-                                    petTypeLower.contains("russian blue") ||
-                                    petTypeLower.contains("norwegian forest") ||
-                                    petTypeLower.contains("birman") ||
-                                    petTypeLower.contains("oriental shorthair") ||
-                                    petTypeLower.contains("devon rex") ||
-                                    petTypeLower.contains("cornish rex") ||
-                                    petTypeLower.contains("himalayan") ||
-                                    petTypeLower.contains("american shorthair") ||
-                                    petTypeLower.contains("exotic shorthair") ||
-                                    petTypeLower.contains("unknown cat") ||  // ← Specific detection
-                                    petTypeLower.contains("other cat") -> "CAT"
-
-                            // FISH detection - including unknown/mixed
+                            // 🔥 1. CHECK FISH FIRST - This catches "Catfish" before it goes to CAT
                             petTypeLower.contains("fish") ||
                                     petTypeLower.contains("goldfish") ||
                                     petTypeLower.contains("betta") ||
@@ -1139,7 +1279,7 @@ class HomeActivity : BaseNavigationActivity() {
                                     petTypeLower.contains("koi") ||
                                     petTypeLower.contains("tetra") ||
                                     petTypeLower.contains("barb") ||
-                                    petTypeLower.contains("corydoras") ||
+                                    petTypeLower.contains("corydoras") ||  // Explicitly catch corydoras
                                     petTypeLower.contains("plecostomus") ||
                                     petTypeLower.contains("danio") ||
                                     petTypeLower.contains("rainbowfish") ||
@@ -1148,10 +1288,11 @@ class HomeActivity : BaseNavigationActivity() {
                                     petTypeLower.contains("flowerhorn") ||
                                     petTypeLower.contains("parrot fish") ||
                                     petTypeLower.contains("gourami") ||
-                                    petTypeLower.contains("unknown fish") ||  // ← Specific detection
+                                    petTypeLower.contains("catfish") ||     // 🔥 CRITICAL: Catfish here before CAT
+                                    petTypeLower.contains("unknown fish") ||
                                     petTypeLower.contains("other fish") -> "FISH"
 
-                            // BIRD detection - including unknown/mixed
+                            // 2. CHECK BIRD SECOND
                             petTypeLower.contains("bird") ||
                                     petTypeLower.contains("parrot") ||
                                     petTypeLower.contains("macaw") ||
@@ -1175,8 +1316,69 @@ class HomeActivity : BaseNavigationActivity() {
                                     petTypeLower.contains("zebra finch") ||
                                     petTypeLower.contains("gouldian finch") ||
                                     petTypeLower.contains("ringneck") ||
-                                    petTypeLower.contains("unknown bird") ||  // ← Specific detection
+                                    petTypeLower.contains("unknown bird") ||
                                     petTypeLower.contains("other bird") -> "BIRD"
+
+                            // 3. CHECK CAT THIRD - Now "catfish" won't reach here
+                            petTypeLower.contains("cat") ||
+                                    petTypeLower.contains("puspin") ||
+                                    petTypeLower.contains("persian") ||
+                                    petTypeLower.contains("siamese") ||
+                                    petTypeLower.contains("maine coon") ||
+                                    petTypeLower.contains("bengal") ||
+                                    petTypeLower.contains("sphynx") ||
+                                    petTypeLower.contains("ragdoll") ||
+                                    petTypeLower.contains("british shorthair") ||
+                                    petTypeLower.contains("scottish fold") ||
+                                    petTypeLower.contains("abyssinian") ||
+                                    petTypeLower.contains("burmese") ||
+                                    petTypeLower.contains("russian blue") ||
+                                    petTypeLower.contains("norwegian forest") ||
+                                    petTypeLower.contains("birman") ||
+                                    petTypeLower.contains("oriental shorthair") ||
+                                    petTypeLower.contains("devon rex") ||
+                                    petTypeLower.contains("cornish rex") ||
+                                    petTypeLower.contains("himalayan") ||
+                                    petTypeLower.contains("american shorthair") ||
+                                    petTypeLower.contains("exotic shorthair") ||
+                                    petTypeLower.contains("unknown cat") ||
+                                    petTypeLower.contains("other cat") -> "CAT"
+
+                            // 4. CHECK DOG LAST
+                            petTypeLower.contains("dog") ||
+                                    petTypeLower.contains("aspin") ||
+                                    petTypeLower.contains("shih tzu") ||
+                                    petTypeLower.contains("labrador") ||
+                                    petTypeLower.contains("golden") ||
+                                    petTypeLower.contains("german shepherd") ||
+                                    petTypeLower.contains("poodle") ||
+                                    petTypeLower.contains("chow") ||
+                                    petTypeLower.contains("pug") ||
+                                    petTypeLower.contains("beagle") ||
+                                    petTypeLower.contains("dachshund") ||
+                                    petTypeLower.contains("rottweiler") ||
+                                    petTypeLower.contains("pomeranian") ||
+                                    petTypeLower.contains("husky") ||
+                                    petTypeLower.contains("corgi") ||
+                                    petTypeLower.contains("maltese") ||
+                                    petTypeLower.contains("chihuahua") ||
+                                    petTypeLower.contains("pitbull") ||
+                                    petTypeLower.contains("bulldog") ||
+                                    petTypeLower.contains("boxer") ||
+                                    petTypeLower.contains("shiba") ||
+                                    petTypeLower.contains("akita") ||
+                                    petTypeLower.contains("samoyed") ||
+                                    petTypeLower.contains("cocker spaniel") ||
+                                    petTypeLower.contains("doberman") ||
+                                    petTypeLower.contains("great dane") ||
+                                    petTypeLower.contains("saint bernard") ||
+                                    petTypeLower.contains("siberian husky") ||
+                                    petTypeLower.contains("jack russell") ||
+                                    petTypeLower.contains("border collie") ||
+                                    petTypeLower.contains("australian shepherd") ||
+                                    petTypeLower.contains("bichon") ||
+                                    petTypeLower.contains("unknown dog") ||
+                                    petTypeLower.contains("other dog") -> "DOG"
 
                             else -> null
                         }
@@ -1186,31 +1388,25 @@ class HomeActivity : BaseNavigationActivity() {
                         categoryBadge.text = category
                         categoryBadge.visibility = View.VISIBLE
 
-                        // Set background color and style based on category
                         when (category) {
                             "DOG" -> {
                                 categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
                                 categoryBadge.background.setTint(Color.parseColor("#B88B4A"))
-                                categoryBadge.setTextColor(Color.WHITE)
                             }
                             "CAT" -> {
                                 categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
                                 categoryBadge.background.setTint(Color.parseColor("#FF9800"))
-                                categoryBadge.setTextColor(Color.WHITE)
                             }
                             "FISH" -> {
                                 categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
                                 categoryBadge.background.setTint(Color.parseColor("#00BCD4"))
-                                categoryBadge.setTextColor(Color.WHITE)
                             }
                             "BIRD" -> {
                                 categoryBadge.setBackgroundResource(R.drawable.category_badge_rounded)
                                 categoryBadge.background.setTint(Color.parseColor("#2196F3"))
-                                categoryBadge.setTextColor(Color.WHITE)
                             }
                         }
-
-                        // Add padding using your working dp extension
+                        categoryBadge.setTextColor(Color.WHITE)
                         categoryBadge.setPadding(12.dp, 4.dp, 12.dp, 4.dp)
 
                         Log.d("HomeActivity", "✅ Set category badge: $category for post: ${post.petName}")
@@ -1611,6 +1807,59 @@ class HomeActivity : BaseNavigationActivity() {
         }
     }
 
+    private fun buildCaseSummary(post: ApiPost): String? {
+        val parts = mutableListOf<String>()
+
+        getCaseTypeLabel(post.caseType)?.let { parts.add(it) }
+
+        if (!post.eventDate.isNullOrBlank()) {
+            parts.add(post.eventDate)
+        }
+
+        getCurrentCareLabel(post.currentCareStatus)?.let { parts.add(it) }
+
+        getContactPreferenceLabel(post.contactPreference)?.let { parts.add("$it preferred") }
+
+        return parts.takeIf { it.isNotEmpty() }?.joinToString(" • ")
+    }
+
+    private fun getCaseTypeLabel(caseType: String?): String? {
+        return when (caseType) {
+            "owner_lost" -> "Lost Pet"
+            "seen_lost_pet" -> "Seen Lost Pet"
+            "found_in_care" -> "Found Pet"
+            "adoption" -> "For Adoption"
+            else -> null
+        }
+    }
+
+    private fun getContactPreferenceLabel(contactPreference: String?): String? {
+        return when (contactPreference) {
+            "call" -> "Call"
+            "text" -> "Text"
+            "in_app_chat" -> "In-app chat"
+            else -> null
+        }
+    }
+
+    private fun getCurrentCareLabel(currentCareStatus: String?): String? {
+        return when (currentCareStatus) {
+            "owner" -> "Owner posting"
+            "in_my_care" -> "In my care"
+            "sighting_only" -> "Sighting only"
+            else -> null
+        }
+    }
+
+    private fun bindCaseDetail(textView: TextView?, label: String, value: String?) {
+        if (value.isNullOrBlank()) {
+            textView?.visibility = View.GONE
+            return
+        }
+        textView?.text = "$label: $value"
+        textView?.visibility = View.VISIBLE
+    }
+
     private fun getTimeAgo(dateTime: String): String {
         return try {
             var date: Date? = null
@@ -1655,6 +1904,8 @@ class HomeActivity : BaseNavigationActivity() {
             val menuUsername = dialogView.findViewById<TextView>(R.id.menu_username)
             val menuPostInfo = dialogView.findViewById<TextView>(R.id.menu_post_info)
             val btnClose = dialogView.findViewById<TextView>(R.id.btn_close)
+            val menuAvatarImage = dialogView.findViewById<ImageView>(R.id.menu_avatar_image)
+            val menuAvatarFallback = dialogView.findViewById<TextView>(R.id.menu_avatar_fallback)
 
             val optionAddFavorites = dialogView.findViewById<LinearLayout>(R.id.option_add_favorites)
             val ivFavoriteIcon = dialogView.findViewById<ImageView>(R.id.iv_favorite_icon)
@@ -1664,9 +1915,9 @@ class HomeActivity : BaseNavigationActivity() {
             val ivFollowIcon = dialogView.findViewById<ImageView>(R.id.iv_follow_icon)
             val tvFollowText = dialogView.findViewById<TextView>(R.id.tv_follow_text)
 
-            val optionWhySeeing = dialogView.findViewById<LinearLayout>(R.id.option_why_seeing)
+
             val optionHide = dialogView.findViewById<LinearLayout>(R.id.option_hide)
-            val optionAboutAccount = dialogView.findViewById<LinearLayout>(R.id.option_about_account)
+            val optionResolve = dialogView.findViewById<LinearLayout>(R.id.option_resolve)
 
             val optionEdit = dialogView.findViewById<LinearLayout>(R.id.option_edit)
             val ivEditIcon = dialogView.findViewById<ImageView>(R.id.iv_edit_icon)
@@ -1681,6 +1932,8 @@ class HomeActivity : BaseNavigationActivity() {
 
             menuUsername?.text = post.userName
             menuPostInfo?.text = "${post.petName} • ${post.status}"
+
+            bindPostMenuAvatar(post.userName, post.userImageUrl, menuAvatarImage, menuAvatarFallback)
 
             viewModel.favoriteStatus.value?.let { favMap ->
                 val isFav = favMap[post.postId] ?: false
@@ -1700,6 +1953,8 @@ class HomeActivity : BaseNavigationActivity() {
 
             val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
             dialog.setContentView(dialogView)
+            dialog.setCancelable(true)
+            dialog.setCanceledOnTouchOutside(true)
 
             dialog.window?.apply {
                 setGravity(android.view.Gravity.BOTTOM)
@@ -1707,7 +1962,8 @@ class HomeActivity : BaseNavigationActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 )
-                setBackgroundDrawable(null)
+                setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                attributes.windowAnimations = R.style.BottomMenuAnimation
             }
 
             btnClose?.setOnClickListener {
@@ -1729,9 +1985,11 @@ class HomeActivity : BaseNavigationActivity() {
 
                 optionFollow?.visibility = View.GONE
                 optionBlock?.visibility = View.GONE
+                optionResolve?.visibility = View.GONE
             } else {
                 optionEdit?.visibility = View.GONE
                 optionDelete?.visibility = View.GONE
+                optionResolve?.visibility = View.GONE
 
                 optionFollow?.visibility = View.VISIBLE
                 if (isFollowing) {
@@ -1763,18 +2021,10 @@ class HomeActivity : BaseNavigationActivity() {
                 dialog.dismiss()
             }
 
-            optionWhySeeing?.setOnClickListener {
-                showWhySeeingDialog(post)
-                dialog.dismiss()
-            }
+
 
             optionHide?.setOnClickListener {
                 showHideConfirmation(post)
-                dialog.dismiss()
-            }
-
-            optionAboutAccount?.setOnClickListener {
-                showAboutAccountDialog(post)
                 dialog.dismiss()
             }
 
@@ -1792,7 +2042,7 @@ class HomeActivity : BaseNavigationActivity() {
     }
 
     private fun showHideConfirmation(post: ApiPost) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Hide Post")
             .setMessage("This post will be hidden from your feed. You can unhide it later in Settings.")
             .setPositiveButton("Hide") { _, _ ->
@@ -1841,7 +2091,7 @@ class HomeActivity : BaseNavigationActivity() {
     }
 
     private fun showBlockConfirmation(post: ApiPost) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Block User")
             .setMessage("Are you sure you want to block ${post.userName}? You will no longer see their posts and they cannot interact with you.")
             .setPositiveButton("Block") { _, _ ->
@@ -1876,7 +2126,7 @@ class HomeActivity : BaseNavigationActivity() {
                 • Similar content you've liked before
             """.trimIndent()
 
-            AlertDialog.Builder(this)
+            AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setTitle("Why you're seeing this post")
                 .setMessage(message)
                 .setPositiveButton("Got it", null)
@@ -1895,7 +2145,7 @@ class HomeActivity : BaseNavigationActivity() {
                 📍 Location information not available
             """.trimIndent()
 
-            AlertDialog.Builder(this)
+            AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setTitle("About this account")
                 .setMessage(message)
                 .setPositiveButton("OK", null)
@@ -1908,7 +2158,7 @@ class HomeActivity : BaseNavigationActivity() {
     private fun showReportDialog(post: ApiPost) {
         val options = arrayOf("Spam", "Inappropriate", "False information", "Scam", "Harassment", "Other")
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Report Post")
             .setItems(options) { _, which ->
                 submitReport(post, options[which])
@@ -1943,7 +2193,7 @@ class HomeActivity : BaseNavigationActivity() {
     }
 
     private fun showDeleteConfirmation(post: ApiPost) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Delete Post")
             .setMessage("Are you sure you want to delete this post?")
             .setPositiveButton("Delete") { _, _ ->
@@ -1979,6 +2229,38 @@ class HomeActivity : BaseNavigationActivity() {
         } catch (e: Exception) {
             println("❌ Error sharing post: ${e.message}")
             Toast.makeText(this, "Sharing not available", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun bindPostMenuAvatar(
+        userName: String?,
+        userImageUrl: String?,
+        avatarImage: ImageView?,
+        avatarFallback: TextView?
+    ) {
+        avatarFallback?.text = userName?.firstOrNull()?.uppercaseChar()?.toString() ?: "🐾"
+
+        if (!userImageUrl.isNullOrBlank()) {
+            val fullImageUrl = if (userImageUrl.startsWith("http")) {
+                userImageUrl
+            } else {
+                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$userImageUrl"
+            }
+
+            avatarImage?.visibility = View.VISIBLE
+            avatarFallback?.visibility = View.GONE
+
+            avatarImage?.let {
+                Glide.with(this)
+                    .load(fullImageUrl)
+                    .placeholder(R.drawable.paw)
+                    .error(R.drawable.paw)
+                    .circleCrop()
+                    .into(it)
+            }
+        } else {
+            avatarImage?.visibility = View.GONE
+            avatarFallback?.visibility = View.VISIBLE
         }
     }
 
@@ -2022,6 +2304,7 @@ class HomeActivity : BaseNavigationActivity() {
         if (::notificationBadge.isInitialized) {
             NotificationManager.cleanup(notificationBadge)
         }
+        releaseCategorySound()
         SocketManager.disconnect()
     }
 

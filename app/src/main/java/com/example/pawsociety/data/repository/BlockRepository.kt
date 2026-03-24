@@ -97,6 +97,31 @@ class BlockRepository {
     }
 
     /**
+     * Get all blocked user IDs for filtering posts
+     */
+    suspend fun getBlockedUserIds(userId: String): Result<Set<String>> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.getBlockedUsers(userId)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.success && body.blocks != null) {
+                    val blockedIds = body.blocks.map { it.blockedUid }.toSet()
+                    println("📋 Got ${blockedIds.size} blocked user IDs")
+                    Result.success(blockedIds)
+                } else {
+                    Result.success(emptySet())
+                }
+            } else {
+                Result.success(emptySet())
+            }
+        } catch (e: Exception) {
+            println("⚠️ Error getting blocked user IDs: ${e.message}")
+            Result.success(emptySet())
+        }
+    }
+
+    /**
      * Get all blocked users
      */
     suspend fun getBlockedUsers(userId: String): Result<List<Block>> = withContext(Dispatchers.IO) {

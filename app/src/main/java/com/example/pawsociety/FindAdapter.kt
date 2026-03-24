@@ -27,18 +27,6 @@ class FindAdapter(
         // 🔥 ADD THIS - Category badge view
         val categoryBadge: TextView = itemView.findViewById(R.id.category_badge)
 
-        init {
-            // Force square container
-            container.post {
-                val width = container.width
-                if (width > 0) {
-                    val layoutParams = container.layoutParams
-                    layoutParams.height = width
-                    container.layoutParams = layoutParams
-                    container.requestLayout()
-                }
-            }
-        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FindViewHolder {
@@ -74,6 +62,21 @@ class FindAdapter(
                     holder.statusBadge.text = "ADOPTION"
                     holder.statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
                     holder.statusBadge.background.setTint(Color.parseColor("#2196F3"))
+                }
+                "reunited" -> {
+                    holder.statusBadge.text = "REUNITED"
+                    holder.statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                    holder.statusBadge.background.setTint(Color.parseColor("#8E6E53"))
+                }
+                "returned" -> {
+                    holder.statusBadge.text = "RETURNED"
+                    holder.statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                    holder.statusBadge.background.setTint(Color.parseColor("#8E6E53"))
+                }
+                "adopted" -> {
+                    holder.statusBadge.text = "ADOPTED"
+                    holder.statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                    holder.statusBadge.background.setTint(Color.parseColor("#8E6E53"))
                 }
             }
 
@@ -275,9 +278,13 @@ class FindAdapter(
                 holder.postImage.setImageDrawable(ColorDrawable(color))
             }
 
-            holder.itemView.setOnClickListener {
+            val openPost = View.OnClickListener {
                 onItemClick(post)
             }
+            holder.itemView.setOnClickListener(openPost)
+            holder.container.setOnClickListener(openPost)
+            holder.postImage.setOnClickListener(openPost)
+            holder.petName.setOnClickListener(openPost)
 
         } catch (e: Exception) {
             e.printStackTrace()

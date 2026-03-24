@@ -2,8 +2,41 @@ const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
 const User = require('../models/User');
+const Follow = require('../models/Follow');
 const Notification = require('../models/Notification');
 const { v4: uuidv4 } = require('uuid');
+
+const ACTIVE_POST_STATUSES = ['Lost', 'Found', 'Adoption'];
+const RESOLVED_STATUS_MAP = {
+  Lost: 'Reunited',
+  Found: 'Returned',
+  Adoption: 'Adopted'
+};
+const RESOLVED_METADATA_MAP = {
+  Lost: 'reunited',
+  Found: 'returned',
+  Adoption: 'adopted'
+};
+
+async function getVisibleAuthorUids(viewerUid) {
+  const publicUsers = await User.find(
+    { 'privacySettings.privateAccount': { $ne: true } },
+    'firebaseUid'
+  ).lean();
+
+  const visibleUids = new Set(publicUsers.map(user => user.firebaseUid).filter(Boolean));
+
+  if (viewerUid) {
+    visibleUids.add(viewerUid);
+
+    const followedUids = await Follow.find({ followerUid: viewerUid }).distinct('followingUid');
+    followedUids.forEach(uid => {
+      if (uid) visibleUids.add(uid);
+    });
+  }
+
+  return Array.from(visibleUids);
+}
 
 /**
  * GET /api/posts
@@ -13,16 +46,34 @@ const { v4: uuidv4 } = require('uuid');
 // In backend/routes/posts.js - UPDATE THIS EXISTING FUNCTION
 router.get('/', async (req, res) => {
   try {
-    const { status, firebaseUid, petCategory, limit = 50, skip = 0 } = req.query;  // ADD petCategory
+    const { status, firebaseUid, viewerUid, petCategory, limit = 50, skip = 0 } = req.query;  // ADD petCategory
     
     const query = {};
-    if (status) query.status = status;
-    if (firebaseUid) query.firebaseUid = firebaseUid;
+    if (status) {
+      query.status = status;
+    } else if (!firebaseUid) {
+      query.status = { $in: ACTIVE_POST_STATUSES };
+    }
     
     // ADD THIS - Filter by pet category
     if (petCategory && petCategory !== 'All') {
       // Create regex to match petType field
       query.petType = { $regex: petCategory, $options: 'i' };
+    }
+
+    const visibleAuthorUids = await getVisibleAuthorUids(viewerUid);
+
+    if (firebaseUid) {
+      if (!visibleAuthorUids.includes(firebaseUid)) {
+        return res.json({
+          success: true,
+          count: 0,
+          posts: []
+        });
+      }
+      query.firebaseUid = firebaseUid;
+    } else {
+      query.firebaseUid = { $in: visibleAuthorUids };
     }
 
     const posts = await Post.find(query)
@@ -50,7 +101,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/search', async (req, res) => {
   try {
-    const { q, status, limit = 50, skip = 0 } = req.query;
+    const { q, status, viewerUid, limit = 50, skip = 0 } = req.query;
     
     console.log(`🔍 Search request: query="${q}", status=${status}`);
     
@@ -74,10 +125,15 @@ router.get('/search', async (req, res) => {
     
     if (status && status !== 'All' && status !== 'all') {
       searchQuery.status = status;
+    } else {
+      searchQuery.status = { $in: ACTIVE_POST_STATUSES };
     }
     
     console.log('🔍 Search query:', JSON.stringify(searchQuery));
     
+    const visibleAuthorUids = await getVisibleAuthorUids(viewerUid);
+    searchQuery.firebaseUid = { $in: visibleAuthorUids };
+
     const posts = await Post.find(searchQuery)
       .limit(parseInt(limit))
       .skip(parseInt(skip))
@@ -285,12 +341,21 @@ router.get('/hidden/count', async (req, res) => {
  */
 router.get('/:postId', async (req, res) => {
   try {
+    const { viewerUid } = req.query;
     const post = await Post.findOne({ postId: req.params.postId });
 
     if (!post) {
       return res.status(404).json({
         success: false,
         message: 'Post not found'
+      });
+    }
+
+    const visibleAuthorUids = await getVisibleAuthorUids(viewerUid);
+    if (!visibleAuthorUids.includes(post.firebaseUid)) {
+      return res.status(403).json({
+        success: false,
+        message: 'This post is private'
       });
     }
 
@@ -328,7 +393,20 @@ router.post('/', async (req, res) => {
       status, 
       description, 
       location, 
+      latitude,
+      longitude,
       reward, 
+      caseType,
+      resolvedStatus,
+      isResolved,
+      eventDate,
+      eventLocation,
+      currentCareStatus,
+      identifyingMarks,
+      temperament,
+      healthCondition,
+      hasCollar,
+      contactPreference,
       contactInfo, 
       imageUrls 
     } = req.body;
@@ -365,7 +443,20 @@ router.post('/', async (req, res) => {
       status,
       description,
       location: location || '',
+      latitude: latitude || null,
+      longitude: longitude || null,
       reward: reward || '',
+      caseType: caseType || (status === 'Adoption' ? 'adoption' : status === 'Found' ? 'found_in_care' : 'owner_lost'),
+      resolvedStatus: resolvedStatus || '',
+      isResolved: Boolean(isResolved),
+      eventDate: eventDate || '',
+      eventLocation: eventLocation || location || '',
+      currentCareStatus: currentCareStatus || '',
+      identifyingMarks: identifyingMarks || '',
+      temperament: temperament || '',
+      healthCondition: healthCondition || '',
+      hasCollar: Boolean(hasCollar),
+      contactPreference: contactPreference || 'call',
       contactInfo,
       imageUrls: imageUrls || []
     });
@@ -373,6 +464,7 @@ router.post('/', async (req, res) => {
     await post.save();
 
     console.log(`✅ Post created with category: ${category}, age: ${age}, weight: ${weight}, gender: ${gender}`);
+    console.log(`📍 GPS Coordinates - Latitude: ${latitude}, Longitude: ${longitude}, Location: ${location}`);
 
     res.status(201).json({
       success: true,
@@ -425,6 +517,59 @@ router.put('/:postId', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Update post error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * PUT /api/posts/:postId/resolve
+ * Mark a post as resolved/closed by its owner
+ */
+router.put('/:postId/resolve', async (req, res) => {
+  try {
+    const { firebaseUid } = req.body;
+
+    if (!firebaseUid) {
+      return res.status(400).json({
+        success: false,
+        message: 'firebaseUid is required'
+      });
+    }
+
+    const post = await Post.findOne({ postId: req.params.postId, firebaseUid });
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: 'Post not found or unauthorized'
+      });
+    }
+
+    const activeStatus = post.status;
+    const resolvedStatus = RESOLVED_STATUS_MAP[activeStatus];
+
+    if (!resolvedStatus) {
+      return res.status(400).json({
+        success: false,
+        message: 'Post is already resolved'
+      });
+    }
+
+    post.status = resolvedStatus;
+    post.resolvedStatus = RESOLVED_METADATA_MAP[activeStatus] || '';
+    post.isResolved = true;
+    await post.save();
+
+    res.json({
+      success: true,
+      message: 'Post marked as resolved',
+      data: post
+    });
+  } catch (error) {
+    console.error('Resolve post error:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -562,11 +707,14 @@ router.post('/:postId/like', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
-    const { status, firebaseUid, petCategory, limit = 50, skip = 0 } = req.query;
+    const { status, firebaseUid, viewerUid, petCategory, limit = 50, skip = 0 } = req.query;
     
     const query = {};
-    if (status) query.status = status;
-    if (firebaseUid) query.firebaseUid = firebaseUid;
+    if (status) {
+      query.status = status;
+    } else if (!firebaseUid) {
+      query.status = { $in: ACTIVE_POST_STATUSES };
+    }
     
     // Add pet category filtering
     if (petCategory && petCategory !== 'All') {
@@ -581,6 +729,21 @@ router.get('/', async (req, res) => {
       if (categoryMap[petCategory]) {
         query.petType = categoryMap[petCategory];
       }
+    }
+
+    const visibleAuthorUids = await getVisibleAuthorUids(viewerUid);
+
+    if (firebaseUid) {
+      if (!visibleAuthorUids.includes(firebaseUid)) {
+        return res.json({
+          success: true,
+          count: 0,
+          posts: []
+        });
+      }
+      query.firebaseUid = firebaseUid;
+    } else {
+      query.firebaseUid = { $in: visibleAuthorUids };
     }
 
     const posts = await Post.find(query)
@@ -635,6 +798,57 @@ router.get('/:postId/is-liked', async (req, res) => {
     });
   } catch (error) {
     console.error('Check like status error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/posts/filter/hidden-and-blocked
+ * Get hidden post IDs and blocked user IDs for current user (for filtering on client)
+ * Query: firebaseUid (required)
+ */
+router.get('/filter/hidden-and-blocked', async (req, res) => {
+  try {
+    const { firebaseUid } = req.query;
+
+    if (!firebaseUid) {
+      return res.status(400).json({
+        success: false,
+        message: 'firebaseUid is required'
+      });
+    }
+
+    const HiddenPost = require('../models/HiddenPost');
+    const Block = require('../models/Block');
+
+    // Get hidden post IDs from current user
+    const hiddenPosts = await HiddenPost.find({ userUid: firebaseUid });
+    const hiddenPostIds = hiddenPosts.map(h => h.postId);
+
+    // Get blocked user IDs (both who current user blocked and who blocked current user)
+    const blocks = await Block.find({
+      $or: [
+        { blockerUid: firebaseUid },  // Users current user blocked
+        { blockedUid: firebaseUid }   // Users who blocked current user
+      ]
+    });
+
+    const blockedUserIds = blocks.map(b => 
+      b.blockerUid === firebaseUid ? b.blockedUid : b.blockerUid
+    );
+
+    res.json({
+      success: true,
+      hiddenPostIds,
+      blockedUserIds,
+      message: `Found ${hiddenPostIds.length} hidden posts and ${blockedUserIds.length} blocked users`
+    });
+
+  } catch (error) {
+    console.error('Get hidden and blocked error:', error);
     res.status(500).json({
       success: false,
       message: error.message

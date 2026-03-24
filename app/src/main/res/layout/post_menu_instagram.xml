@@ -2,29 +2,59 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="#FFFFFF"
+    android:background="@drawable/bg_post_menu_sheet"
     android:elevation="16dp"
-    android:padding="0dp"
-    android:layout_margin="0dp">
+    android:orientation="vertical">
 
-    <!-- Header with user info -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="16dp"
-        android:background="#F8F8F8">
+        android:layout_height="34dp"
+        android:gravity="center"
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:gravity="center"
-            android:text="🐶"
-            android:textSize="24sp"
-            android:background="#7A4F2B"
-            android:textColor="#FFFFFF" />
+        <View
+            android:layout_width="42dp"
+            android:layout_height="5dp"
+            android:background="@drawable/bg_post_menu_handle" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_post_menu_header"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="14dp">
+
+        <FrameLayout
+            android:layout_width="44dp"
+            android:layout_height="44dp">
+
+            <ImageView
+                android:id="@+id/menu_avatar_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_post_menu_avatar"
+                android:clipToOutline="true"
+                android:contentDescription="Poster image"
+                android:outlineProvider="background"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/menu_avatar_fallback"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_post_menu_avatar"
+                android:gravity="center"
+                android:text="🐾"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:visibility="visible" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -38,7 +68,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="username"
-                android:textColor="#000000"
+                android:textColor="#20170F"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -46,332 +76,291 @@
                 android:id="@+id/menu_post_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="3dp"
                 android:text="pet_name • Lost"
-                android:textColor="#666666"
-                android:textSize="14sp" />
+                android:textColor="#7C6C5E"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/btn_close"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:gravity="center"
-            android:text="✕"
-            android:textSize="20sp"
-            android:textColor="#999999"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"
+            android:gravity="center"
+            android:text="✕"
+            android:textColor="#A18973"
+            android:textSize="18sp" />
     </LinearLayout>
 
-    <!-- Divider -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:background="#F0F0F0" />
-
-    <!-- Menu Options -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxHeight="400dp"
-        android:background="#FFFFFF"
         android:fillViewport="true"
+        android:maxHeight="420dp"
         android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_post_menu_panel"
             android:orientation="vertical"
-            android:background="#FFFFFF"
-            android:padding="0dp">
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp">
 
-            <!-- Add to favorites -->
             <LinearLayout
                 android:id="@+id/option_add_favorites"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
+                android:layout_height="58dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp">
 
                 <ImageView
                     android:id="@+id/iv_favorite_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:src="@drawable/faved"
-                    android:tint="#000000" />
+                    android:tint="#2B2118" />
 
                 <TextView
                     android:id="@+id/tv_favorite_text"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
                     android:layout_weight="1"
                     android:text="Add to favorites"
-                    android:textColor="#000000"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
+                    android:textColor="#2B2118"
+                    android:textSize="16sp" />
             </LinearLayout>
 
-            <!-- Follow/Unfollow -->
             <LinearLayout
                 android:id="@+id/option_follow"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
+                android:layout_height="58dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp">
 
                 <ImageView
                     android:id="@+id/iv_follow_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:src="@drawable/add"
-                    android:tint="#000000" />
+                    android:tint="#2B2118" />
 
                 <TextView
                     android:id="@+id/tv_follow_text"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
                     android:layout_weight="1"
                     android:text="Follow"
-                    android:textColor="#000000"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
+                    android:textColor="#2B2118"
+                    android:textSize="16sp" />
             </LinearLayout>
 
-            <!-- EDIT OPTION (for own posts) -->
             <LinearLayout
                 android:id="@+id/option_edit"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
+                android:layout_height="58dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
                 android:visibility="gone">
 
                 <ImageView
                     android:id="@+id/iv_edit_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:src="@drawable/edit"
-                    android:tint="#000000" />
+                    android:tint="#2B2118" />
 
                 <TextView
                     android:id="@+id/tv_edit_text"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
                     android:layout_weight="1"
                     android:text="Edit Post"
-                    android:textColor="#000000"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
+                    android:textColor="#2B2118"
+                    android:textSize="16sp" />
             </LinearLayout>
 
-            <!-- Why you're seeing this post -->
             <LinearLayout
-                android:id="@+id/option_why_seeing"
+                android:id="@+id/option_resolve"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/information"
-                    android:tint="#000000" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Why you're seeing this post"
-                    android:textColor="#000000"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
-            </LinearLayout>
-
-            <!-- Hide -->
-            <LinearLayout
-                android:id="@+id/option_hide"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_eye_closed"
-                    android:tint="#000000" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Hide"
-                    android:textColor="#000000"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
-            </LinearLayout>
-
-            <!-- About this account -->
-            <LinearLayout
-                android:id="@+id/option_about_account"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/profile"
-                    android:tint="#000000" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="About this account"
-                    android:textColor="#000000"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
-            </LinearLayout>
-
-            <!-- Divider -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="8dp"
-                android:background="#F0F0F0" />
-
-            <!-- BLOCK OPTION (NEW) -->
-            <LinearLayout
-                android:id="@+id/option_block"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
+                android:layout_height="58dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/iv_resolve_icon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_check"
+                    android:tint="#2B2118" />
+
+                <TextView
+                    android:id="@+id/tv_resolve_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:text="Mark as Closed"
+                    android:textColor="#2B2118"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/option_hide"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_eye_closed"
+                    android:tint="#2B2118" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:text="Hide"
+                    android:textColor="#2B2118"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="18dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginEnd="18dp"
+                android:layout_marginBottom="6dp"
+                android:background="#ECDDCB" />
+
+            <LinearLayout
+                android:id="@+id/option_block"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
                 android:visibility="gone">
 
                 <ImageView
                     android:id="@+id/iv_block_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:src="@drawable/block"
-                    android:tint="#F44336" />
+                    android:tint="#D64A3A" />
 
                 <TextView
                     android:id="@+id/tv_block_text"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
                     android:layout_weight="1"
                     android:text="Block User"
-                    android:textColor="#F44336"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
+                    android:textColor="#D64A3A"
+                    android:textSize="16sp" />
             </LinearLayout>
 
-            <!-- Report -->
             <LinearLayout
                 android:id="@+id/option_report"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/report"
-                    android:tint="#F44336" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Report"
-                    android:textColor="#F44336"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
-            </LinearLayout>
-
-            <!-- Delete (only for own posts) -->
-            <LinearLayout
-                android:id="@+id/option_delete"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="20dp"
+                android:layout_height="58dp"
                 android:background="?android:attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
-                android:visibility="gone">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/delete"
-                    android:tint="#F44336" />
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/report"
+                    android:tint="#D64A3A" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:text="Report"
+                    android:textColor="#D64A3A"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/option_delete"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/delete"
+                    android:tint="#D64A3A" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
                     android:layout_weight="1"
                     android:text="Delete Post"
-                    android:textColor="#F44336"
-                    android:textSize="16sp"
-                    android:layout_marginStart="16dp" />
+                    android:textColor="#D64A3A"
+                    android:textSize="16sp" />
             </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
-
-    <!-- Bottom handle (like Instagram) -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:background="#FFFFFF"
-        android:padding="10dp">
-
-        <View
-            android:layout_width="40dp"
-            android:layout_height="4dp"
-            android:background="#DDDDDD" />
-    </LinearLayout>
 
 </LinearLayout>

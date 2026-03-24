@@ -13,12 +13,8 @@ import com.example.pawsociety.data.repository.PostRepository
 import com.example.pawsociety.data.repository.UserRepository
 import com.example.pawsociety.util.SessionManager
 import kotlinx.coroutines.launch
-import com.example.pawsociety.api.ApiHighlight
-import com.example.pawsociety.data.repository.HighlightRepository
 import com.example.pawsociety.data.FavoritesManager
 import kotlinx.coroutines.flow.collect
-import java.text.SimpleDateFormat
-import java.util.*
 
 class ProfileViewModel : ViewModel() {
 
@@ -26,7 +22,6 @@ class ProfileViewModel : ViewModel() {
     private val postRepository = PostRepository()
     private val favoriteRepository = FavoriteRepository()
     private val petRepository = PetRepository()
-    private val highlightRepository = HighlightRepository()
 
     private val _user = MutableLiveData<ApiUser?>()
     val user: LiveData<ApiUser?> = _user
@@ -40,9 +35,6 @@ class ProfileViewModel : ViewModel() {
     private val _pets = MutableLiveData<List<ApiPet>>()
     val pets: LiveData<List<ApiPet>> = _pets
 
-    private val _highlights = MutableLiveData<List<ApiHighlight>>()
-    val highlights: LiveData<List<ApiHighlight>> = _highlights
-
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
@@ -54,7 +46,6 @@ class ProfileViewModel : ViewModel() {
     init {
         println("📊 ProfileViewModel INIT")
         _isLoading.value = false
-        _highlights.value = emptyList()
 
         // Listen for favorite changes from Home
         viewModelScope.launch {
@@ -110,7 +101,6 @@ class ProfileViewModel : ViewModel() {
                     // Load all data with the fresh user's UID
                     if (!freshUser.firebaseUid.isNullOrEmpty()) {
                         loadUserPosts(freshUser.firebaseUid)
-                        loadHighlights()
                         loadPets(freshUser.firebaseUid)
                         loadFavoritePosts(freshUser.firebaseUid)
                     }
@@ -120,7 +110,6 @@ class ProfileViewModel : ViewModel() {
                     // Still try to load data with cached user
                     if (!cachedUser.firebaseUid.isNullOrEmpty()) {
                         loadUserPosts(cachedUser.firebaseUid)
-                        loadHighlights()
                         loadPets(cachedUser.firebaseUid)
                         loadFavoritePosts(cachedUser.firebaseUid)
                     }
@@ -145,7 +134,10 @@ class ProfileViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 println("📤 Calling postRepository.getPosts with firebaseUid: $userId")
-                val result = postRepository.getPosts(firebaseUid = userId)
+                val result = postRepository.getPosts(
+                    firebaseUid = userId,
+                    viewerUid = sessionManager?.getCurrentUser()?.firebaseUid
+                )
                 if (result.isSuccess) {
                     val posts = result.getOrNull() ?: emptyList()
                     println("✅ Loaded ${posts.size} posts")
@@ -170,7 +162,6 @@ class ProfileViewModel : ViewModel() {
             if (!currentUser.firebaseUid.isNullOrEmpty()) {
                 loadFavoritePosts(currentUser.firebaseUid)
                 loadUserPosts(currentUser.firebaseUid)
-                loadHighlights()
                 loadPets(currentUser.firebaseUid)
             }
         }
@@ -277,90 +268,6 @@ class ProfileViewModel : ViewModel() {
                 println("❌ Exception in updateProfile: ${e.message}")
                 e.printStackTrace()
                 _isLoading.value = false
-            }
-        }
-    }
-
-    fun loadHighlights() {
-        println("📊 loadHighlights called")
-        viewModelScope.launch {
-            try {
-                val user = _user.value
-                if (user != null && !user.firebaseUid.isNullOrEmpty()) {
-                    println("📤 Calling highlightRepository.getHighlights with userId: ${user.firebaseUid}")
-                    val result = highlightRepository.getHighlights(user.firebaseUid)
-                    _highlights.value = result.getOrNull() ?: emptyList()
-                    println("✅ Loaded ${_highlights.value?.size} highlights")
-                }
-            } catch (e: Exception) {
-                println("❌ Exception in loadHighlights: ${e.message}")
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun createHighlight(
-        name: String,
-        emoji: String,
-        color: String,
-        imageUrl: String? = null,
-        postIds: List<String> = emptyList()
-    ) {
-        viewModelScope.launch {
-            try {
-                val user = _user.value ?: return@launch
-                val result = highlightRepository.createHighlight(
-                    userId = user.firebaseUid,
-                    name = name,
-                    emoji = emoji,
-                    color = color,
-                    imageUrl = imageUrl,
-                    postIds = postIds
-                )
-
-                if (result.isSuccess) {
-                    loadHighlights()
-                    _error.value = "Highlight created!"
-                } else {
-                    _error.value = "Highlights feature coming soon!"
-                    val tempHighlight = ApiHighlight(
-                        highlightId = "temp_${System.currentTimeMillis()}",
-                        userId = user.firebaseUid,
-                        name = name,
-                        emoji = emoji,
-                        color = color,
-                        imageUrl = imageUrl,
-                        postIds = postIds,
-                        createdAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(Date())
-                    )
-                    val currentList = _highlights.value?.toMutableList() ?: mutableListOf()
-                    currentList.add(tempHighlight)
-                    _highlights.value = currentList
-                }
-            } catch (e: Exception) {
-                println("❌ Exception in createHighlight: ${e.message}")
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun deleteHighlight(highlightId: String) {
-        viewModelScope.launch {
-            try {
-                val user = _user.value ?: return@launch
-                val result = highlightRepository.deleteHighlight(user.firebaseUid, highlightId)
-
-                if (result.isSuccess) {
-                    loadHighlights()
-                } else {
-                    val currentList = _highlights.value?.toMutableList() ?: mutableListOf()
-                    currentList.removeAll { it.highlightId == highlightId }
-                    _highlights.value = currentList
-                    _error.value = "Highlight removed (offline mode)"
-                }
-            } catch (e: Exception) {
-                println("❌ Exception in deleteHighlight: ${e.message}")
-                e.printStackTrace()
             }
         }
     }

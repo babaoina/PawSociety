@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const { handleError, formatErrorMessage } = require('../utils/errorHandler');
 
 /**
  * GET /api/users
@@ -269,11 +270,7 @@ router.put('/:firebaseUid', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    handleError(error, res, 500, 'Update user profile');
   }
 });
 
@@ -339,6 +336,164 @@ router.delete('/:firebaseUid', async (req, res) => {
     });
   } catch (error) {
     console.error('Delete user error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/users/:firebaseUid/notification-settings
+ * Get user's notification settings
+ */
+router.get('/:firebaseUid/notification-settings', async (req, res) => {
+  try {
+    const { firebaseUid } = req.params;
+
+    const user = await User.findOne({ firebaseUid }).select('notificationSettings');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      settings: user.notificationSettings || {
+        postsLikes: true,
+        postComments: true,
+        follows: true,
+        messages: true,
+        highlightedPosts: true,
+        announcements: true
+      }
+    });
+  } catch (error) {
+    console.error('Get notification settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * PUT /api/users/:firebaseUid/notification-settings
+ * Update user's notification settings
+ * Body: { settingKey, value } or { notificationSettings: {...} }
+ */
+router.put('/:firebaseUid/notification-settings', async (req, res) => {
+  try {
+    const { firebaseUid } = req.params;
+    const { settingKey, value, notificationSettings } = req.body;
+
+    const user = await User.findOne({ firebaseUid });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update single setting or entire settings object
+    if (notificationSettings) {
+      user.notificationSettings = notificationSettings;
+    } else if (settingKey && value !== undefined) {
+      if (!user.notificationSettings) {
+        user.notificationSettings = {};
+      }
+      user.notificationSettings[settingKey] = value;
+    }
+
+    await user.save();
+
+    console.log(`✅ Notification settings updated for ${firebaseUid}`);
+
+    res.json({
+      success: true,
+      settings: user.notificationSettings
+    });
+  } catch (error) {
+    console.error('Update notification settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/users/:firebaseUid/security-settings
+ * Get user's security settings
+ */
+router.get('/:firebaseUid/security-settings', async (req, res) => {
+  try {
+    const { firebaseUid } = req.params;
+
+    const user = await User.findOne({ firebaseUid }).select('securitySettings');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      settings: user.securitySettings || {
+        loginAlerts: true,
+        suspiciousActivityAlerts: true
+      }
+    });
+  } catch (error) {
+    console.error('Get security settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * PUT /api/users/:firebaseUid/security-settings
+ * Update user's security settings
+ * Body: { settingKey, value } or { securitySettings: {...} }
+ */
+router.put('/:firebaseUid/security-settings', async (req, res) => {
+  try {
+    const { firebaseUid } = req.params;
+    const { settingKey, value, securitySettings } = req.body;
+
+    const user = await User.findOne({ firebaseUid });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update single setting or entire settings object
+    if (securitySettings) {
+      user.securitySettings = securitySettings;
+    } else if (settingKey && value !== undefined) {
+      if (!user.securitySettings) {
+        user.securitySettings = {};
+      }
+      user.securitySettings[settingKey] = value;
+    }
+
+    await user.save();
+
+    console.log(`✅ Security settings updated for ${firebaseUid}`);
+
+    res.json({
+      success: true,
+      settings: user.securitySettings
+    });
+  } catch (error) {
+    console.error('Update security settings error:', error);
     res.status(500).json({
       success: false,
       message: error.message

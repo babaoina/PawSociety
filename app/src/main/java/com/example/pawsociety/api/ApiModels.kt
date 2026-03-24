@@ -85,14 +85,27 @@ data class ApiPost(
     @SerializedName("userImageUrl") val userImageUrl: String? = "",
     @SerializedName("petName") val petName: String,
     @SerializedName("petType") val petType: String,
-    @SerializedName("category") val category: String? = null,  // 🔥 ADD THIS
+    @SerializedName("category") val category: String? = null,
     @SerializedName("age") val age: String? = "",
     @SerializedName("weight") val weight: String? = "",
     @SerializedName("gender") val gender: String? = "Unknown",
     @SerializedName("status") val status: String,
     @SerializedName("description") val description: String,
     @SerializedName("location") val location: String? = "",
+    @SerializedName("latitude") val latitude: Double? = null,
+    @SerializedName("longitude") val longitude: Double? = null,
     @SerializedName("reward") val reward: String? = "",
+    @SerializedName("caseType") val caseType: String? = null,
+    @SerializedName("resolvedStatus") val resolvedStatus: String? = "",
+    @SerializedName("isResolved") val isResolved: Boolean = false,
+    @SerializedName("eventDate") val eventDate: String? = "",
+    @SerializedName("eventLocation") val eventLocation: String? = "",
+    @SerializedName("currentCareStatus") val currentCareStatus: String? = "",
+    @SerializedName("identifyingMarks") val identifyingMarks: String? = "",
+    @SerializedName("temperament") val temperament: String? = "",
+    @SerializedName("healthCondition") val healthCondition: String? = "",
+    @SerializedName("hasCollar") val hasCollar: Boolean = false,
+    @SerializedName("contactPreference") val contactPreference: String? = "call",
     @SerializedName("contactInfo") val contactInfo: String,
     @SerializedName("imageUrls") val imageUrls: List<String>? = emptyList(),
     @SerializedName("likesCount") val likesCount: Int = 0,
@@ -103,14 +116,27 @@ data class CreatePostRequest(
     @SerializedName("firebaseUid") val firebaseUid: String,
     @SerializedName("petName") val petName: String,
     @SerializedName("petType") val petType: String,
-    @SerializedName("category") val category: String? = null,  // 🔥 ADD THIS
+    @SerializedName("category") val category: String? = null,
     @SerializedName("age") val age: String? = null,
     @SerializedName("weight") val weight: String? = null,
     @SerializedName("gender") val gender: String? = "Unknown",
     @SerializedName("status") val status: String,
     @SerializedName("description") val description: String,
     @SerializedName("location") val location: String? = null,
+    @SerializedName("latitude") val latitude: Double? = null,
+    @SerializedName("longitude") val longitude: Double? = null,
     @SerializedName("reward") val reward: String? = null,
+    @SerializedName("caseType") val caseType: String? = null,
+    @SerializedName("resolvedStatus") val resolvedStatus: String? = null,
+    @SerializedName("isResolved") val isResolved: Boolean? = false,
+    @SerializedName("eventDate") val eventDate: String? = null,
+    @SerializedName("eventLocation") val eventLocation: String? = null,
+    @SerializedName("currentCareStatus") val currentCareStatus: String? = null,
+    @SerializedName("identifyingMarks") val identifyingMarks: String? = null,
+    @SerializedName("temperament") val temperament: String? = null,
+    @SerializedName("healthCondition") val healthCondition: String? = null,
+    @SerializedName("hasCollar") val hasCollar: Boolean? = false,
+    @SerializedName("contactPreference") val contactPreference: String? = "call",
     @SerializedName("contactInfo") val contactInfo: String,
     @SerializedName("imageUrls") val imageUrls: List<String>? = null
 )
@@ -231,34 +257,6 @@ data class CreateNotificationRequest(
     @SerializedName("message") val message: String
 )
 
-// Highlight API Models
-data class ApiHighlight(
-    @SerializedName("highlightId") val highlightId: String = "",
-    @SerializedName("userId") val userId: String = "",
-    @SerializedName("name") val name: String = "",
-    @SerializedName("emoji") val emoji: String = "📸",
-    @SerializedName("color") val color: String = "#FF6B35",
-    @SerializedName("imageUrl") val imageUrl: String? = null,
-    @SerializedName("postIds") val postIds: List<String> = emptyList(),
-    @SerializedName("createdAt") val createdAt: String = ""
-)
-
-data class CreateHighlightRequest(
-    @SerializedName("name") val name: String,
-    @SerializedName("emoji") val emoji: String,
-    @SerializedName("color") val color: String,
-    @SerializedName("imageUrl") val imageUrl: String? = null,
-    @SerializedName("postIds") val postIds: List<String> = emptyList()
-)
-
-data class UpdateHighlightRequest(
-    @SerializedName("name") val name: String? = null,
-    @SerializedName("emoji") val emoji: String? = null,
-    @SerializedName("color") val color: String? = null,
-    @SerializedName("imageUrl") val imageUrl: String? = null,
-    @SerializedName("postIds") val postIds: List<String>? = null
-)
-
 // Follow response models
 data class FollowCheckResponse(
     @SerializedName("success") val success: Boolean,
@@ -329,4 +327,48 @@ data class MutedUser(
     @SerializedName("username") val username: String,
     @SerializedName("fullName") val fullName: String,
     @SerializedName("profileImageUrl") val profileImageUrl: String?
+)
+
+// Delete Account Models
+data class DeleteAccountRequest(
+    @SerializedName("firebaseUid") val firebaseUid: String,
+    @SerializedName("password") val password: String
+)
+
+data class DeleteAccountResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("deleted") val deleted: Boolean? = false,
+    @SerializedName("message") val message: String? = null
+)
+
+// Sessions Response Model
+data class SessionsResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("sessions") val sessions: List<Map<String, Any>>? = null,
+    @SerializedName("message") val message: String? = null
+)
+
+// User Notification Settings Response
+data class UserNotificationSettingsResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("settings") val settings: Map<String, Any>? = null,
+    @SerializedName("message") val message: String? = null
+)
+
+data class UserPrivacySettingsResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("settings") val settings: PrivacySettingsData? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("error") val error: String? = null
+)
+
+data class PrivacySettingsData(
+    @SerializedName("privateAccount") val privateAccount: Boolean = false
+)
+
+// Generic Settings Update Response
+data class SettingsUpdateResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("error") val error: String? = null
 )

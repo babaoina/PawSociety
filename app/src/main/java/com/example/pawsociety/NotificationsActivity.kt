@@ -60,6 +60,11 @@ class NotificationsActivity : AppCompatActivity() {
         findViewById<ImageView>(R.id.btn_back).setOnClickListener {
             finish()
         }
+
+        // Clear All Button
+        findViewById<TextView>(R.id.btn_clear_all).setOnClickListener {
+            clearAllNotifications(currentUser.firebaseUid)
+        }
     }
 
     private fun initializeViews() {
@@ -72,10 +77,23 @@ class NotificationsActivity : AppCompatActivity() {
             // Handle notification click
             when (notification.type) {
                 "like", "comment" -> {
-                    Toast.makeText(this, "Opening post...", Toast.LENGTH_SHORT).show()
-                    // TODO: Navigate to post
+                    // Navigate to the post
+                    if (!notification.postId.isNullOrEmpty()) {
+                        val intent = Intent(this, PostDetailsActivity::class.java)
+                        intent.putExtra("postId", notification.postId)
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this, "Post no longer available", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                "follow", "message", "message_request" -> {  // 🔥 ADDED message types
+                "message", "message_request" -> {
+                    // Navigate to conversation/chat
+                    val intent = Intent(this, ChatActivity::class.java)
+                    intent.putExtra("receiverUid", notification.fromUserId)
+                    intent.putExtra("receiverUsername", notification.fromUserName)
+                    startActivity(intent)
+                }
+                "follow" -> {
                     // Navigate to user profile
                     val intent = Intent(this, UserProfileActivity::class.java)
                     intent.putExtra("userId", notification.fromUserId)
@@ -124,6 +142,27 @@ class NotificationsActivity : AppCompatActivity() {
                 NotificationManager.startPolling(userId, this@NotificationsActivity)
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+    }
+
+    private fun clearAllNotifications(userId: String) {
+        lifecycleScope.launch {
+            try {
+                val result = notificationRepository.clearAllNotifications(userId)
+                if (result.isSuccess) {
+                    notificationsList.clear()
+                    notificationsAdapter.notifyDataSetChanged()
+                    recyclerView.visibility = View.GONE
+                    emptyState.visibility = View.VISIBLE
+                    Toast.makeText(this@NotificationsActivity, "All notifications cleared", Toast.LENGTH_SHORT).show()
+                    // Refresh badge count
+                    NotificationManager.startPolling(userId, this@NotificationsActivity)
+                } else {
+                    Toast.makeText(this@NotificationsActivity, "Failed to clear notifications", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@NotificationsActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }

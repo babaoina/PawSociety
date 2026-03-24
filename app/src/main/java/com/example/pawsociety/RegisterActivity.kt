@@ -279,6 +279,12 @@ class RegisterActivity : AppCompatActivity() {
                 lastNameError.visibility = View.VISIBLE
                 false
             }
+            name.length > 10 -> {
+                etLastName.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
+                lastNameError.text = "Last name must be maximum 10 characters"
+                lastNameError.visibility = View.VISIBLE
+                false
+            }
             !name.matches(Regex("^[a-zA-Z\\s.-]+$")) -> {
                 etLastName.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
                 lastNameError.text = "Only letters, spaces, dots, and hyphens allowed"
@@ -305,6 +311,12 @@ class RegisterActivity : AppCompatActivity() {
             name.length < 2 -> {
                 etFirstName.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
                 firstNameError.text = "First name must be at least 2 characters"
+                firstNameError.visibility = View.VISIBLE
+                false
+            }
+            name.length > 10 -> {
+                etFirstName.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
+                firstNameError.text = "First name must be maximum 10 characters"
                 firstNameError.visibility = View.VISIBLE
                 false
             }
@@ -432,6 +444,12 @@ class RegisterActivity : AppCompatActivity() {
             password.length < 8 -> {
                 etPassword.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
                 passwordError.text = "Password must be at least 8 characters"
+                passwordError.visibility = View.VISIBLE
+                false
+            }
+            password.length > 100 -> {
+                etPassword.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
+                passwordError.text = "Password must be maximum 100 characters"
                 passwordError.visibility = View.VISIBLE
                 false
             }

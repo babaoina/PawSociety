@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -8,24 +9,25 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#FFFFFF">
+        android:background="#FBF5EE">
 
         <!-- Top Bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="#FFFFFF"
+            android:background="#FBF5EE"
             android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
+            android:paddingHorizontal="18dp"
             android:gravity="center_vertical"
-            android:elevation="4dp">
+            android:elevation="2dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Find Pets"
-                android:textColor="#000000"
-                android:textSize="24sp"
+                android:textColor="#1F1A14"
+                android:textSize="28sp"
+                android:fontFamily="sans-serif-medium"
                 android:textStyle="bold" />
 
             <View
@@ -39,7 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#FFFFFF"
+            android:background="#FBF5EE"
             android:id="@+id/search_container">
 
             <!-- Search Row (Horizontal) -->
@@ -47,7 +49,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:padding="16dp"
+                android:paddingStart="16dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="16dp"
                 android:paddingBottom="8dp">
 
                 <!-- Search Input Field with Clear Button -->
@@ -63,7 +67,7 @@
                         android:orientation="horizontal"
                         android:paddingHorizontal="16dp"
                         android:gravity="center_vertical"
-                        android:background="@drawable/input_oval">
+                        android:background="@drawable/bg_find_search_surface">
 
                         <!-- Magnifying glass -->
                         <ImageView
@@ -78,7 +82,7 @@
                             android:layout_height="match_parent"
                             android:layout_weight="1"
                             android:hint="Search pets, breeds, locations..."
-                            android:textColorHint="#666666"
+                            android:textColorHint="#8C7A6B"
                             android:textColor="#000000"
                             android:textSize="14sp"
                             android:background="@null"
@@ -107,7 +111,7 @@
                     android:layout_height="48dp"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:background="@drawable/input_oval"
+                    android:background="@drawable/bg_find_filter_button"
                     android:clickable="true"
                     android:focusable="true"
                     android:padding="8dp">
@@ -126,12 +130,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="#FFFFFF"
+                android:background="@drawable/bg_find_recent_panel"
                 android:visibility="gone"
                 android:elevation="8dp"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="8dp"
-                android:alpha="0.95">
+                android:alpha="0.98">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -140,8 +144,11 @@
                     android:textColor="#7A4F2B"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:padding="12dp"
-                    android:background="#F8F8F8" />
+                    android:paddingStart="14dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp"
+                    android:background="@drawable/bg_find_recent_header" />
 
                 <LinearLayout
                     android:id="@+id/recent_searches_container"
@@ -161,6 +168,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="16dp"
+            android:paddingTop="2dp"
             android:paddingBottom="8dp"
             android:textColor="#7A4F2B"
             android:textSize="14sp"
@@ -180,9 +188,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="16dp"
-            android:paddingVertical="8dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="12dp"
             android:scrollbars="none"
-            android:background="#FFFFFF">
+            android:background="#FBF5EE">
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -193,11 +202,11 @@
                 <Button
                     android:id="@+id/chip_all"
                     android:layout_width="wrap_content"
-                    android:layout_height="32dp"
+                    android:layout_height="36dp"
                     android:text="All Pets"
                     android:textColor="#FFFFFF"
-                    android:background="@drawable/button_oval_brown"
-                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_find_chip_all"
+                    android:layout_marginEnd="8dp"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:stateListAnimator="@null"
@@ -215,11 +224,11 @@
                 <Button
                     android:id="@+id/chip_lost"
                     android:layout_width="wrap_content"
-                    android:layout_height="32dp"
+                    android:layout_height="36dp"
                     android:text="Lost"
                     android:textColor="#FFFFFF"
-                    android:background="@drawable/button_oval_red"
-                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_find_chip_lost"
+                    android:layout_marginEnd="8dp"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:stateListAnimator="@null"
@@ -237,11 +246,11 @@
                 <Button
                     android:id="@+id/chip_found"
                     android:layout_width="wrap_content"
-                    android:layout_height="32dp"
+                    android:layout_height="36dp"
                     android:text="Found"
                     android:textColor="#FFFFFF"
-                    android:background="@drawable/button_oval_green"
-                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_find_chip_found"
+                    android:layout_marginEnd="8dp"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:stateListAnimator="@null"
@@ -259,10 +268,10 @@
                 <Button
                     android:id="@+id/chip_adoption"
                     android:layout_width="wrap_content"
-                    android:layout_height="32dp"
+                    android:layout_height="36dp"
                     android:text="Adoption"
                     android:textColor="#FFFFFF"
-                    android:background="@drawable/button_oval_blue"
+                    android:background="@drawable/bg_find_chip_adoption"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:stateListAnimator="@null"
@@ -284,23 +293,26 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:background="#FFFFFF">
+            android:background="#FBF5EE">
 
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#FFFFFF"
+                android:background="#FBF5EE"
                 android:paddingBottom="0dp">  <!-- REMOVED padding to go full height -->
 
+                <!-- Empty State -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/find_recycler_view"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:padding="2dp"
+                    android:background="#FBF5EE"
                     android:clipToPadding="false"
-                    android:background="#FFFFFF" />
+                    android:paddingStart="10dp"
+                    android:paddingTop="0dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="12dp" />
 
-                <!-- Empty State -->
                 <LinearLayout
                     android:id="@+id/empty_state"
                     android:layout_width="match_parent"
@@ -309,7 +321,7 @@
                     android:gravity="center"
                     android:visibility="gone"
                     android:padding="32dp"
-                    android:background="#FFFFFF">
+                    android:background="#FBF5EE">
 
                     <TextView
                         android:layout_width="80dp"
@@ -377,4 +389,21 @@
                 android:layout_gravity="center" />
         </FrameLayout>
     </FrameLayout>
+
+    <!-- Floating GPS Button -->
+    <ImageButton
+        android:id="@+id/fab_gps_map"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="88dp"
+        android:background="@drawable/bg_pawgps_button"
+        android:scaleType="fitCenter"
+        android:padding="9dp"
+        android:src="@drawable/pawgps"
+        android:tint="#000000"
+        android:elevation="10dp"
+        android:contentDescription="Go to Map View" />
+
 </FrameLayout>

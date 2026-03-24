@@ -17,36 +17,11 @@
         android:layout_marginBottom="20dp"
         android:layout_gravity="center_horizontal" />
 
-    <!-- Current Phone Label -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Current Phone Number"
-        android:textColor="#666666"
-        android:textSize="14sp"
-        android:layout_marginBottom="4dp"
-        android:layout_marginStart="8dp" />
-
-    <!-- Current Phone Input -->
-    <EditText
-        android:id="@+id/et_current_phone"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:hint="Enter current phone number"
-        android:inputType="phone"
-        android:textColor="#000000"
-        android:textColorHint="#999999"
-        android:background="@drawable/bg_rounded_edittext"
-        android:paddingHorizontal="16dp"
-        android:maxLength="11"
-        android:digits="0123456789"
-        android:layout_marginBottom="16dp" />
-
     <!-- New Phone Label -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="New Phone Number"
+        android:text="Phone Number"
         android:textColor="#666666"
         android:textSize="14sp"
         android:layout_marginBottom="4dp"
@@ -66,6 +41,16 @@
         android:maxLength="11"
         android:digits="0123456789"
         android:layout_marginBottom="24dp" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:indeterminate="true"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp" />
 
     <!-- Button Container -->
     <LinearLayout

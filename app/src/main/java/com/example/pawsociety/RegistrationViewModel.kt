@@ -65,6 +65,11 @@ class RegistrationViewModel(application: Application) : AndroidViewModel(applica
     private val _registrationComplete = MutableLiveData<Boolean>()
     val registrationComplete: LiveData<Boolean> = _registrationComplete
 
+    private fun isGoogleAccountRegistration(): Boolean {
+        val firebaseUser = FirebaseAuthHelper.currentUser ?: return false
+        return firebaseUser.providerData.any { it.providerId == "google.com" }
+    }
+
     fun setSessionManager(sessionManager: SessionManager) {
         this.sessionManager = sessionManager
     }
@@ -108,40 +113,55 @@ class RegistrationViewModel(application: Application) : AndroidViewModel(applica
                 val emailValue = _email.value ?: throw Exception("Email is required")
                 val passwordValue = _password.value ?: throw Exception("Password is required")
 
+                // STEP 1: Create Firebase account first.
+                // If the backend step fails after this, we roll Firebase back immediately.
                 val firebaseResult = FirebaseAuthHelper.registerWithEmail(emailValue, passwordValue)
 
                 if (firebaseResult.isFailure) {
-                    onError(firebaseResult.exceptionOrNull()?.message ?: "Registration failed")
+                    onError(firebaseResult.exceptionOrNull()?.message ?: "Firebase registration failed")
                     _isLoading.value = false
                     return@launch
                 }
 
                 val firebaseUser = firebaseResult.getOrNull()!!
-                FirebaseAuthHelper.sendEmailVerification()
 
-                val tempUsername = emailValue.substringBefore("@") + "_temp" + UUID.randomUUID().toString().take(4)
+                try {
+                    // STEP 2: Create or resume the unverified backend placeholder.
+                    val registerResult = authRepository.registerUnverified(
+                        email = emailValue,
+                        username = null,
+                        fullName = null,
+                        phone = null
+                    )
 
-                val backendResult = authRepository.firebaseLogin(
-                    firebaseUid = firebaseUser.uid,
-                    email = emailValue,
-                    username = tempUsername,
-                    fullName = ""
-                )
+                    if (registerResult.isFailure) {
+                        throw Exception(registerResult.exceptionOrNull()?.message ?: "Registration failed")
+                    }
 
-                if (backendResult.isSuccess) {
-                    val apiUser = backendResult.getOrNull()!!
-                    sessionManager.saveUserSession(apiUser)
-                } else {
-                    val localUser = ApiUser(
+                    // STEP 3: Send email verification.
+                    val verificationResult = FirebaseAuthHelper.sendEmailVerification()
+                    if (verificationResult.isFailure) {
+                        throw Exception(
+                            verificationResult.exceptionOrNull()?.message
+                                ?: "We couldn't send the verification email."
+                        )
+                    }
+
+                    // STEP 4: Store temporary data for later finalization.
+                    sessionManager.saveTempRegistrationData(
                         firebaseUid = firebaseUser.uid,
                         email = emailValue,
-                        username = tempUsername,
-                        fullName = ""
+                        username = null,
+                        fullName = null,
+                        password = passwordValue
                     )
-                    sessionManager.saveUserSession(localUser)
-                }
 
-                onSuccess()
+                    onSuccess()
+                } catch (backendOrVerificationError: Exception) {
+                    FirebaseAuthHelper.deleteCurrentUser()
+                    FirebaseAuthHelper.signOut()
+                    throw backendOrVerificationError
+                }
 
             } catch (e: Exception) {
                 onError(e.message ?: "Unknown error")
@@ -195,7 +215,10 @@ class RegistrationViewModel(application: Application) : AndroidViewModel(applica
                 var usernameValue = _username.value
                 if (usernameValue.isNullOrEmpty()) {
                     val emailValue = _email.value ?: "user"
-                    usernameValue = emailValue.substringBefore("@") + System.currentTimeMillis().toString().takeLast(4)
+                    // Generate username respecting 20 char limit
+                    val emailPart = emailValue.substringBefore("@").take(15) // Limit to 15 chars
+                    val timestamp = System.currentTimeMillis().toString().takeLast(4) // 4 chars
+                    usernameValue = "${emailPart}_${timestamp}" // Max: 15 + 1 + 4 = 20 chars
                     _username.value = usernameValue
                     println("✅ Generated username: $usernameValue")
                 }
@@ -209,14 +232,17 @@ class RegistrationViewModel(application: Application) : AndroidViewModel(applica
                 // Try to get current user, if null, create a new one from email
                 var currentUser = sessionManager.getCurrentUser()
                 if (currentUser == null) {
-                    println("⚠️ No session found, creating from email")
-                    val emailValue = _email.value ?: throw Exception("Email is required")
                     val firebaseUser = FirebaseAuthHelper.currentUser
+                    if (firebaseUser?.uid.isNullOrEmpty()) {
+                        _error.value = "Firebase user not authenticated. Please login again."
+                        return@launch
+                    }
                     currentUser = ApiUser(
-                        firebaseUid = firebaseUser?.uid ?: "",
-                        email = emailValue,
-                        username = emailValue.substringBefore("@"),
-                        fullName = "$firstNameValue $lastNameValue"
+                        firebaseUid = firebaseUser!!.uid,  // ✅ Guaranteed non-empty
+                        email = _email.value ?: "",
+                        username = _username.value ?: _email.value?.substringBefore("@") ?: "user",
+                        fullName = "${_firstName.value ?: ""} ${_lastName.value ?: ""}".trim(),
+                        phone = _mobile.value ?: ""
                     )
                 }
 
@@ -257,33 +283,77 @@ class RegistrationViewModel(application: Application) : AndroidViewModel(applica
                     println("📸 Using Google photo: $profileImageUrl")
                 }
 
-                // Update user in backend
+                val backendUser = if (isGoogleAccountRegistration()) {
+                    try {
+                        println("🔗 Completing Google account setup...")
+                        val googleLoginResult = authRepository.firebaseLogin(
+                            firebaseUid = currentUser.firebaseUid,
+                            email = currentUser.email,
+                            username = usernameValue,
+                            fullName = fullName,
+                            phone = mobileValue
+                        )
+                        if (googleLoginResult.isFailure) {
+                            throw Exception(googleLoginResult.exceptionOrNull()?.message ?: "We couldn't complete your Google sign-up.")
+                        }
+                        println("✅ Google account synced")
+                        googleLoginResult.getOrNull() ?: currentUser
+                    } catch (e: Exception) {
+                        println("❌ Google setup error: ${e.message}")
+                        _error.value = e.message ?: "We couldn't complete your Google sign-up."
+                        return@launch
+                    }
+                } else {
+                    try {
+                        println("🔗 Finalizing account (linking Firebase UID to MongoDB user)...")
+                        val finalizeResult = authRepository.finalizeAccount(
+                            firebaseUid = currentUser.firebaseUid,
+                            email = currentUser.email
+                        )
+                        if (finalizeResult.isFailure) {
+                            throw Exception(finalizeResult.exceptionOrNull()?.message ?: "We couldn't finish setting up your account.")
+                        }
+                        println("✅ Account finalized")
+                        currentUser
+                    } catch (e: Exception) {
+                        println("❌ Finalization error: ${e.message}")
+                        _error.value = e.message ?: "We couldn't finish setting up your account."
+                        return@launch
+                    }
+                }
+
+                // STEP 2: Update user in backend with profile data
                 try {
                     println("📤 Updating user in backend...")
-                    userRepository.updateUser(
-                        firebaseUid = currentUser.firebaseUid,
+                    val updateResult = userRepository.updateUser(
+                        firebaseUid = backendUser.firebaseUid,
                         username = usernameValue,
                         fullName = fullName,
                         phone = mobileValue,
                         profileImageUrl = profileImageUrl
                     )
+                    if (updateResult.isFailure) {
+                        throw Exception(updateResult.exceptionOrNull()?.message ?: "We couldn't save your profile.")
+                    }
                     println("✅ User updated in backend")
                 } catch (e: Exception) {
                     println("❌ Backend update error: ${e.message}")
-                    e.printStackTrace()
+                    _error.value = e.message ?: "We couldn't save your profile."
+                    return@launch  // ✅ STOP here, don't continue
                 }
 
-                // Update local session
-                val updatedUser = currentUser.copy(
+                // STEP 3: Update local session
+                val updatedUser = backendUser.copy(
                     username = usernameValue,
                     fullName = fullName,
                     phone = mobileValue,
-                    profileImageUrl = profileImageUrl ?: currentUser.profileImageUrl
+                    profileImageUrl = profileImageUrl ?: backendUser.profileImageUrl
                 )
                 sessionManager.saveUserSession(updatedUser)
+                sessionManager.clearTempRegistrationData()
                 println("✅ Session saved")
 
-                // Connect Socket.IO and FCM
+                // STEP 4: Connect Socket.IO and FCM
                 SocketManager.connect()
                 SocketManager.joinUserRoom(updatedUser.firebaseUid)
                 FCMTokenManager.initialize(updatedUser.firebaseUid)
@@ -296,7 +366,7 @@ class RegistrationViewModel(application: Application) : AndroidViewModel(applica
             } catch (e: Exception) {
                 println("❌ Registration error: ${e.message}")
                 e.printStackTrace()
-                _error.value = e.message
+                _error.value = e.message ?: "We couldn't complete your registration."
             }
         }
     }

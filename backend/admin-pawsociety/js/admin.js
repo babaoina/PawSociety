@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadDashboardData() {
     try {
         console.log('Loading dashboard data from API...');
-        const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+        const response = await fetch(`${API_BASE_URL}/stats`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
             }
@@ -167,7 +167,7 @@ async function loadDashboardData() {
 async function loadUsersData() {
     try {
         console.log('Loading users...');
-        const users = await apiRequest('/admin/users');
+        const users = await apiRequest('/users');
         displayUsers(users);
         updateUserStats(users);
     } catch (error) {
@@ -179,7 +179,10 @@ function displayUsers(users) {
     const tbody = document.getElementById('usersTableBody');
     if (!tbody) return;
 
-    if (users.length === 0) {
+    // Filter out admin accounts
+    const filteredUsers = users.filter(user => user.role !== 'admin');
+
+    if (filteredUsers.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" style="text-align: center; padding: 50px;">
@@ -191,7 +194,7 @@ function displayUsers(users) {
         return;
     }
 
-    tbody.innerHTML = users.map(user => {
+    tbody.innerHTML = filteredUsers.map(user => {
         const avatar = user.name?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || '?';
         const colors = ['#7A4F2B', '#B88B4A', '#2196F3', '#4CAF50', '#9C27B0'];
         const color = colors[Math.abs(user.id?.toString().charCodeAt(0) || 0) % colors.length];
@@ -205,17 +208,21 @@ function displayUsers(users) {
                 </div>
             </td>
             <td>${user.email || ''}</td>
-            <td>${user.role || 'user'}</td>
+            <td>
+                ${user.reportCount > 0 ? `<span class="report-badge" onclick="showUserReports('${user.firebaseUid}')">🚩 ${user.reportCount} report${user.reportCount > 1 ? 's' : ''}</span>` : '<span style="color: #999;">No reports</span>'}
+            </td>
             <td><span class="user-status ${user.status === 'Active' ? 'status-active' : 'status-suspended'}">${user.status || 'Active'}</span></td>
             <td>${user.joined ? new Date(user.joined).toLocaleDateString() : ''}</td>
-            <td>${user.posts || 0}</td>
+            <td>
+                <span style="cursor: pointer; color: #7A4F2B; font-weight: bold;" title="View Posts" onclick="viewUserPosts('${user.firebaseUid}', '${user.name}')">${user.posts || 0} 👁️</span>
+            </td>
             <td>
                 <div class="action-icons">
                     <span title="Edit" onclick="editUser('${user.id}')">✏️</span>
                     ${user.status === 'Active' 
                         ? '<span title="Suspend" onclick="updateUserStatus(\'' + user.id + '\', \'Suspended\')">⛔</span>' 
                         : '<span title="Activate" onclick="updateUserStatus(\'' + user.id + '\', \'Active\')">✅</span>'}
-                    ${user.role !== 'admin' ? '<span title="Delete" onclick="deleteUser(\'' + user.id + '\')">🗑️</span>' : ''}
+                    <span title="Delete" onclick="deleteUser(\'' + user.id + '\')">🗑️</span>
                 </div>
             </td>
         </tr>
@@ -231,7 +238,7 @@ function updateUserStats(users) {
 
 async function editUser(id) {
     try {
-        const users = await apiRequest('/admin/users');
+        const users = await apiRequest('/users');
         const user = users.find(u => u.id === id);
         
         if (!user) return;
@@ -264,13 +271,13 @@ async function saveUser() {
     
     try {
         if (id) {
-            await apiRequest(`/admin/users/${id}`, {
+            await apiRequest(`/users/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ name, email, role, status })
             });
             alert('User updated successfully');
         } else {
-            await apiRequest('/admin/users', {
+            await apiRequest('/users', {
                 method: 'POST',
                 body: JSON.stringify({ name, email, role, status, password: 'default123' })
             });
@@ -288,11 +295,11 @@ async function saveUser() {
 async function updateUserStatus(id, status) {
     if (confirm(`${status} this user?`)) {
         try {
-            const users = await apiRequest('/admin/users');
+            const users = await apiRequest('/users');
             const user = users.find(u => u.id === id);
             
             if (user) {
-                await apiRequest(`/admin/users/${id}`, {
+                await apiRequest(`/users/${id}`, {
                     method: 'PUT',
                     body: JSON.stringify({
                         name: user.name,
@@ -314,7 +321,7 @@ async function updateUserStatus(id, status) {
 async function deleteUser(id) {
     if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
         try {
-            await apiRequest(`/admin/users/${id}`, { method: 'DELETE' });
+            await apiRequest(`/users/${id}`, { method: 'DELETE' });
             loadUsersData();
             alert('User deleted successfully');
         } catch (error) {
@@ -324,11 +331,216 @@ async function deleteUser(id) {
     }
 }
 
+// ===== VIEW USER POSTS FUNCTION =====
+async function viewUserPosts(userId, userName) {
+    try {
+        console.log('🔍 Fetching posts for user:', userId);
+        const posts = await apiRequest(`/users/${userId}/posts`);
+        
+        if (posts.length === 0) {
+            alert(`${userName} has no posts`);
+            return;
+        }
+        
+        // Build HTML for modal
+        let html = `
+            <div style="font-family: Arial, sans-serif;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #7A4F2B; padding-bottom: 10px;">
+                    <h2 style="margin: 0; color: #5a3a1f;">📝 ${userName}'s Posts (${posts.length})</h2>
+                    <button onclick="closeModal('userPostsModal')" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; max-height: 600px; overflow-y: auto;">
+        `;
+        
+        posts.forEach(post => {
+            // Get status color
+            let statusColor = '#F44336'; // Lost (red)
+            let statusBg = '#ffebee';
+            if (post.status === 'Found') {
+                statusColor = '#4CAF50'; // Found (green)
+                statusBg = '#e8f5e9';
+            } else if (post.status === 'Adoption') {
+                statusColor = '#2196F3'; // Adoption (blue)
+                statusBg = '#e3f2fd';
+            }
+            
+            // Handle images
+            let imageHtml = '';
+            if (post.imageUrls && post.imageUrls.length > 0) {
+                const filename = post.imageUrls[0].split('/').pop();
+                let imageUrl = post.imageUrls[0];
+                if (imageUrl.startsWith('http')) {
+                    imageUrl = imageUrl;
+                } else if (imageUrl.startsWith('/api/uploads')) {
+                    imageUrl = APP_BACKEND_URL + imageUrl;
+                } else {
+                    imageUrl = APP_BACKEND_URL + '/api/uploads/posts/' + filename;
+                }
+                imageHtml = `<img src="${imageUrl}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px 8px 0 0;" onerror="this.style.display='none';">`;
+            }
+            
+            html += `
+                <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #f0e4d4;">
+                    ${imageHtml}
+                    <div style="padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #5a3a1f;">${post.petName || 'Unnamed'}</strong>
+                            <span style="background: ${statusBg}; color: ${statusColor}; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                                ${post.status || 'Unknown'}
+                            </span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 6px;">
+                            📍 ${post.location || 'No location'}<br>
+                            🎂 ${post.age || 'Unknown age'} | ⚖️ ${post.weight || 'Unknown weight'}
+                        </div>
+                        <div style="font-size: 12px; color: #999; margin-bottom: 10px;">
+                            ${new Date(post.createdAt).toLocaleDateString()}
+                        </div>
+                        <button onclick="viewPost('${post.id}')" style="width: 100%; background: #7A4F2B; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button onclick="closeModal('userPostsModal')" style="background: #7A4F2B; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        const userPostsModalContent = document.getElementById('userPostsModalContent') || document.createElement('div');
+        userPostsModalContent.id = 'userPostsModalContent';
+        userPostsModalContent.innerHTML = html;
+        
+        if (!document.getElementById('userPostsModal')) {
+            const modal = document.createElement('div');
+            modal.id = 'userPostsModal';
+            modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-content" style="max-width: 900px;"></div>`;
+            document.body.appendChild(modal);
+            modal.querySelector('.modal-content').appendChild(userPostsModalContent);
+        } else {
+            document.getElementById('userPostsModal').querySelector('.modal-content').innerHTML = html;
+        }
+        
+        openModal('userPostsModal');
+        
+    } catch (error) {
+        console.error('❌ Error loading posts:', error);
+        alert('Failed to load user posts: ' + error.message);
+    }
+}
+
+// ===== VIEW USER REPORTS FUNCTION =====
+async function showUserReports(userId) {
+    try {
+        console.log('🔍 Fetching reports for user:', userId);
+        const reports = await apiRequest(`/users/${userId}/reports`);
+        
+        if (reports.length === 0) {
+            alert('Zero reports for this user');
+            return;
+        }
+        
+        // Build HTML for modal
+        let html = `
+            <div style="font-family: Arial, sans-serif;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #FF9800; padding-bottom: 10px;">
+                    <h2 style="margin: 0; color: #FF9800;">🚩 Reports (${reports.length})</h2>
+                    <button onclick="closeModal('userReportsModal')" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+        `;
+        
+        reports.forEach((report, index) => {
+            const reporterName = report.reporterName || 'Unknown User';
+            const reportDate = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'Unknown date';
+            const reportId = report.reportId;
+            
+            let statusColor = '#FF9800';
+            let statusText = 'PENDING';
+            if (report.status === 'reviewed') {
+                statusColor = '#4CAF50';
+                statusText = 'REVIEWED';
+            }
+            if (report.status === 'dismissed') {
+                statusColor = '#999';
+                statusText = 'DISMISSED';
+            }
+            
+            html += `
+                <div style="background: ${index % 2 === 0 ? '#f9f9f9' : '#fff'}; 
+                            padding: 15px; 
+                            margin-bottom: 15px; 
+                            border-radius: 8px;
+                            border-left: 5px solid #FF9800;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-weight: bold; color: #FF9800;">Report #${index + 1}</span>
+                        <span style="color: #666; font-size: 12px;">${reportDate}</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">👤 Reporter</div>
+                        <div>${reporterName}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">📝 Reason</div>
+                        <div style="text-transform: capitalize;">${report.reason || 'Not specified'}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #555; margin-bottom: 3px;">⚙️ Status</div>
+                        <span style="display: inline-block; background: ${statusColor}; color: white; padding: 3px 12px; border-radius: 12px; font-weight: bold; font-size: 11px;">${statusText}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                <div style="text-align: right; margin-top: 20px;">
+                    <button onclick="closeModal('userReportsModal')" style="background: #7A4F2B; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        const userReportsModalContent = document.getElementById('userReportsModalContent') || document.createElement('div');
+        userReportsModalContent.id = 'userReportsModalContent';
+        userReportsModalContent.innerHTML = html;
+        
+        if (!document.getElementById('userReportsModal')) {
+            const modal = document.createElement('div');
+            modal.id = 'userReportsModal';
+            modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-content" style="max-width: 600px;"></div>`;
+            document.body.appendChild(modal);
+            modal.querySelector('.modal-content').appendChild(userReportsModalContent);
+        } else {
+            document.getElementById('userReportsModal').querySelector('.modal-content').innerHTML = html;
+        }
+        
+        openModal('userReportsModal');
+        
+    } catch (error) {
+        console.error('❌ Error:', error);
+        alert('Failed to load reports: ' + error.message);
+    }
+}
+
 // ===== POSTS FUNCTIONS =====
 async function loadPostsData() {
     try {
         console.log('Loading posts...');
-        const posts = await apiRequest('/admin/posts');
+        const posts = await apiRequest('/posts');
         
         // DEBUG: Log all image URLs to see what's coming from backend
         console.log('📸 IMAGE URLS FROM DATABASE:');
@@ -340,7 +552,7 @@ async function loadPostsData() {
         
         let reports = [];
         try {
-            reports = await apiRequest('/admin/reports');
+            reports = await apiRequest('/reports');
             console.log('Reports loaded:', reports.length);
         } catch (e) {
             console.log('No reports found');
@@ -404,7 +616,7 @@ router.get('/settings', async (req, res) => {
 async function loadSettingsData() {
   try {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${API_BASE_URL}/admin/settings`, {
+    const response = await fetch(`${API_BASE_URL}/settings`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -528,7 +740,7 @@ async function saveSettings(section) {
     
     console.log(`📤 Saving ${section} settings:`, settings);
     
-    const response = await fetch(`${API_BASE_URL}/admin/settings/${section}`, {
+    const response = await fetch(`${API_BASE_URL}/settings/${section}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -573,7 +785,7 @@ async function emergencyAction(action) {
   
   try {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${API_BASE_URL}/admin/settings/emergency/${action}`, {
+    const response = await fetch(`${API_BASE_URL}/settings/emergency/${action}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -596,18 +808,12 @@ async function emergencyAction(action) {
 // Get notification count for badge
 async function getNotificationCount() {
   try {
-    const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${API_BASE_URL}/admin/notifications/count`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      const badge = document.getElementById('notificationBadge');
-      if (badge) {
-        badge.textContent = data.count;
-        badge.style.display = data.count > 0 ? 'flex' : 'none';
-      }
+    const reports = await apiRequest('/reports');
+    const pendingCount = reports.filter(report => !report.status || report.status === 'pending').length;
+    const badge = document.getElementById('notificationBadge');
+    if (badge) {
+      badge.textContent = pendingCount;
+      badge.style.display = pendingCount > 0 ? 'flex' : 'none';
     }
   } catch (error) {
     console.error('Failed to get notification count:', error);
@@ -818,7 +1024,7 @@ async function showReportDetails(postId) {
         console.log('🔍 Fetching reports for post:', postId);
         
         // Get all reports
-        const reports = await apiRequest('/admin/reports');
+        const reports = await apiRequest('/reports');
         
         // Find reports for this post
         const postReports = reports.filter(r => 
@@ -955,7 +1161,7 @@ async function updateReportStatus(reportId, status) {
     try {
         console.log('Updating report:', reportId, 'to', status);
         
-        await apiRequest(`/admin/reports/${reportId}/status`, {
+        await apiRequest(`/reports/${reportId}/status`, {
             method: 'PUT',
             body: JSON.stringify({ status })
         });
@@ -987,7 +1193,7 @@ async function showReportDetails(postId) {
     try {
         console.log('🔍 Fetching reports for post:', postId);
         
-        const reports = await apiRequest('/admin/reports');
+        const reports = await apiRequest('/reports');
         const postReports = reports.filter(r => 
             r.postId === postId || 
             (r.post && r.post.postId === postId)
@@ -1110,7 +1316,7 @@ async function showReportDetails(postId) {
 // Refresh modal function
 async function refreshReportModal(postId) {
     try {
-        const reports = await apiRequest('/admin/reports');
+        const reports = await apiRequest('/reports');
         const postReports = reports.filter(r => 
             r.postId === postId || 
             (r.post && r.post.postId === postId)
@@ -1226,7 +1432,7 @@ async function refreshReportModal(postId) {
 async function deleteReport(reportId) {
     if (confirm('Are you sure you want to delete this report?')) {
         try {
-            await apiRequest(`/admin/reports/${reportId}`, {
+            await apiRequest(`/reports/${reportId}`, {
                 method: 'DELETE'
             });
             alert('Report deleted');
@@ -1253,7 +1459,7 @@ async function viewPost(id) {
         console.log('🔍 Viewing post:', id);
         
         // Fetch single post from API
-        const response = await fetch(`${API_BASE_URL}/admin/posts/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/posts/${id}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
             }
@@ -1450,21 +1656,13 @@ function formatReward(reward) {
 }
 
 async function flagPost(id) {
-    if (confirm('Flag/unflag this post?')) {
-        try {
-            await apiRequest(`/admin/posts/${id}/flag`, { method: 'PUT' });
-            loadPostsData();
-        } catch (error) {
-            console.error('Failed to flag post:', error);
-            alert('Failed to flag post');
-        }
-    }
+    alert('Use the Reports button on a post to review and moderate reports.');
 }
 
 async function deletePost(id) {
     if (confirm('Are you sure you want to delete this post?')) {
         try {
-            await apiRequest(`/admin/posts/${id}`, { method: 'DELETE' });
+            await apiRequest(`/posts/${id}`, { method: 'DELETE' });
             loadPostsData();
             closeModal('deleteModal');
         } catch (error) {
@@ -1478,7 +1676,7 @@ async function deletePost(id) {
 async function loadReportsData() {
     try {
         console.log('Loading reports...');
-        const stats = await apiRequest('/admin/stats');
+        const stats = await apiRequest('/stats');
         
         document.getElementById('total-users').textContent = stats.totalUsers || 0;
         document.getElementById('total-posts').textContent = stats.totalPosts || 0;
@@ -1590,7 +1788,7 @@ async function loadSettingsData() {
 
     console.log('📥 Loading settings from API...');
     
-    const response = await fetch(`${API_BASE_URL}/admin/settings`, {
+    const response = await fetch(`${API_BASE_URL}/settings`, {
       method: 'GET',
       headers: { 
         'Authorization': `Bearer ${token}`,
@@ -1676,30 +1874,88 @@ function toggleSwitch(element) {
     element.classList.toggle('active');
 }
 
-async function saveSettings() {
-    const settings = {
-        siteName: document.getElementById('siteName')?.value || 'PawSociety',
-        siteDescription: document.getElementById('siteDescription')?.value || '',
-        contactEmail: document.getElementById('contactEmail')?.value || '',
-        timezone: document.getElementById('timezone')?.value || 'PST',
-        allowRegistration: document.getElementById('allowRegistration')?.classList.contains('active') || false,
-        emailVerification: document.getElementById('emailVerification')?.classList.contains('active') || false,
-        defaultRole: document.getElementById('defaultRole')?.value || 'user',
-        twoFactorAuth: document.getElementById('twoFactorAuth')?.classList.contains('active') || false,
-        sessionTimeout: parseInt(document.getElementById('sessionTimeout')?.value) || 120,
-        autoApprovePosts: document.getElementById('autoApprovePosts')?.classList.contains('active') || false,
-        profanityFilter: document.getElementById('profanityFilter')?.classList.contains('active') || false
-    };
-    
+async function saveSettings(section = 'general') {
     try {
-        await apiRequest('/admin/settings', {
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        let settings = {};
+
+        switch (section) {
+            case 'general':
+                settings = {
+                    appName: document.getElementById('appName')?.value,
+                    supportEmail: document.getElementById('supportEmail')?.value,
+                    minVersion: document.getElementById('minVersion')?.value,
+                    maintenanceMode: document.getElementById('maintenanceMode')?.classList.contains('active'),
+                    maintenanceMessage: document.getElementById('maintenanceMessage')?.value,
+                    allowRegistration: document.getElementById('allowRegistration')?.classList.contains('active'),
+                    emailVerification: document.getElementById('emailVerification')?.classList.contains('active'),
+                    phoneVerification: document.getElementById('phoneVerification')?.classList.contains('active')
+                };
+                break;
+            case 'notifications':
+                settings = {
+                    pushEnabled: document.getElementById('pushEnabled')?.classList.contains('active'),
+                    quietStart: document.getElementById('quietStart')?.value,
+                    quietEnd: document.getElementById('quietEnd')?.value,
+                    notificationTypes: Array.from(document.getElementById('notificationTypes')?.selectedOptions || []).map(option => option.value)
+                };
+                break;
+            case 'security':
+                settings = {
+                    maxLoginAttempts: parseInt(document.getElementById('maxLoginAttempts')?.value, 10) || 5,
+                    lockoutDuration: parseInt(document.getElementById('lockoutDuration')?.value, 10) || 30,
+                    sessionTimeout: parseInt(document.getElementById('sessionTimeout')?.value, 10) || 120,
+                    admin2FA: document.getElementById('admin2FA')?.classList.contains('active')
+                };
+                break;
+            case 'moderation':
+                settings = {
+                    flagThreshold: parseInt(document.getElementById('flagThreshold')?.value, 10) || 3,
+                    autoApprove: document.getElementById('autoApprove')?.classList.contains('active'),
+                    profanityFilter: document.getElementById('profanityFilter')?.classList.contains('active'),
+                    blockedWords: (document.getElementById('blockedWords')?.value || '')
+                        .split(',')
+                        .map(word => word.trim())
+                        .filter(Boolean)
+                };
+                break;
+            case 'api':
+                settings = {
+                    rateLimit: parseInt(document.getElementById('rateLimit')?.value, 10) || 60,
+                    apiStatus: document.getElementById('apiStatus')?.classList.contains('active'),
+                    allowedOrigins: (document.getElementById('allowedOrigins')?.value || '')
+                        .split(',')
+                        .map(origin => origin.trim())
+                        .filter(Boolean)
+                };
+                break;
+            default:
+                throw new Error(`Unknown settings section: ${section}`);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/settings/${section}`, {
             method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(settings)
         });
-        alert('Settings saved successfully!');
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || error.message || 'Failed to save settings');
+        }
+
+        showToast('Settings saved successfully!', 'success');
     } catch (error) {
         console.error('Failed to save settings:', error);
-        alert('Failed to save settings');
+        showToast(`Failed to save settings: ${error.message}`, 'error');
     }
 }
 
@@ -1820,10 +2076,24 @@ function resetSettings() {
 
 async function deleteAllData() {
     if (confirm('⚠️ WARNING: This will delete ALL non-admin data. Are you ABSOLUTELY sure?')) {
-        const confirmText = prompt('Type "DELETE" to confirm:');
-        if (confirmText === 'DELETE') {
+        const confirmText = prompt('Type "RESET" to confirm:');
+        if (confirmText === 'RESET') {
             try {
-                await apiRequest('/admin/clear-all-data', { method: 'POST' });
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`${API_BASE_URL}/settings/emergency/reset`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ confirm: 'RESET' })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || 'Failed to clear data');
+                }
+
                 alert('All non-admin data has been cleared.');
                 loadDashboardData();
             } catch (error) {

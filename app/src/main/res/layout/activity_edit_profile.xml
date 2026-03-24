@@ -2,192 +2,253 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="@drawable/bg_create_post_screen"
+    android:orientation="vertical">
 
-    <!-- Top Bar -->
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="#7A4F2B"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:gravity="center_vertical"
-        android:elevation="4dp">
+        android:layout_height="136dp"
+        android:background="@drawable/bg_create_post_header"
+        android:elevation="8dp"
+        android:paddingLeft="18dp"
+        android:paddingTop="18dp"
+        android:paddingRight="18dp"
+        android:paddingBottom="18dp">
 
         <ImageView
             android:id="@+id/btn_back"
             android:layout_width="24dp"
             android:layout_height="24dp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:contentDescription="Back"
             android:src="@drawable/back"
-            android:tint="#FFFFFF"
-            android:contentDescription="Back" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:text="Edit Profile"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:tint="#FFFFFF" />
 
         <TextView
             android:id="@+id/btn_save"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:padding="6dp"
             android:text="Save"
             android:textColor="#FFFFFF"
             android:textSize="16sp"
-            android:textStyle="bold"
-            android:padding="8dp" />
-    </LinearLayout>
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="48dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Edit Profile"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Refresh your info and make your profile feel like you."
+                android:textColor="#F3E3D3"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </RelativeLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FAF0E6"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never"
         android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#FFFFFF"
-            android:padding="20dp"
-            android:elevation="4dp">
+            android:orientation="vertical">
 
-            <!-- Profile Image -->
-            <ImageView
-                android:id="@+id/edit_profile_image"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_gravity="center"
-                android:layout_marginBottom="16dp"
-                android:src="@android:drawable/ic_menu_gallery"
-                android:scaleType="centerCrop"
-                android:background="@drawable/circle_border"
-                android:padding="3dp" />
-
-            <TextView
-                android:id="@+id/btn_change_photo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginBottom="24dp"
-                android:text="Change Photo"
-                android:textColor="#B88B4A"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <!-- Last Name -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Last Name *"
-                android:textColor="#7A4F2B"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
-
-            <EditText
-                android:id="@+id/et_last_name"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:hint="Dela Cruz"
-                android:inputType="textPersonName"
-                android:padding="12dp"
-                android:background="@drawable/input_oval"
-                android:layout_marginBottom="16dp"
-                android:textSize="14sp" />
-
-            <!-- First Name -->
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="First Name *"
-                android:textColor="#7A4F2B"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
-
-            <EditText
-                android:id="@+id/et_first_name"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:hint="Juan"
-                android:inputType="textPersonName"
-                android:padding="12dp"
-                android:background="@drawable/input_oval"
                 android:layout_marginBottom="16dp"
-                android:textSize="14sp" />
+                android:background="@drawable/bg_edit_profile_photo_card"
+                android:elevation="3dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
 
-            <!-- Middle Initial -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Middle Initial (Optional)"
-                android:textColor="#7A4F2B"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
+                <ImageView
+                    android:id="@+id/edit_profile_image"
+                    android:layout_width="112dp"
+                    android:layout_height="112dp"
+                    android:background="@drawable/circle_border"
+                    android:padding="3dp"
+                    android:scaleType="centerCrop"
+                    android:src="@android:drawable/ic_menu_gallery" />
 
-            <EditText
-                android:id="@+id/et_middle_initial"
+                <TextView
+                    android:id="@+id/btn_change_photo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Change Photo"
+                    android:textColor="#B88B4A"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Upload Photo."
+                    android:textColor="#8A6B4C"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:hint="M"
-                android:inputType="text"
-                android:maxLength="1"
-                android:padding="12dp"
-                android:background="@drawable/input_oval"
-                android:layout_marginBottom="16dp"
-                android:textSize="14sp" />
-
-            <!-- Username -->
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Username *"
-                android:textColor="#7A4F2B"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
+                android:background="@drawable/bg_create_post_card"
+                android:elevation="3dp"
+                android:orientation="vertical">
 
-            <EditText
-                android:id="@+id/et_username"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:hint="@username"
-                android:inputType="text"
-                android:padding="12dp"
-                android:background="@drawable/input_oval"
-                android:layout_marginBottom="16dp"
-                android:textSize="14sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Profile details"
+                    android:textColor="#7A4F2B"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
 
-            <!-- Bio -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Bio"
-                android:textColor="#7A4F2B"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="These details help people recognize and trust your account."
+                    android:textColor="#8A6B4C"
+                    android:textSize="12sp" />
 
-            <EditText
-                android:id="@+id/et_bio"
-                android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:hint="Tell us about yourself..."
-                android:gravity="top"
-                android:padding="12dp"
-                android:background="@drawable/input_oval"
-                android:inputType="textMultiLine"
-                android:layout_marginBottom="8dp"
-                android:textSize="14sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Last Name *"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
+                <EditText
+                    android:id="@+id/et_last_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/edittext_bg"
+                    android:hint="Dela Cruz"
+                    android:inputType="textPersonName"
+                    android:padding="12dp"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="First Name *"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_first_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/edittext_bg"
+                    android:hint="Juan"
+                    android:inputType="textPersonName"
+                    android:padding="12dp"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Middle Initial (Optional)"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_middle_initial"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/edittext_bg"
+                    android:hint="M"
+                    android:inputType="text"
+                    android:maxLength="1"
+                    android:padding="12dp"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Username *"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_username"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/edittext_bg"
+                    android:hint="@username"
+                    android:inputType="text"
+                    android:padding="12dp"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tv_username_timer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_create_post_category"
+                    android:padding="10dp"
+                    android:text="You can change your username once every 30 days."
+                    android:textColor="#7A4F2B"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Bio"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_bio"
+                    android:layout_width="match_parent"
+                    android:layout_height="110dp"
+                    android:background="@drawable/edittext_bg"
+                    android:gravity="top"
+                    android:hint="Tell us about yourself..."
+                    android:inputType="textMultiLine"
+                    android:padding="12dp"
+                    android:textSize="14sp" />
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 

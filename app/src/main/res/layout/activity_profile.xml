@@ -15,9 +15,9 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="#FFFFFF"
+            android:background="#FBF2E7"
             android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
+            android:paddingHorizontal="18dp"
             android:gravity="center_vertical"
             android:elevation="0dp">
 
@@ -27,8 +27,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text=""
-                android:textColor="#000000"
-                android:textSize="20sp"
+                android:textColor="#20170F"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <!-- Three horizontal lines menu (Instagram style) -->
@@ -37,7 +37,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_menu_horizontal"
-                android:tint="#000000"
+                android:tint="#7A4F2B"
                 android:contentDescription="Menu" />
         </LinearLayout>
 
@@ -68,14 +68,20 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:background="#FFFFFF">
+                        android:background="@drawable/bg_profile_header_panel"
+                        android:paddingBottom="10dp">
 
                         <!-- Profile Picture and Stats Row -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:padding="16dp">
+                            android:gravity="center_vertical"
+                            android:layout_marginStart="16dp"
+                            android:layout_marginTop="10dp"
+                            android:layout_marginEnd="16dp"
+                            android:padding="14dp"
+                            android:background="@drawable/bg_profile_stat_card">
 
                             <!-- Profile Picture -->
                             <LinearLayout
@@ -118,17 +124,18 @@
                             <!-- Stats -->
                             <LinearLayout
                                 android:layout_width="0dp"
-                                android:layout_height="wrap_content"
+                                android:layout_height="match_parent"
                                 android:layout_weight="1"
                                 android:layout_marginStart="16dp"
                                 android:orientation="vertical"
-                                android:gravity="center_vertical">
+                                android:gravity="center">
 
                                 <!-- Stats Row -->
                                 <LinearLayout
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:orientation="horizontal"
+                                    android:gravity="center"
                                     android:weightSum="3">
 
                                     <!-- Posts -->
@@ -234,7 +241,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="Full Name"
                                 android:textColor="#262626"
-                                android:textSize="18sp"
+                                android:textSize="20sp"
                                 android:textStyle="bold" />
 
                             <!-- Username with @ -->
@@ -245,7 +252,7 @@
                                 android:text="@{user.username}"
                                 android:textColor="#8E8E8E"
                                 android:textSize="14sp"
-                                android:layout_marginTop="2dp" />
+                                android:layout_marginTop="4dp" />
 
                             <!-- Pet Parent Badge (optional) -->
                             <TextView
@@ -322,37 +329,6 @@
                                 android:clickable="true"
                                 android:focusable="true" />
                         </LinearLayout>
-
-                        <!-- Story Highlights Title -->
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Story Highlights"
-                            android:textColor="#7A4F2B"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:paddingHorizontal="16dp"
-                            android:paddingTop="8dp"
-                            android:paddingBottom="4dp" />
-
-                        <!-- Highlights Container -->
-                        <HorizontalScrollView
-                            android:id="@+id/highlights_scroll"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:scrollbars="none"
-                            android:paddingLeft="12dp"
-                            android:paddingRight="12dp"
-                            android:paddingBottom="8dp"
-                            android:background="#FFFFFF">
-
-                            <LinearLayout
-                                android:id="@+id/highlights_container"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:paddingVertical="4dp" />
-                        </HorizontalScrollView>
 
                         <!-- ===== POSTS AND FAVORITES TABS - Like Instagram with moving indicator ===== -->
                         <FrameLayout
@@ -506,7 +482,22 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/paw"
-                android:layout_gravity="center" />
+            android:layout_gravity="center" />
         </FrameLayout>
     </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/fab_gps_map"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="88dp"
+        android:background="@drawable/bg_pawgps_button"
+        android:contentDescription="Open map view"
+        android:elevation="10dp"
+        android:padding="9dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/pawgps"
+        android:tint="#000000" />
 </FrameLayout>

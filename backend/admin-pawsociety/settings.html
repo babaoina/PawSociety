@@ -50,6 +50,55 @@
             gap: 20px;
         }
 
+        .notification-bell {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid #f0e4d4;
+            background: white;
+            color: #7A4F2B;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        .notification-dropdown { position: relative; }
+        .notification-menu { position: absolute; top: 46px; right: 0; width: 320px; background: white; border: 1px solid #f0e4d4; border-radius: 16px; box-shadow: 0 18px 35px rgba(90, 58, 31, 0.16); padding: 16px; display: none; z-index: 1002; }
+        .notification-menu.show { display: block; }
+        .notification-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; color: #5a3a1f; }
+        .notification-menu-header strong { font-size: 14px; }
+        .notification-menu-header span { font-size: 11px; color: #9c856c; }
+        .notification-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+        .notification-stat { background: #fffaf3; border: 1px solid #f0e4d4; border-radius: 12px; padding: 10px; }
+        .notification-stat span { display: block; font-size: 11px; color: #9c856c; margin-bottom: 4px; }
+        .notification-stat strong { font-size: 18px; color: #7A4F2B; }
+        .notification-list { display: grid; gap: 10px; max-height: 220px; overflow-y: auto; margin-bottom: 12px; }
+        .notification-item { background: #fffaf3; border: 1px solid #f0e4d4; border-radius: 12px; padding: 10px; }
+        .notification-item-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; font-size: 12px; color: #5a3a1f; font-weight: 700; }
+        .notification-item-meta { font-size: 12px; color: #7c6b5a; line-height: 1.45; }
+        .notification-empty { text-align: center; color: #9c856c; font-size: 12px; padding: 16px 8px; background: #fffaf3; border: 1px dashed #f0e4d4; border-radius: 12px; }
+        .notification-link { width: 100%; border: none; border-radius: 12px; background: #7A4F2B; color: white; padding: 10px 12px; font-weight: 600; cursor: pointer; }
+
         .admin-profile {
             display: flex;
             align-items: center;
@@ -311,6 +360,21 @@
             margin-top: 20px;
         }
 
+        .reset-card {
+            background: #fffaf3;
+            border: 1px solid #f0e4d4;
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 8px;
+        }
+
+        .reset-card p {
+            color: #7c6b5a;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+
         .footer {
             margin-top: 24px;
             text-align: center;
@@ -350,6 +414,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="css/premium-admin.css">
 </head>
 <body>
     <div class="header">
@@ -357,6 +422,22 @@
             <h1>PawSociety <span>🐾 Admin</span></h1>
         </div>
         <div class="header-right">
+            <div class="notification-dropdown" id="notificationDropdown">
+                <button class="notification-bell" onclick="toggleNotificationMenu(event)" title="All reports received from the app">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadge"></span>
+                </button>
+                <div class="notification-menu" id="notificationMenu">
+                    <div class="notification-menu-header"><strong>Reports Overview</strong><span>From your app</span></div>
+                    <div class="notification-summary">
+                        <div class="notification-stat"><span>Total</span><strong id="notificationTotalReports">0</strong></div>
+                        <div class="notification-stat"><span>Profile</span><strong id="notificationProfileReports">0</strong></div>
+                        <div class="notification-stat"><span>Posts</span><strong id="notificationPostReports">0</strong></div>
+                    </div>
+                    <div class="notification-list" id="notificationList"><div class="notification-empty">No reports received from the app yet.</div></div>
+                    <button class="notification-link" onclick="window.location.href='reports.html'">Open Reports</button>
+                </div>
+            </div>
             <div class="admin-profile" id="adminProfile">
                 <div class="admin-name">
                     <div class="name" id="adminName">Admin User</div>
@@ -415,6 +496,7 @@
                 <div class="settings-nav">
                     <div class="settings-tab active" onclick="switchTab('general')">General</div>
                     <div class="settings-tab" onclick="switchTab('notifications')">Notifications</div>
+                    <div class="settings-tab" onclick="switchTab('security')">Security</div>
                 </div>
 
                 <div class="settings-section active" id="general-settings">
@@ -432,26 +514,54 @@
                     <button class="save-button" onclick="saveSettings('notifications')"><i class="fas fa-save"></i> Save Notification Settings</button>
                 </div>
 
+                <div class="settings-section" id="security-settings">
+                    <div class="reset-card">
+                        <h3 style="color:#5a3a1f; margin-bottom:8px;">Forgot Password</h3>
+                        <p>Send a Firebase password reset email to your admin account so you can change the web admin password safely.</p>
+                        <div class="setting-item" style="margin-bottom:0; padding-bottom:0; border-bottom:none;">
+                            <div class="setting-info">
+                                <label>Admin Email</label>
+                                <div class="description">Reset link will be sent to this email</div>
+                            </div>
+                            <div class="setting-control">
+                                <input type="email" id="adminResetEmail" value="markdeverauwu143@gmail.com">
+                            </div>
+                        </div>
+                        <button class="save-button" onclick="sendAdminResetEmail()"><i class="fas fa-envelope"></i> Send Reset Email</button>
+                    </div>
+                </div>
+
                 <div class="footer">
-                    <p>© 2025 PawSociety. All rights reserved.</p>
+                    <p>© 2026 PawSociety. All rights reserved.</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="js/popup.js"></script>
     <script>
         const avatarBtn = document.getElementById('avatarBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
-        avatarBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
-        document.addEventListener('click', (e) => { if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) dropdownMenu.classList.remove('show'); });
-        function logout() { if(confirm('Logout?')) { localStorage.removeItem('adminToken'); localStorage.removeItem('adminUser'); window.location.href='index.html'; } }
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationMenu = document.getElementById('notificationMenu');
+        avatarBtn.addEventListener('click', (e) => { e.stopPropagation(); notificationMenu.classList.remove('show'); dropdownMenu.classList.toggle('show'); });
+        document.addEventListener('click', (e) => { if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) dropdownMenu.classList.remove('show'); if (!notificationDropdown.contains(e.target)) notificationMenu.classList.remove('show'); });
+        function toggleNotificationMenu(event) { event.stopPropagation(); dropdownMenu.classList.remove('show'); notificationMenu.classList.toggle('show'); }
+        function getReportType(report) { if (report.postId) return 'Post report'; if (report.reportedUid) return 'Profile report'; if (report.commentId) return 'Comment report'; return 'Report'; }
+        function escapeNotificationText(value) { return String(value || '').replace(/[&<>]/g, (m) => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+        function renderNotificationItems(reports) { const list = document.getElementById('notificationList'); if (!list) return; if (!reports.length) { list.innerHTML = '<div class="notification-empty">No reports received from the app yet.</div>'; return; } list.innerHTML = reports.slice(0, 4).map((report) => { const reporterName = report.reporter?.username || report.reporterName || report.reporterUid || 'Unknown'; const targetName = report.reportedUser?.username || report.post?.userName || report.post?.petName || report.reportedUid || 'Unknown'; return `<div class="notification-item"><div class="notification-item-top"><span>${escapeNotificationText(getReportType(report))}</span><span>${new Date(report.createdAt).toLocaleString()}</span></div><div class="notification-item-meta">Reason: ${escapeNotificationText(report.reason || 'Not specified')}</div><div class="notification-item-meta">Reporter: ${escapeNotificationText(reporterName)}</div><div class="notification-item-meta">Target: ${escapeNotificationText(targetName)}</div></div>`; }).join(''); }
+        async function logout() { if(await AdminPopup.confirm('Logout from admin panel?', { title: 'Logout' })) { localStorage.removeItem('adminToken'); localStorage.removeItem('adminUser'); window.location.href='index.html'; } }
         function switchTab(tab) { document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active')); document.getElementById(tab+'-settings').classList.add('active'); document.querySelectorAll('.settings-tab').forEach(t=>t.classList.remove('active')); event.target.classList.add('active'); }
         function toggleSwitch(el) { el.classList.toggle('active'); }
         async function loadSettingsData() { try { const token=localStorage.getItem('adminToken'); if(!token){window.location.href='index.html';return;} const res=await fetch('/api/admin/settings',{headers:{'Authorization':`Bearer ${token}`}}); if(!res.ok)throw new Error(); const s=await res.json(); if(s.general){ document.getElementById('supportEmail').value=s.general.supportEmail||''; document.getElementById('maintenanceMessage').value=s.general.maintenanceMessage||''; if(s.general.maintenanceMode) document.getElementById('maintenanceMode').classList.add('active'); else document.getElementById('maintenanceMode').classList.remove('active'); if(s.general.allowRegistration) document.getElementById('allowRegistration').classList.add('active'); else document.getElementById('allowRegistration').classList.remove('active'); } if(s.notifications){ if(s.notifications.pushEnabled) document.getElementById('pushEnabled').classList.add('active'); else document.getElementById('pushEnabled').classList.remove('active'); document.getElementById('quietStart').value=s.notifications.quietStart||'22:00'; document.getElementById('quietEnd').value=s.notifications.quietEnd||'08:00'; } } catch(e){ showToast('Failed to load settings','error'); } }
         async function saveSettings(section) { try { const token=localStorage.getItem('adminToken'); if(!token){window.location.href='index.html';return;} let body={}; if(section==='general'){ body={ supportEmail:document.getElementById('supportEmail').value, maintenanceMode:document.getElementById('maintenanceMode').classList.contains('active'), maintenanceMessage:document.getElementById('maintenanceMessage').value, allowRegistration:document.getElementById('allowRegistration').classList.contains('active') }; } else { body={ pushEnabled:document.getElementById('pushEnabled').classList.contains('active'), quietStart:document.getElementById('quietStart').value, quietEnd:document.getElementById('quietEnd').value }; } const res=await fetch(`/api/admin/settings/${section}`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify(body)}); if(!res.ok)throw new Error(); showToast('Settings saved!','success'); setTimeout(loadSettingsData,1000); } catch(e){ showToast('Failed to save settings','error'); } }
+        async function sendAdminResetEmail() { try { const email=document.getElementById('adminResetEmail').value.trim(); if(!email){ showToast('Admin email is required','error'); return; } const res=await fetch('/api/admin/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})}); const data=await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error||'Failed to send reset email'); showToast('Firebase reset email sent','success'); } catch(e){ showToast(e.message||'Failed to send reset email','error'); } }
+        async function loadNotificationBell() { try { const token=localStorage.getItem('adminToken'); if(!token)return; const res=await fetch('/api/admin/reports',{headers:{'Authorization':`Bearer ${token}`}}); if(!res.ok) throw new Error(); const reports=await res.json(); const reportCount=reports.length; const profileReports=reports.filter(report => report.reportedUid && !report.postId && !report.commentId).length; const postReports=reports.filter(report => report.postId).length; const badge=document.getElementById('notificationBadge'); badge.textContent=reportCount>99?'99+':reportCount; badge.style.display=reportCount>0?'flex':'none'; document.getElementById('notificationTotalReports').textContent=reportCount; document.getElementById('notificationProfileReports').textContent=profileReports; document.getElementById('notificationPostReports').textContent=postReports; renderNotificationItems(reports); } catch(e){ console.error('Notification bell error:',e); } }
         function showToast(msg,type){ let c=document.getElementById('toast-container'); if(!c){c=document.createElement('div');c.id='toast-container';document.body.appendChild(c);} const t=document.createElement('div'); t.style.cssText=`background:${type==='success'?'#22c55e':'#ef4444'};color:white;padding:10px 16px;border-radius:8px;margin-bottom:8px;animation:slideIn 0.3s ease;`; t.textContent=msg; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
-        document.addEventListener('DOMContentLoaded', loadSettingsData);
+        document.addEventListener('DOMContentLoaded', function(){ loadSettingsData(); loadNotificationBell(); });
         setInterval(loadSettingsData, 30000);
+        setInterval(loadNotificationBell, 30000);
     </script>
 </body>
-</html>s
+</html>
+

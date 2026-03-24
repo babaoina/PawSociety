@@ -11,6 +11,8 @@ import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -18,12 +20,13 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.pawsociety.data.repository.UploadRepository
 import com.example.pawsociety.util.FileHelper
+import com.example.pawsociety.util.KeyboardAwareScrollHelper
 import com.example.pawsociety.util.PermissionHelper
 import com.example.pawsociety.util.SessionManager
 import com.yalantis.ucrop.UCrop
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
@@ -51,6 +54,16 @@ class EditProfileActivity : AppCompatActivity() {
     private lateinit var btnChangePhoto: TextView
     private lateinit var btnSave: TextView
     private lateinit var btnBack: ImageView
+    private lateinit var tvUsernameTimer: TextView
+    private var originalUsername: String = ""
+
+    companion object {
+        private const val PREFS_EDIT_PROFILE = "edit_profile_prefs"
+        private const val KEY_LAST_USERNAME_CHANGE_AT = "last_username_change_at"
+        private const val USERNAME_COOLDOWN_MS = 30L * 24 * 60 * 60 * 1000
+        private const val STATE_CURRENT_IMAGE_URI = "state_current_image_uri"
+        private const val STATE_CURRENT_PHOTO_PATH = "state_current_photo_path"
+    }
 
     // Gallery launcher
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -63,13 +76,12 @@ class EditProfileActivity : AppCompatActivity() {
     // Camera launcher
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
-            currentPhotoPath?.let { path ->
-                val file = File(path)
-                if (file.exists()) {
-                    val uri = Uri.fromFile(file)
-                    selectedProfileImageUri = uri
-                    startCrop(uri)
-                }
+            val capturedUri = resolveCapturedImageUri()
+            if (capturedUri != null) {
+                selectedProfileImageUri = capturedUri
+                startCrop(capturedUri)
+            } else {
+                Toast.makeText(this, "Captured image could not be found", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -79,6 +91,9 @@ class EditProfileActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             val resultUri = UCrop.getOutput(result.data!!)
             resultUri?.let { croppedUri ->
+                selectedProfileImageUri = croppedUri
+                profileImage.setImageURI(null)
+                profileImage.setImageURI(croppedUri)
                 lifecycleScope.launch {
                     uploadCroppedImage(croppedUri)
                 }
@@ -121,6 +136,16 @@ class EditProfileActivity : AppCompatActivity() {
         loadUserData()
         setupClickListeners()
         setupValidation()
+        setupKeyboardScrollHandlers()
+
+        selectedProfileImageUri = savedInstanceState?.getParcelable(STATE_CURRENT_IMAGE_URI)
+        currentPhotoPath = savedInstanceState?.getString(STATE_CURRENT_PHOTO_PATH)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putParcelable(STATE_CURRENT_IMAGE_URI, selectedProfileImageUri)
+        outState.putString(STATE_CURRENT_PHOTO_PATH, currentPhotoPath)
     }
 
     private fun initViews() {
@@ -133,6 +158,19 @@ class EditProfileActivity : AppCompatActivity() {
         etBio = findViewById(R.id.et_bio)
         profileImage = findViewById(R.id.edit_profile_image)
         btnChangePhoto = findViewById(R.id.btn_change_photo)
+        tvUsernameTimer = findViewById(R.id.tv_username_timer)
+    }
+
+    private fun resolveCapturedImageUri(): Uri? {
+        selectedProfileImageUri?.let { return it }
+
+        val photoPath = currentPhotoPath ?: return null
+        val file = File(photoPath)
+        if (!file.exists() || file.length() == 0L) {
+            return null
+        }
+
+        return Uri.fromFile(file)
     }
 
     private fun loadUserData() {
@@ -142,7 +180,9 @@ class EditProfileActivity : AppCompatActivity() {
             etFirstName.setText(firstName)
             etMiddleInitial.setText(middleInitial)
             etUsername.setText(user.username)
+            originalUsername = user.username
             etBio.setText(user.bio)
+            updateUsernameCooldownUI()
 
             if (!user.profileImageUrl.isNullOrEmpty()) {
                 val fullImageUrl = if (user.profileImageUrl.startsWith("http")) {
@@ -153,6 +193,8 @@ class EditProfileActivity : AppCompatActivity() {
                 Glide.with(this)
                     .load(fullImageUrl)
                     .circleCrop()
+                    .skipMemoryCache(true)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
                     .placeholder(android.R.drawable.ic_menu_gallery)
                     .into(profileImage)
             }
@@ -178,7 +220,7 @@ class EditProfileActivity : AppCompatActivity() {
     private fun showImageSourceDialog() {
         val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Change Profile Picture")
             .setItems(options) { _, which ->
                 when (which) {
@@ -188,6 +230,16 @@ class EditProfileActivity : AppCompatActivity() {
                 }
             }
             .show()
+    }
+
+    private fun setupKeyboardScrollHandlers() {
+        KeyboardAwareScrollHelper.attach(
+            etLastName,
+            etFirstName,
+            etMiddleInitial,
+            etUsername,
+            etBio
+        )
     }
 
     private fun checkCameraPermissionAndOpen() {
@@ -306,10 +358,7 @@ class EditProfileActivity : AppCompatActivity() {
                     viewModel.updateProfile(
                         profileImageUrl = imageUrl
                     )
-
-                    // Small delay then refresh
-                    delay(500)
-                    loadUserData() // Reload user data to show new image
+                    currentUser = user.copy(profileImageUrl = imageUrl)
                 }
             } else {
                 val error = result.exceptionOrNull()?.message ?: "Upload failed"
@@ -337,11 +386,31 @@ class EditProfileActivity : AppCompatActivity() {
         val newUsername = etUsername.text.toString().trim()
         val newBio = etBio.text.toString().trim()
 
+        if (newUsername != originalUsername) {
+            val remaining = getUsernameCooldownRemaining()
+            if (remaining > 0) {
+                Toast.makeText(
+                    this,
+                    "You can change your username again in ${formatCooldown(remaining)}",
+                    Toast.LENGTH_LONG
+                ).show()
+                return
+            }
+        }
+
         viewModel.updateProfile(
             fullName = newFullName,
             username = newUsername,
             bio = newBio
         )
+
+        if (newUsername != originalUsername) {
+            getSharedPreferences(PREFS_EDIT_PROFILE, MODE_PRIVATE)
+                .edit()
+                .putLong(KEY_LAST_USERNAME_CHANGE_AT, System.currentTimeMillis())
+                .apply()
+            originalUsername = newUsername
+        }
 
         Toast.makeText(this, "Profile updated!", Toast.LENGTH_SHORT).show()
         setResult(RESULT_OK)
@@ -430,5 +499,43 @@ class EditProfileActivity : AppCompatActivity() {
         }
 
         return isValid
+    }
+
+    private fun updateUsernameCooldownUI() {
+        val remaining = getUsernameCooldownRemaining()
+        val isLocked = remaining > 0
+
+        etUsername.isEnabled = !isLocked
+        etUsername.isFocusable = !isLocked
+        etUsername.isFocusableInTouchMode = !isLocked
+        etUsername.isClickable = !isLocked
+        etUsername.alpha = if (isLocked) 0.65f else 1.0f
+
+        tvUsernameTimer.text = if (isLocked) {
+            "Username is locked. You can change it again in ${formatCooldown(remaining)}."
+        } else {
+            "You can change your username now. After that, the next change is available in 30 days."
+        }
+    }
+
+    private fun getUsernameCooldownRemaining(): Long {
+        val prefs = getSharedPreferences(PREFS_EDIT_PROFILE, MODE_PRIVATE)
+        val lastChangedAt = prefs.getLong(KEY_LAST_USERNAME_CHANGE_AT, 0L)
+        if (lastChangedAt <= 0L) return 0L
+
+        val nextAllowedAt = lastChangedAt + USERNAME_COOLDOWN_MS
+        return (nextAllowedAt - System.currentTimeMillis()).coerceAtLeast(0L)
+    }
+
+    private fun formatCooldown(remainingMs: Long): String {
+        val totalHours = remainingMs / (60 * 60 * 1000)
+        val days = totalHours / 24
+        val hours = totalHours % 24
+
+        return when {
+            days > 0 -> "$days day${if (days == 1L) "" else "s"}${if (hours > 0) " and $hours hour${if (hours == 1L) "" else "s"}" else ""}"
+            hours > 0 -> "$hours hour${if (hours == 1L) "" else "s"}"
+            else -> "less than 1 hour"
+        }
     }
 }

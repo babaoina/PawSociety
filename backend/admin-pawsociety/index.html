@@ -327,6 +327,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="css/premium-admin.css">
 </head>
 <body>
     <div class="login-container">
@@ -345,12 +346,12 @@
         <div class="login-form" id="loginForm">
             <div class="input-group">
                 <label>Email</label>
-                <input type="email" placeholder="Enter your email" id="email" value="admin@pawsociety.com">
+                <input type="email" placeholder="Enter your admin email" id="email">
             </div>
 
             <div class="input-group">
                 <label>Password</label>
-                <input type="password" placeholder="Enter your password" id="password" value="admin123">
+                <input type="password" placeholder="Enter your password" id="password">
             </div>
 
             <div class="forgot-password">
@@ -371,21 +372,10 @@
 
             <div class="input-group">
                 <label>Email</label>
-                <input type="email" placeholder="Enter your email" id="resetEmail">
+                <input type="email" placeholder="Enter your admin email" id="resetEmail">
             </div>
 
-            <div class="input-group">
-                <label>New Password</label>
-                <input type="password" placeholder="Enter new password" id="newPassword">
-                <div id="passwordStrength" class="password-strength"></div>
-            </div>
-
-            <div class="input-group">
-                <label>Confirm Password</label>
-                <input type="password" placeholder="Confirm new password" id="confirmPassword">
-            </div>
-
-            <button class="reset-btn" onclick="resetPassword()" id="resetBtn">Reset Password</button>
+            <button class="reset-btn" onclick="resetPassword()" id="resetBtn">Send Reset Email</button>
         </div>
 
         <!-- Success Message Container -->
@@ -393,6 +383,7 @@
 
     </div>
 
+    <script src="js/popup.js"></script>
     <script>
     // State management
     let resetCooldown = false;
@@ -403,7 +394,7 @@
         document.getElementById('loginForm').classList.add('hidden');
         document.getElementById('forgotForm').classList.add('active');
         document.getElementById('formTitle').textContent = 'RESET PASSWORD';
-        document.getElementById('formDescription').textContent = 'Enter your email and new password to reset your account.';
+        document.getElementById('formDescription').textContent = 'Enter your admin email and we will send the Firebase password reset link.';
         
         // Clear any previous messages
         hideSuccessMessage();
@@ -422,9 +413,6 @@
         
         // Clear reset form
         document.getElementById('resetEmail').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
-        document.getElementById('passwordStrength').textContent = '';
     }
 
     // Login function - FIXED
@@ -485,20 +473,18 @@
             console.error('Login error:', error);
             loginBtn.textContent = 'Login';
             loginBtn.disabled = false;
-            alert('Connection error: Cannot connect to backend server. Make sure it is running on http://localhost:5000');
+            AdminPopup.alert('Connection error: Cannot connect to the backend server. Please make sure it is running.', { title: 'Connection Error' });
         }
     }
 
     // Reset password function
-    function resetPassword() {
+    async function resetPassword() {
         if (resetCooldown) {
-            alert('Please wait before requesting another password reset.');
+            await AdminPopup.alert('Please wait before requesting another password reset.', { title: 'Please Wait' });
             return;
         }
 
         const email = document.getElementById('resetEmail').value.trim();
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
         
         clearErrors();
 
@@ -513,61 +499,44 @@
             isValid = false;
         }
 
-        // Password validation
-        if (!newPassword) {
-            showError('newPassword', 'New password is required');
-            isValid = false;
-        } else if (newPassword.length < 6) {
-            showError('newPassword', 'Password must be at least 6 characters');
-            isValid = false;
-        } else if (!isValidPassword(newPassword)) {
-            showError('newPassword', 'Password must contain at least one uppercase letter, one number, and one special character');
-            isValid = false;
-        }
-
-        // Confirm password validation
-        if (!confirmPassword) {
-            showError('confirmPassword', 'Please confirm your password');
-            isValid = false;
-        } else if (newPassword !== confirmPassword) {
-            showError('confirmPassword', 'Passwords do not match');
-            isValid = false;
-        }
-
         if (!isValid) return;
 
-        // Check if email exists in our "database"
-        if (email !== 'admin@pawsociety.com') {
-            showError('resetEmail', 'Email not found in our system');
-            return;
-        }
-
         const resetBtn = document.getElementById('resetBtn');
-        resetBtn.textContent = 'Resetting...';
+        resetBtn.textContent = 'Sending...';
         resetBtn.disabled = true;
 
-        // Simulate API call
-        setTimeout(() => {
-            // Show success message
-            showSuccessMessage('Password reset successfully! You can now login with your new password.');
-            
-            // Clear form
-            document.getElementById('resetEmail').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-            document.getElementById('passwordStrength').textContent = '';
-            
-            resetBtn.textContent = 'Reset Password';
-            resetBtn.disabled = false;
+        fetch('/api/admin/auth/reset-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email })
+        })
+        .then(async (response) => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to reset password');
+            }
 
-            // Start cooldown
+            showSuccessMessage('Firebase reset email sent. Open the link from your inbox to set a new admin password.');
+            document.getElementById('resetEmail').value = '';
             startResetCooldown();
 
-            // Auto redirect to login after 3 seconds
             setTimeout(() => {
                 showLogin();
             }, 3000);
-        }, 1500);
+        })
+        .catch((error) => {
+            if (error.message.toLowerCase().includes('not found')) {
+                showError('resetEmail', 'Email not found in our system');
+            } else {
+                showError('resetEmail', error.message);
+            }
+        })
+        .finally(() => {
+            resetBtn.textContent = 'Send Reset Email';
+            resetBtn.disabled = false;
+        });
     }
 
     // Start cooldown timer
@@ -658,7 +627,7 @@
         if (error) error.remove();
     });
 
-    document.getElementById('newPassword').addEventListener('input', function() {
+    document.getElementById('newPassword')?.addEventListener('input', function() {
         this.classList.remove('error');
         const error = this.parentNode.querySelector('.error-message');
         if (error) error.remove();
@@ -683,7 +652,7 @@
         }
     });
 
-    document.getElementById('confirmPassword').addEventListener('input', function() {
+    document.getElementById('confirmPassword')?.addEventListener('input', function() {
         this.classList.remove('error');
         const error = this.parentNode.querySelector('.error-message');
         if (error) error.remove();
@@ -712,7 +681,7 @@
     });
 
     // Enter key press for reset
-    document.getElementById('confirmPassword').addEventListener('keypress', function(e) {
+    document.getElementById('resetEmail').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             resetPassword();
         }

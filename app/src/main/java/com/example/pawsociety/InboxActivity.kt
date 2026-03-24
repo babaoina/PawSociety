@@ -107,8 +107,9 @@ class InboxActivity : BaseNavigationActivity() {
         SocketManager.on("new-message") { args ->
             if (isInForeground) {
                 runOnUiThread {
-                    println("📨 New message received, refreshing inbox...")
+                    println("📨 New message received, refreshing inbox silently...")
                     loadConversations()
+                    updateBadgeSilently()
                 }
             }
         }
@@ -117,8 +118,9 @@ class InboxActivity : BaseNavigationActivity() {
         SocketManager.on("new-message-request") { args ->
             if (isInForeground) {
                 runOnUiThread {
-                    println("📨 New message request received, refreshing inbox...")
+                    println("📨 New message request received, refreshing inbox silently...")
                     loadConversations()
+                    updateBadgeSilently()
                 }
             }
         }
@@ -127,8 +129,9 @@ class InboxActivity : BaseNavigationActivity() {
         SocketManager.on("message-sent") { args ->
             if (isInForeground) {
                 runOnUiThread {
-                    println("📨 Message sent confirmed, refreshing inbox...")
+                    println("📨 Message sent confirmed, refreshing inbox silently...")
                     loadConversations()
+                    updateBadgeSilently()
                 }
             }
         }
@@ -137,8 +140,9 @@ class InboxActivity : BaseNavigationActivity() {
         SocketManager.on("request-accepted") { args ->
             if (isInForeground) {
                 runOnUiThread {
-                    println("✅ Request accepted, refreshing inbox...")
+                    println("✅ Request accepted, refreshing inbox silently...")
                     loadConversations()
+                    updateBadgeSilently()
                 }
             }
         }
@@ -147,9 +151,26 @@ class InboxActivity : BaseNavigationActivity() {
         SocketManager.on("chat-cleared") { args ->
             if (isInForeground) {
                 runOnUiThread {
-                    println("🗑️ Chat cleared, refreshing inbox...")
+                    println("🗑️ Chat cleared, refreshing inbox silently...")
                     loadConversations()
+                    updateBadgeSilently()
                 }
+            }
+        }
+    }
+
+    private fun updateBadgeSilently() {
+        lifecycleScope.launch {
+            try {
+                val result = chatRepository.getConversations(currentUser?.firebaseUid ?: return@launch)
+                if (result.isSuccess) {
+                    val response = result.getOrNull()!!
+                    val totalUnread = (response.messages?.sumOf { it.unreadCount } ?: 0) +
+                            (response.requests?.size ?: 0)
+                    InboxBadgeManager.updateBadgeManually(totalUnread)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -194,10 +215,7 @@ class InboxActivity : BaseNavigationActivity() {
             startActivity(intent)
         }
 
-        findViewById<ImageButton>(R.id.btn_new_message).setOnClickListener {
-            val intent = Intent(this, SearchUsersActivity::class.java)
-            startActivity(intent)
-        }
+        // btn_new_message has been removed per user request
 
         tabMessages.setOnClickListener {
             if (currentTab != "messages") {
@@ -397,7 +415,9 @@ class InboxActivity : BaseNavigationActivity() {
         println("📬 Loading conversations...")
         val currentUser = sessionManager.getCurrentUser() ?: return
 
-        swipeRefreshLayout.isRefreshing = true
+        // Only show refresh indicator if user manually triggered the refresh via swipe
+        // Socket-triggered refreshes will be silent
+        val shouldShowRefreshing = swipeRefreshLayout.isRefreshing
 
         lifecycleScope.launch {
             try {
@@ -421,7 +441,9 @@ class InboxActivity : BaseNavigationActivity() {
                 } else {
                     val errorMsg = result.exceptionOrNull()?.message ?: "Failed to load conversations"
                     println("❌ Failed to load conversations: $errorMsg")
-                    Toast.makeText(this@InboxActivity, "Failed to load conversations", Toast.LENGTH_SHORT).show()
+                    if (shouldShowRefreshing) {
+                        Toast.makeText(this@InboxActivity, "Failed to load conversations", Toast.LENGTH_SHORT).show()
+                    }
                     showEmptyState()
                 }
                 loadMutualFriends()
@@ -429,10 +451,14 @@ class InboxActivity : BaseNavigationActivity() {
             } catch (e: Exception) {
                 println("❌ Error loading conversations: ${e.message}")
                 e.printStackTrace()
-                Toast.makeText(this@InboxActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                if (shouldShowRefreshing) {
+                    Toast.makeText(this@InboxActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
                 showEmptyState()
             } finally {
-                swipeRefreshLayout.isRefreshing = false
+                if (shouldShowRefreshing) {
+                    swipeRefreshLayout.isRefreshing = false
+                }
             }
         }
     }
@@ -497,7 +523,8 @@ class InboxActivity : BaseNavigationActivity() {
             currentUserId = currentUser?.firebaseUid ?: "",
             isRequestTab = true,
             onUserClick = { user ->
-                openUserProfile(user)
+                // For message requests: open chat to preview message, not the profile
+                openConversation(user)
             },
             onAcceptRequest = { conversation ->
                 acceptMessageRequest(conversation)
@@ -537,7 +564,7 @@ class InboxActivity : BaseNavigationActivity() {
     }
 
     private fun rejectMessageRequest(conversation: ApiConversation) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Reject Message Request")
             .setMessage("Are you sure you want to reject this message request? This will delete all messages from this user.")
             .setPositiveButton("Reject") { _, _ ->
@@ -570,7 +597,7 @@ class InboxActivity : BaseNavigationActivity() {
     private fun showRequestOptions(conversation: ApiConversation, user: ApiUser) {
         val options = arrayOf("Accept Request", "Reject Request", "View Profile", "Cancel")
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Message Request from ${user.username}")
             .setItems(options) { _, which ->
                 when (which) {
@@ -586,7 +613,7 @@ class InboxActivity : BaseNavigationActivity() {
     private fun showConversationOptions(conversation: ApiConversation, user: ApiUser) {
         val options = arrayOf("Delete Conversation", "View Profile", "Cancel")
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle(user.username)
             .setItems(options) { _, which ->
                 when (which) {
@@ -599,7 +626,7 @@ class InboxActivity : BaseNavigationActivity() {
     }
 
     private fun confirmDeleteConversation(conversation: ApiConversation, user: ApiUser) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Delete Conversation")
             .setMessage("Are you sure you want to delete this conversation? This will only delete it for you, not for ${user.username}.")
             .setPositiveButton("Delete") { _, _ ->

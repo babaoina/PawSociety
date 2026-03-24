@@ -7,6 +7,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -73,6 +74,21 @@ class SearchActivity : AppCompatActivity() {
                 }
             }
         })
+        
+        // Keyboard scroll handling for search input
+        searchInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                searchInput.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        searchInput.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        // Ensure search input is visible at top
+                        recyclerView.post {
+                            recyclerView.scrollToPosition(0)
+                        }
+                    }
+                })
+            }
+        }
     }
 
     private fun performSearch(query: String) {

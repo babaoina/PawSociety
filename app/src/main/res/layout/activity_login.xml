@@ -167,14 +167,19 @@
     </LinearLayout>
 
     <!-- EMAIL FORM - Hidden -->
-    <LinearLayout
+    <ScrollView
         android:id="@+id/email_form_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:background="#FFFFFF"
         android:visibility="gone"
-        android:padding="24dp">
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
 
         <!-- Back button -->
         <TextView
@@ -282,6 +287,7 @@
             android:background="@drawable/button_rounded_brown"
             android:layout_marginBottom="16dp" />
 
-    </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
 
 </LinearLayout>

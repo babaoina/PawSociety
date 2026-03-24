@@ -10,7 +10,7 @@ import com.example.pawsociety.offline.data.entity.PostEntity
 
 @Database(
     entities = [PostEntity::class],
-    version = 3,  // 🔥 CHANGE FROM 2 TO 3
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

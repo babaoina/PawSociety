@@ -162,4 +162,104 @@ class SettingsRepository {
             "support@pawsociety.com"
         }
     }
+
+    // 🔥 NEW: Get notification settings for a user
+    suspend fun getNotificationSettings(firebaseUid: String): Result<Map<String, Any>> = withContext(Dispatchers.IO) {
+        try {
+            val apiService = ApiClient.apiService
+            val response = apiService.getNotificationSettings(firebaseUid)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.settings != null) {
+                    println("✅ Loaded notification settings: ${body.settings}")
+                    Result.success(body.settings!!)
+                } else {
+                    println("❌ Empty response or null settings")
+                    Result.failure(Exception("Empty response"))
+                }
+            } else {
+                val error = response.errorBody()?.string()
+                println("❌ Failed to load settings: $error")
+                Result.failure(Exception(error ?: "Failed to load settings"))
+            }
+        } catch (e: Exception) {
+            println("❌ Error loading settings: ${e.message}")
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    // 🔥 NEW: Update a single notification setting in real-time
+    suspend fun updateNotificationSetting(
+        firebaseUid: String,
+        settingKey: String,
+        value: Boolean
+    ): Result<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val apiService = ApiClient.apiService
+            val updateData = mapOf(
+                "firebaseUid" to firebaseUid,
+                "settingKey" to settingKey,
+                "value" to value
+            )
+
+            val response = apiService.updateSettings(updateData)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.success) {
+                    println("✅ Setting updated: $settingKey = $value")
+                    Result.success(true)
+                } else {
+                    println("❌ Update failed: ${body?.message ?: "Unknown error"}")
+                    Result.failure(Exception(body?.message ?: "Failed to update"))
+                }
+            } else {
+                val error = response.errorBody()?.string()
+                println("❌ API error: $error")
+                Result.failure(Exception(error ?: "API error"))
+            }
+        } catch (e: Exception) {
+            println("❌ Error updating setting: ${e.message}")
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    // 🔥 NEW: Save all notification settings at once
+    suspend fun saveAllNotificationSettings(
+        firebaseUid: String,
+        settings: Map<String, Boolean>
+    ): Result<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val apiService = ApiClient.apiService
+            val updateData = mapOf(
+                "firebaseUid" to firebaseUid,
+                "notificationSettings" to settings
+            )
+
+            println("📤 Saving all notification settings: $settings")
+            val response = apiService.updateSettings(updateData)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.success) {
+                    println("✅ All settings saved successfully")
+                    Result.success(true)
+                } else {
+                    println("❌ Save failed: ${body?.message ?: "Unknown error"}")
+                    Result.failure(Exception(body?.message ?: "Failed to save"))
+                }
+            } else {
+                val error = response.errorBody()?.string()
+                println("❌ API error: $error")
+                Result.failure(Exception(error ?: "API error"))
+            }
+        } catch (e: Exception) {
+            println("❌ Error saving settings: ${e.message}")
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
 }

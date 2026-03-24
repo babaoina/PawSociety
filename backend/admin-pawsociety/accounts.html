@@ -3,715 +3,649 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PawSociety - User Accounts 👤</title>
+    <title>PawSociety - User Accounts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/premium-admin.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-
-        body {
-            background: #fef7e8;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: white;
-            padding: 0 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            height: 60px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .logo h1 {
-            font-size: 20px;
-            font-weight: 700;
-            color: #7A4F2B;
-        }
-
-        .logo span {
-            font-weight: 400;
-            color: #B88B4A;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .admin-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .admin-name .name {
-            font-weight: 600;
-            color: #1e293b;
-            font-size: 13px;
-        }
-
-        .admin-name .role {
-            font-size: 11px;
-            color: #64748b;
-        }
-
-        .avatar {
-            width: 36px;
-            height: 36px;
-            background: #7A4F2B;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 16px;
-            color: white;
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            top: 45px;
-            right: 0;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            width: 160px;
-            display: none;
-            overflow: hidden;
-        }
-
-        .dropdown-menu.show {
-            display: block;
-        }
-
-        .dropdown-item {
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #475569;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 13px;
-        }
-
-        .dropdown-item:hover {
-            background: #fef3e8;
-            color: #7A4F2B;
-        }
-
-        .container {
-            display: flex;
-            padding-top: 60px;
-            min-height: 100vh;
-            justify-content: center;
-        }
-
-        .sidebar {
-            width: 240px;
-            background: #5a3a1f;
-            position: fixed;
-            left: 0;
-            top: 60px;
-            height: calc(100vh - 60px);
-            padding: 20px 0;
-        }
-
-        .menu-item {
-            padding: 10px 20px;
-            margin: 4px 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #e8d9cc;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 10px;
-            font-weight: 500;
-            font-size: 13px;
-        }
-
-        .menu-item:hover {
-            background: #7A4F2B;
-            color: white;
-        }
-
-        .menu-item.active {
-            background: #7A4F2B;
-            color: white;
-        }
-
-        .menu-icon {
-            font-size: 16px;
-            width: 22px;
-        }
-
-        .main-content {
-            flex: 1;
-            margin-left: 240px;
-            padding: 24px 32px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .content-wrapper {
-            max-width: 1200px;
-            width: 100%;
-        }
-
-        .page-header {
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .page-header h2 {
-            font-size: 22px;
-            font-weight: 600;
-            color: #5a3a1f;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .page-header h2 i {
-            color: #7A4F2B;
-            font-size: 22px;
-        }
-
-        .stat-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: white;
-            padding: 6px 14px;
-            border-radius: 30px;
-            font-size: 12px;
-            color: #7A4F2B;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .search-section {
-            background: white;
-            padding: 16px 20px;
-            border-radius: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-            border: 1px solid #f0e4d4;
-        }
-
-        .search-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .search-input-wrapper {
-            flex: 2;
-            position: relative;
-            min-width: 200px;
-        }
-
-        .search-input-wrapper i {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #B88B4A;
-            font-size: 14px;
-        }
-
-        .search-input-wrapper input {
-            width: 100%;
-            padding: 10px 14px 10px 40px;
-            border: 1px solid #eef2f6;
-            border-radius: 40px;
-            font-size: 13px;
-            background: #fef7e8;
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .filter-select {
-            padding: 9px 16px;
-            border: 1px solid #eef2f6;
-            border-radius: 40px;
-            font-size: 12px;
-            color: #7A4F2B;
-            background: white;
-            cursor: pointer;
-        }
-
-        .clear-btn {
-            background: #fef3e8;
-            border: none;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            color: #7A4F2B;
-            cursor: pointer;
-        }
-
-        .results-count {
-            margin: 16px 0 12px;
-            font-size: 13px;
-            color: #7A4F2B;
-        }
-
-        .results-count span {
-            font-weight: 700;
-        }
-
-        .users-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-
-        .user-card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid #f0e4d4;
-            transition: all 0.2s;
-        }
-
-        .user-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 14px rgba(90,58,31,0.08);
-        }
-
-        .user-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 16px;
-        }
-
-        .user-avatar-large {
-            width: 60px;
-            height: 60px;
-            background: #7A4F2B;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        .user-info h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #5a3a1f;
-        }
-
-        .user-info .user-email {
-            font-size: 12px;
-            color: #7c6b5a;
-            margin: 4px 0;
-        }
-
-        .user-role {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-            background: #fef3e8;
-            color: #7A4F2B;
-        }
-
-        .user-stats {
-            display: flex;
-            gap: 16px;
-            padding: 12px 0;
-            border-top: 1px solid #f0e4d4;
-            border-bottom: 1px solid #f0e4d4;
-            margin: 12px 0;
-        }
-
-        .stat-item {
-            text-align: center;
-            flex: 1;
-        }
-
-        .stat-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #5a3a1f;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: #9c856c;
-        }
-
-        .report-badge {
-            background: #fff7ed;
-            color: #f97316;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            margin-bottom: 12px;
-        }
-
-        .user-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .action-btn {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .btn-view-posts {
-            background: #7A4F2B;
-            color: white;
-        }
-
-        .btn-suspend {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-activate {
-            background: #22c55e;
-            color: white;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 24px;
-            border-radius: 20px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .close-btn {
-            background: #7A4F2B;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 12px;
-            width: 100%;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 16px;
-        }
-
-        .footer {
-            margin-top: 24px;
-            text-align: center;
-            padding: 16px;
-            color: #9c856c;
-            font-size: 11px;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        #toast-container {
-            position: fixed;
-            top: 70px;
-            right: 20px;
-            z-index: 9999;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                position: relative;
-                height: auto;
-                display: flex;
-                overflow-x: auto;
-                padding: 10px;
-            }
-            .main-content {
-                margin-left: 0;
-            }
-            .container {
-                flex-direction: column;
-            }
-            .users-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        body { background: #fef7e8; min-height: 100vh; }
+        .header { background: white; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: 60px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .logo h1 { font-size: 20px; font-weight: 700; color: #7A4F2B; }
+        .logo span { font-weight: 400; color: #B88B4A; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .notification-bell { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #f0e4d4; background: white; color: #7A4F2B; display: inline-flex; align-items: center; justify-content: center; position: relative; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+        .notification-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 999px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; display: none; align-items: center; justify-content: center; padding: 0 5px; }
+        .notification-dropdown { position: relative; }
+        .notification-menu { position: absolute; top: 46px; right: 0; width: 320px; background: white; border: 1px solid #f0e4d4; border-radius: 16px; box-shadow: 0 18px 35px rgba(90, 58, 31, 0.16); padding: 16px; display: none; z-index: 1002; }
+        .notification-menu.show { display: block; }
+        .notification-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; color: #5a3a1f; }
+        .notification-menu-header strong { font-size: 14px; }
+        .notification-menu-header span { font-size: 11px; color: #9c856c; }
+        .notification-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+        .notification-stat { background: #fffaf3; border: 1px solid #f0e4d4; border-radius: 12px; padding: 10px; }
+        .notification-stat span { display: block; font-size: 11px; color: #9c856c; margin-bottom: 4px; }
+        .notification-stat strong { font-size: 18px; color: #7A4F2B; }
+        .notification-list { display: grid; gap: 10px; max-height: 220px; overflow-y: auto; margin-bottom: 12px; }
+        .notification-item { background: #fffaf3; border: 1px solid #f0e4d4; border-radius: 12px; padding: 10px; }
+        .notification-item-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; font-size: 12px; color: #5a3a1f; font-weight: 700; }
+        .notification-item-meta { font-size: 12px; color: #7c6b5a; line-height: 1.45; }
+        .notification-empty { text-align: center; color: #9c856c; font-size: 12px; padding: 16px 8px; background: #fffaf3; border: 1px dashed #f0e4d4; border-radius: 12px; }
+        .notification-link { width: 100%; border: none; border-radius: 12px; background: #7A4F2B; color: white; padding: 10px 12px; font-weight: 600; cursor: pointer; }
+        .admin-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+        .admin-name .name { font-weight: 600; color: #1e293b; font-size: 13px; }
+        .admin-name .role { font-size: 11px; color: #64748b; }
+        .avatar { width: 36px; height: 36px; background: #7A4F2B; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; color: white; }
+        .dropdown-menu { position: absolute; top: 45px; right: 0; background: white; border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 160px; display: none; overflow: hidden; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item { padding: 10px 16px; display: flex; align-items: center; gap: 10px; color: #475569; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+        .dropdown-item:hover { background: #fef3e8; color: #7A4F2B; }
+        .container { display: flex; padding-top: 60px; min-height: 100vh; justify-content: center; }
+        .sidebar { width: 240px; background: #5a3a1f; position: fixed; left: 0; top: 60px; height: calc(100vh - 60px); padding: 20px 0; }
+        .menu-item { padding: 10px 20px; margin: 4px 12px; display: flex; align-items: center; gap: 12px; color: #e8d9cc; cursor: pointer; transition: all 0.2s; border-radius: 10px; font-weight: 500; font-size: 13px; }
+        .menu-item:hover, .menu-item.active { background: #7A4F2B; color: white; }
+        .menu-icon { font-size: 16px; width: 22px; }
+        .main-content { flex: 1; margin-left: 240px; padding: 24px 32px; display: flex; justify-content: center; }
+        .content-wrapper { max-width: 1200px; width: 100%; }
+        .page-header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .page-header h2 { font-size: 22px; font-weight: 600; color: #5a3a1f; display: flex; align-items: center; gap: 8px; }
+        .page-header h2 i { color: #7A4F2B; font-size: 22px; }
+        .stat-badge { display: inline-flex; align-items: center; gap: 6px; background: white; padding: 6px 14px; border-radius: 30px; font-size: 12px; color: #7A4F2B; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .search-section { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border: 1px solid #f0e4d4; }
+        .search-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .search-input-wrapper { flex: 2; position: relative; min-width: 200px; }
+        .search-input-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #B88B4A; font-size: 14px; }
+        .search-input-wrapper input { width: 100%; padding: 10px 14px 10px 40px; border: 1px solid #eef2f6; border-radius: 40px; font-size: 13px; background: #fef7e8; }
+        .filter-group { display: flex; gap: 10px; }
+        .filter-select { padding: 9px 16px; border: 1px solid #eef2f6; border-radius: 40px; font-size: 12px; color: #7A4F2B; background: white; cursor: pointer; }
+        .clear-btn { background: #fef3e8; border: none; width: 38px; height: 38px; border-radius: 50%; color: #7A4F2B; cursor: pointer; }
+        .results-count { margin: 16px 0 12px; font-size: 13px; color: #7A4F2B; }
+        .results-count span { font-weight: 700; }
+        .users-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .user-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #f0e4d4; transition: all 0.2s; }
+        .user-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(90,58,31,0.08); }
+        .user-header { display: flex; align-items: center; gap: 15px; margin-bottom: 16px; }
+        .user-avatar-large { width: 60px; height: 60px; background: #7A4F2B; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600; flex-shrink: 0; }
+        .user-info h3 { font-size: 18px; font-weight: 600; color: #5a3a1f; }
+        .user-username { font-size: 12px; color: #B88B4A; font-weight: 700; margin-top: 3px; }
+        .user-email { font-size: 12px; color: #7c6b5a; margin: 4px 0; word-break: break-word; }
+        .user-role { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; background: #fef3e8; color: #7A4F2B; }
+        .user-stats { display: flex; gap: 16px; padding: 12px 0; border-top: 1px solid #f0e4d4; border-bottom: 1px solid #f0e4d4; margin: 12px 0; }
+        .stat-item { text-align: center; flex: 1; }
+        .stat-value { font-size: 20px; font-weight: 700; color: #5a3a1f; }
+        .stat-label { font-size: 11px; color: #9c856c; }
+        .report-badge { background: #fff7ed; color: #f97316; padding: 6px 12px; border-radius: 20px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; font-weight: 700; }
+        .reports-preview, .reports-list { display: grid; gap: 10px; }
+        .report-preview-item, .report-card, .detail-item, .user-post-card { background: #fffaf3; border: 1px solid #f0e4d4; border-radius: 14px; }
+        .report-preview-item, .report-card { padding: 12px; }
+        .report-preview-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
+        .report-preview-reason { font-size: 13px; font-weight: 700; color: #7A4F2B; }
+        .report-preview-date, .report-preview-meta { font-size: 12px; color: #7c6b5a; }
+        .report-preview-empty { font-size: 12px; color: #9c856c; margin-bottom: 14px; }
+        .user-actions { display: flex; gap: 10px; }
+        .action-btn { flex: 1; padding: 10px; border: none; border-radius: 10px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-view-posts { background: #7A4F2B; color: white; }
+        .btn-suspend { background: #ef4444; color: white; }
+        .btn-activate { background: #22c55e; color: white; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; z-index: 2000; padding: 24px; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 24px; border-radius: 20px; width: 90%; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.18); }
+        .wide-modal { max-width: 1080px; }
+        .detail-modal { max-width: 760px; }
+        .modal-title { color: #5a3a1f; font-size: 22px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .modal-summary { display: flex; gap: 15px; align-items: center; padding: 14px 16px; border-radius: 18px; background: #fffaf3; border: 1px solid #f0e4d4; margin-bottom: 18px; }
+        .user-posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .user-post-card { overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .user-post-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(90,58,31,0.1); }
+        .user-post-image { height: 170px; background: #f3e4d2; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .user-post-image img { width: 100%; height: 100%; object-fit: cover; }
+        .post-status-badge, .post-category-badge, .report-status { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; color: white; }
+        .post-status-badge { position: absolute; top: 12px; right: 12px; }
+        .post-category-badge { position: absolute; left: 12px; bottom: 12px; background: rgba(122,79,43,0.9); font-size: 11px; }
+        .status-lost { background: #f97316; } .status-found { background: #22c55e; } .status-adoption { background: #3b82f6; } .status-reunited { background: #0f766e; } .status-returned { background: #0891b2; } .status-adopted { background: #7c3aed; }
+        .status-pending { background: #f97316; } .status-reviewed { background: #22c55e; } .status-dismissed { background: #94a3b8; }
+        .user-post-body { padding: 14px; }
+        .user-post-title { font-size: 16px; color: #5a3a1f; font-weight: 700; margin-bottom: 6px; }
+        .user-post-meta, .report-card div, .report-card p, .detail-item span, .detail-item div { font-size: 13px; color: #475569; line-height: 1.5; }
+        .detail-section { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #f0e4d4; }
+        .detail-section:last-of-type { border-bottom: none; margin-bottom: 8px; }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+        .detail-item { padding: 12px; }
+        .detail-item strong { display: block; color: #7A4F2B; font-size: 12px; margin-bottom: 6px; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+        .gallery-grid img { width: 100%; height: 140px; object-fit: cover; border-radius: 14px; background: #f3e4d2; }
+        .empty-state { text-align: center; padding: 42px 18px; color: #9c856c; }
+        .close-btn { background: #7A4F2B; color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: 600; cursor: pointer; margin-top: 16px; }
+        .footer { margin-top: 24px; text-align: center; padding: 16px; color: #9c856c; font-size: 11px; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        #toast-container { position: fixed; top: 70px; right: 20px; z-index: 9999; }
+        @media (max-width: 768px) { .sidebar { width: 100%; position: relative; height: auto; display: flex; overflow-x: auto; padding: 10px; } .main-content { margin-left: 0; } .container { flex-direction: column; } .users-grid, .user-posts-grid, .gallery-grid, .detail-grid { grid-template-columns: 1fr; } .modal { padding: 12px; } }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="logo">
-            <h1>PawSociety <span>🐾 Admin</span></h1>
-        </div>
+        <div class="logo"><h1>PawSociety <span>Admin</span></h1></div>
         <div class="header-right">
-            <div class="admin-profile" id="adminProfile">
-                <div class="admin-name">
-                    <div class="name" id="adminName">Admin User</div>
-                    <div class="role" id="adminRole">Super Admin</div>
+            <div class="notification-dropdown" id="notificationDropdown">
+                <button class="notification-bell" onclick="toggleNotificationMenu(event)" title="All reports received from the app">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadge"></span>
+                </button>
+                <div class="notification-menu" id="notificationMenu">
+                    <div class="notification-menu-header"><strong>Reports Overview</strong><span>From your app</span></div>
+                    <div class="notification-summary">
+                        <div class="notification-stat"><span>Total</span><strong id="notificationTotalReports">0</strong></div>
+                        <div class="notification-stat"><span>Profile</span><strong id="notificationProfileReports">0</strong></div>
+                        <div class="notification-stat"><span>Posts</span><strong id="notificationPostReports">0</strong></div>
+                    </div>
+                    <div class="notification-list" id="notificationList"><div class="notification-empty">No reports received from the app yet.</div></div>
+                    <button class="notification-link" onclick="window.location.href='reports.html'">Open Reports</button>
                 </div>
-                <div class="avatar" id="avatarBtn">🐶</div>
+            </div>
+            <div class="admin-profile" id="adminProfile">
+                <div class="admin-name"><div class="name" id="adminName">Admin User</div><div class="role" id="adminRole">Super Admin</div></div>
+                <div class="avatar" id="avatarBtn">A</div>
                 <div class="dropdown-menu" id="dropdownMenu">
-                    <div class="dropdown-item" onclick="window.location.href='settings.html'">
-                        <i class="fas fa-cog"></i> Settings
-                    </div>
-                    <div class="dropdown-item logout" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </div>
+                    <div class="dropdown-item" onclick="window.location.href='settings.html'"><i class="fas fa-cog"></i> Settings</div>
+                    <div class="dropdown-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
                 </div>
             </div>
         </div>
     </div>
-
     <div class="container">
         <div class="sidebar">
-            <div class="menu-item" onclick="window.location.href='dashboard.html'">
-                <i class="fas fa-chart-line menu-icon"></i>
-                <span>Dashboard</span>
-            </div>
-            <div class="menu-item" onclick="window.location.href='posts.html'">
-                <i class="fas fa-paw menu-icon"></i>
-                <span>Posts</span>
-            </div>
-            <div class="menu-item" onclick="window.location.href='users.html'">
-                <i class="fas fa-user menu-icon"></i>
-                <span>Users</span>
-            </div>
-            <div class="menu-item active">
-                <i class="fas fa-users menu-icon"></i>
-                <span>Accounts</span>
-            </div>
-            <div class="menu-item" onclick="window.location.href='reports.html'">
-                <i class="fas fa-chart-bar menu-icon"></i>
-                <span>Reports</span>
-            </div>
-            <div class="menu-item" onclick="window.location.href='settings.html'">
-                <i class="fas fa-cog menu-icon"></i>
-                <span>Settings</span>
-            </div>
+            <div class="menu-item" onclick="window.location.href='dashboard.html'"><i class="fas fa-chart-line menu-icon"></i><span>Dashboard</span></div>
+            <div class="menu-item" onclick="window.location.href='posts.html'"><i class="fas fa-paw menu-icon"></i><span>Posts</span></div>
+            <div class="menu-item" onclick="window.location.href='users.html'"><i class="fas fa-user menu-icon"></i><span>Users</span></div>
+            <div class="menu-item active"><i class="fas fa-users menu-icon"></i><span>Accounts</span></div>
+            <div class="menu-item" onclick="window.location.href='reports.html'"><i class="fas fa-chart-bar menu-icon"></i><span>Reports</span></div>
+            <div class="menu-item" onclick="window.location.href='settings.html'"><i class="fas fa-cog menu-icon"></i><span>Settings</span></div>
         </div>
-
         <div class="main-content">
             <div class="content-wrapper">
                 <div class="page-header">
-                    <h2>
-                        <i class="fas fa-users"></i>
-                        User Accounts
-                    </h2>
-                    <div class="stat-badge">
-                        <i class="fas fa-paw"></i> <span id="totalUsers">0</span> Total Users
+                    <h2><i class="fas fa-users"></i>User Accounts</h2>
+                    <div class="stat-badge"><i class="fas fa-paw"></i> <span id="totalUsers">0</span> Total Users</div>
+                </div>
+                <div class="ops-banner ops-banner-accounts ops-banner-compact">
+                    <div class="ops-metrics">
+                        <div class="ops-stat"><span class="ops-label">Visible Accounts</span><strong id="accountsVisibleCount">0</strong></div>
+                        <div class="ops-stat"><span class="ops-label">Flagged</span><strong id="accountsFlaggedCount">0</strong></div>
+                        <div class="ops-stat"><span class="ops-label">Suspended</span><strong id="accountsSuspendedCount">0</strong></div>
                     </div>
                 </div>
-
                 <div class="search-section">
                     <div class="search-row">
-                        <div class="search-input-wrapper">
-                            <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Search users by name, email, or username..." id="searchInput">
-                        </div>
+                        <div class="search-input-wrapper"><i class="fas fa-search"></i><input type="text" placeholder="Search users by name, email, or username..." id="searchInput"></div>
                         <div class="filter-group">
-                            <select class="filter-select" id="roleFilter">
-                                <option value="">All Roles</option>
-                                <option value="admin">Admin</option>
-                                <option value="user">User</option>
-                                <option value="moderator">Moderator</option>
-                            </select>
-                            <select class="filter-select" id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="Active">Active</option>
-                                <option value="Suspended">Suspended</option>
-                            </select>
+                            <select class="filter-select" id="statusFilter"><option value="">All Status</option><option value="Active">Active</option><option value="Suspended">Suspended</option></select>
                             <button class="clear-btn" onclick="clearFilters()"><i class="fas fa-times"></i></button>
                         </div>
                     </div>
-                    <div class="results-count">
-                        <i class="fas fa-paw"></i> <span id="resultCount">0</span> users found
-                    </div>
+                    <div class="results-count"><i class="fas fa-paw"></i> <span id="resultCount">0</span> users found</div>
                 </div>
-
-                <div class="users-grid" id="usersGrid">
-                    <div style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading users...</div>
-                </div>
-
-                <div class="footer">
-                    <p>© 2025 PawSociety. All rights reserved.</p>
-                </div>
+                <div class="users-grid" id="usersGrid"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading users...</div></div>
+                <div class="footer"><p>&copy; 2026 PawSociety. All rights reserved.</p></div>
             </div>
         </div>
     </div>
-
-    <div class="modal" id="userPostsModal">
-        <div class="modal-content">
-            <h3><i class="fas fa-paw"></i> User's Posts</h3>
-            <div id="modalUserInfo"></div>
-            <div id="userPostsGrid"></div>
-            <button class="close-btn" onclick="closeModal('userPostsModal')">Close</button>
-        </div>
-    </div>
-
-    <div class="modal" id="reportsModal">
-        <div class="modal-content">
-            <h3><i class="fas fa-flag"></i> Reports for <span id="reportedUserName"></span></h3>
-            <div id="reportsList"></div>
-            <button class="close-btn" onclick="closeModal('reportsModal')">Close</button>
-        </div>
-    </div>
-
+    <div class="modal" id="userPostsModal"><div class="modal-content wide-modal"><h3 class="modal-title"><i class="fas fa-paw"></i> User Posts</h3><div id="modalUserInfo"></div><div id="userPostsGrid" class="user-posts-grid"></div><button class="close-btn" onclick="closeModal('userPostsModal')">Close</button></div></div>
+    <div class="modal" id="postDetailModal"><div class="modal-content detail-modal"><h3 class="modal-title"><i class="fas fa-file-alt"></i> Post Details</h3><div id="postDetailContent"></div><button class="close-btn" onclick="closeModal('postDetailModal')">Close</button></div></div>
+    <div class="modal" id="reportsModal"><div class="modal-content detail-modal"><h3 class="modal-title"><i class="fas fa-flag"></i> Reports for <span id="reportedUserName"></span></h3><div id="reportsList" class="reports-list"></div><button class="close-btn" onclick="closeModal('reportsModal')">Close</button></div></div>
+    <script src="js/popup.js"></script>
     <script>
         const avatarBtn = document.getElementById('avatarBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationMenu = document.getElementById('notificationMenu');
         let allUsers = [];
+        let reportsByUser = {};
+        let userPostsCache = {};
 
-        avatarBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
-        document.addEventListener('click', (e) => { if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) dropdownMenu.classList.remove('show'); });
+        avatarBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notificationMenu.classList.remove('show');
+            dropdownMenu.classList.toggle('show');
+        });
 
-        function logout() { if(confirm('Logout?')) { localStorage.removeItem('adminToken'); localStorage.removeItem('adminUser'); window.location.href='index.html'; } }
+        document.addEventListener('click', (e) => {
+            if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+            if (!notificationDropdown.contains(e.target)) {
+                notificationMenu.classList.remove('show');
+            }
+        });
+
+        function toggleNotificationMenu(event) {
+            event.stopPropagation();
+            dropdownMenu.classList.remove('show');
+            notificationMenu.classList.toggle('show');
+        }
+
+        function getReportType(report) {
+            if (report.postId) return 'Post report';
+            if (report.reportedUid) return 'Profile report';
+            if (report.commentId) return 'Comment report';
+            return 'Report';
+        }
+
+        function renderNotificationItems(reports) {
+            const list = document.getElementById('notificationList');
+            if (!list) return;
+            if (!reports.length) {
+                list.innerHTML = '<div class="notification-empty">No reports received from the app yet.</div>';
+                return;
+            }
+            list.innerHTML = reports.slice(0, 4).map((report) => {
+                const reporterName = report.reporter?.username || report.reporterName || report.reporterUid || 'Unknown';
+                const targetName = report.reportedUser?.username || report.post?.userName || report.post?.petName || report.reportedUid || 'Unknown';
+                return `
+                    <div class="notification-item">
+                        <div class="notification-item-top">
+                            <span>${escapeHtml(getReportType(report))}</span>
+                            <span>${formatDate(report.createdAt)}</span>
+                        </div>
+                        <div class="notification-item-meta">Reason: ${escapeHtml(report.reason || 'Not specified')}</div>
+                        <div class="notification-item-meta">Reporter: ${escapeHtml(reporterName)}</div>
+                        <div class="notification-item-meta">Target: ${escapeHtml(targetName)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function logout() {
+            if (await AdminPopup.confirm('Logout from admin panel?', { title: 'Logout' })) {
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminUser');
+                window.location.href = 'index.html';
+            }
+        }
 
         let searchTimeout;
-        document.getElementById('searchInput').addEventListener('input', () => { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadUsers, 300); });
-        document.getElementById('roleFilter').addEventListener('change', loadUsers);
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadUsers, 300);
+        });
         document.getElementById('statusFilter').addEventListener('change', loadUsers);
 
-        function clearFilters() { document.getElementById('searchInput').value=''; document.getElementById('roleFilter').value=''; document.getElementById('statusFilter').value=''; loadUsers(); }
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            loadUsers();
+        }
 
         async function loadUsers() {
             try {
                 const token = localStorage.getItem('adminToken');
-                if (!token) { window.location.href='index.html'; return; }
-                const searchTerm = document.getElementById('searchInput').value;
-                const roleFilter = document.getElementById('roleFilter').value;
-                const statusFilter = document.getElementById('statusFilter').value;
+                if (!token) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const searchTerm = document.getElementById('searchInput').value.trim();
+                const statusValue = document.getElementById('statusFilter').value;
                 let url = '/api/admin/users?';
-                if(searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
-                if(roleFilter) url += `role=${roleFilter}&`;
-                if(statusFilter) url += `status=${statusFilter}`;
-                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-                if(!response.ok) throw new Error('Failed');
-                allUsers = await response.json();
-                const nonAdminUsers = allUsers.filter(u => u.role !== 'admin');
+                if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+                if (statusValue) url += `status=${encodeURIComponent(statusValue)}`;
+
+                const [usersResponse, reportsResponse] = await Promise.all([
+                    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/admin/reports', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                if (!usersResponse.ok || !reportsResponse.ok) throw new Error('Failed to load data');
+
+                allUsers = await usersResponse.json();
+                reportsByUser = buildReportsByUser(await reportsResponse.json());
+
+                const nonAdminUsers = allUsers.filter((user) => user.role !== 'admin');
+                const flaggedAccounts = nonAdminUsers.filter((user) => (user.reportCount || 0) > 0).length;
+                const suspendedAccounts = nonAdminUsers.filter((user) => user.status === 'Suspended').length;
+
                 document.getElementById('totalUsers').textContent = nonAdminUsers.length;
                 document.getElementById('resultCount').textContent = nonAdminUsers.length;
+                document.getElementById('accountsVisibleCount').textContent = nonAdminUsers.length;
+                document.getElementById('accountsFlaggedCount').textContent = flaggedAccounts;
+                document.getElementById('accountsSuspendedCount').textContent = suspendedAccounts;
+
                 displayUsers(nonAdminUsers);
-            } catch(error) { showToast('Failed to load users', 'error'); }
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load users', 'error');
+            }
+        }
+
+        function buildReportsByUser(reports) {
+            return reports.reduce((map, report) => {
+                const targets = new Set();
+                if (report.reportedUid) targets.add(report.reportedUid);
+                if (report.post && report.post.firebaseUid) targets.add(report.post.firebaseUid);
+                targets.forEach((uid) => {
+                    if (!map[uid]) map[uid] = [];
+                    map[uid].push(report);
+                });
+                return map;
+            }, {});
         }
 
         function displayUsers(users) {
             const grid = document.getElementById('usersGrid');
-            if(users.length===0) { grid.innerHTML='<div style="text-align:center;padding:60px;"><i class="fas fa-users" style="font-size:40px;color:#B88B4A;"></i><h3 style="color:#7A4F2B;">No users found</h3></div>'; return; }
-            grid.innerHTML = users.map(user => {
-                const initials = (user.name || user.username || 'U').charAt(0).toUpperCase();
+            if (!users.length) {
+                grid.innerHTML = '<div class="empty-state"><i class="fas fa-users" style="font-size:40px;color:#B88B4A;"></i><h3 style="color:#7A4F2B;margin-top:12px;">No users found</h3></div>';
+                return;
+            }
+
+            grid.innerHTML = users.map((user) => {
+                const displayName = escapeHtml(user.name || user.username || 'Unknown user');
+                const username = escapeHtml(user.username || '');
+                const email = escapeHtml(user.email || 'No email');
+                const userUid = user.firebaseUid || user.id;
+                const userReports = reportsByUser[user.firebaseUid] || [];
+
                 return `
-                <div class="user-card">
-                    <div class="user-header"><div class="user-avatar-large">${initials}</div><div class="user-info"><h3>${user.name || user.username}</h3><div class="user-email"><i class="fas fa-envelope"></i> ${user.email || 'No email'}</div><span class="user-role">${user.role || 'user'}</span></div></div>
-                    <div class="user-stats"><div class="stat-item"><div class="stat-value">${user.posts || 0}</div><div class="stat-label">Posts</div></div><div class="stat-item"><div class="stat-value">0</div><div class="stat-label">Followers</div></div><div class="stat-item"><div class="stat-value">0</div><div class="stat-label">Following</div></div></div>
-                    <div class="report-badge" onclick="viewUserReports('${user.firebaseUid || user.id}', '${user.name || user.username}')"><i class="fas fa-flag"></i> ${user.reportCount || 0} Reports</div>
-                    <div class="user-actions"><button class="action-btn btn-view-posts" onclick="viewUserPosts('${user.firebaseUid || user.id}', '${user.name || user.username}')"><i class="fas fa-paw"></i> View Posts</button>
-                    ${user.status === 'Active' ? `<button class="action-btn btn-suspend" onclick="updateUserStatus('${user.id}', 'Suspended')"><i class="fas fa-ban"></i> Suspend</button>` : `<button class="action-btn btn-activate" onclick="updateUserStatus('${user.id}', 'Active')"><i class="fas fa-check"></i> Activate</button>`}</div>
-                </div>`;
+                    <div class="user-card">
+                        <div class="user-header">
+                            <div class="user-avatar-large">${escapeHtml((user.name || user.username || 'U').charAt(0).toUpperCase())}</div>
+                            <div class="user-info">
+                                <h3>${displayName}</h3>
+                                <div class="user-username">${username ? `@${username}` : 'No username set'}</div>
+                                <div class="user-email"><i class="fas fa-envelope"></i> ${email}</div>
+                                <span class="user-role">${escapeHtml(user.role || 'user')}</span>
+                            </div>
+                        </div>
+                        <div class="user-stats">
+                            <div class="stat-item"><div class="stat-value">${user.posts || 0}</div><div class="stat-label">Posts</div></div>
+                            <div class="stat-item"><div class="stat-value">${userReports.length}</div><div class="stat-label">Reports</div></div>
+                            <div class="stat-item"><div class="stat-value">${user.status === 'Suspended' ? 'Yes' : 'No'}</div><div class="stat-label">Suspended</div></div>
+                        </div>
+                        <div class="report-badge"><i class="fas fa-flag"></i> ${userReports.length} Report${userReports.length === 1 ? '' : 's'}</div>
+                        ${renderUserReportPreview(userReports)}
+                        <div class="user-actions">
+                            <button class="action-btn btn-view-posts" onclick="viewUserPosts('${escapeJs(userUid)}', '${escapeJs(user.name || user.username || 'User')}')"><i class="fas fa-paw"></i> View Posts</button>
+                            ${user.status === 'Active'
+                                ? `<button class="action-btn btn-suspend" onclick="updateUserStatus('${escapeJs(user.id)}', 'Suspended')"><i class="fas fa-ban"></i> Suspend</button>`
+                                : `<button class="action-btn btn-activate" onclick="updateUserStatus('${escapeJs(user.id)}', 'Active')"><i class="fas fa-check"></i> Activate</button>`}
+                        </div>
+                    </div>
+                `;
             }).join('');
+        }
+
+        function renderUserReportPreview(reports) {
+            if (!reports.length) return '<div class="report-preview-empty">No active reports showing for this account.</div>';
+            return `<div class="reports-preview">${reports.slice(0, 2).map((report) => `
+                <div class="report-preview-item">
+                    <div class="report-preview-head">
+                        <div class="report-preview-reason">${escapeHtml(report.reason || 'No reason')}</div>
+                        <div class="report-preview-date">${formatDate(report.createdAt)}</div>
+                    </div>
+                    <div class="report-preview-meta">Reporter: ${escapeHtml(report.reporter?.username || report.reporterName || report.reporterUid || 'Unknown')}</div>
+                    <div class="report-preview-meta">${report.post?.petName ? `Post: ${escapeHtml(report.post.petName)}` : 'Profile report'}</div>
+                </div>
+            `).join('')}</div>`;
         }
 
         async function viewUserPosts(userId, userName) {
             try {
                 const token = localStorage.getItem('adminToken');
-                document.getElementById('modalUserInfo').innerHTML = `<div style="display:flex; gap:15px;"><div class="user-avatar-large">${userName.charAt(0)}</div><div><h4>${userName}</h4><p>Loading posts...</p></div></div>`;
-                document.getElementById('userPostsGrid').innerHTML = '<div style="text-align:center;"><i class="fas fa-spinner fa-spin"></i></div>';
+                document.getElementById('modalUserInfo').innerHTML = `
+                    <div class="modal-summary">
+                        <div class="user-avatar-large">${escapeHtml((userName || 'U').charAt(0).toUpperCase())}</div>
+                        <div><h4 style="color:#5a3a1f;font-size:18px;margin-bottom:4px;">${escapeHtml(userName)}</h4><p style="color:#7c6b5a;font-size:13px;">Loading posts...</p></div>
+                    </div>`;
+                document.getElementById('userPostsGrid').innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading posts...</div>';
                 openModal('userPostsModal');
+
                 const response = await fetch(`/api/admin/users/${userId}/posts`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if(!response.ok) throw new Error('Failed');
+                if (!response.ok) throw new Error('Failed');
                 const posts = await response.json();
-                document.getElementById('modalUserInfo').innerHTML = `<div style="display:flex; gap:15px;"><div class="user-avatar-large">${userName.charAt(0)}</div><div><h4>${userName}</h4><p>${posts.length} posts found</p></div></div>`;
-                if(posts.length===0) document.getElementById('userPostsGrid').innerHTML = '<div style="text-align:center;padding:40px;">No posts yet</div>';
-                else document.getElementById('userPostsGrid').innerHTML = posts.map(p => `<div style="background:#fef3e8; padding:12px; border-radius:12px; margin-bottom:10px;"><strong>${p.petName}</strong> - ${p.status}<br><small>${p.location || 'No location'}</small></div>`).join('');
-            } catch(error) { showToast('Failed to load posts', 'error'); }
+                userPostsCache[userId] = posts;
+
+                document.getElementById('modalUserInfo').innerHTML = `
+                    <div class="modal-summary">
+                        <div class="user-avatar-large">${escapeHtml((userName || 'U').charAt(0).toUpperCase())}</div>
+                        <div><h4 style="color:#5a3a1f;font-size:18px;margin-bottom:4px;">${escapeHtml(userName)}</h4><p style="color:#7c6b5a;font-size:13px;">${posts.length} post${posts.length === 1 ? '' : 's'} from the app</p></div>
+                    </div>`;
+
+                if (!posts.length) {
+                    document.getElementById('userPostsGrid').innerHTML = '<div class="empty-state">No posts yet for this account.</div>';
+                    return;
+                }
+
+                document.getElementById('userPostsGrid').innerHTML = posts.map((post, index) => renderUserPostCard(post, userId, index)).join('');
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load posts', 'error');
+            }
+        }
+
+        function renderUserPostCard(post, userId, index) {
+            const image = Array.isArray(post.imageUrls) && post.imageUrls.length
+                ? `<img src="${escapeAttribute(getFullImageUrl(post.imageUrls[0]))}" alt="${escapeAttribute(post.petName || 'Pet')}" onerror="this.onerror=null;this.parentNode.innerHTML='<i class=&quot;fas fa-paw&quot; style=&quot;font-size:42px;color:#B88B4A;&quot;></i>';">`
+                : '<i class="fas fa-paw" style="font-size:42px;color:#B88B4A;"></i>';
+
+            return `
+                <div class="user-post-card" onclick="openUserPostDetail('${escapeJs(userId)}', ${index})">
+                    <div class="user-post-image">
+                        ${image}
+                        <span class="post-status-badge ${getStatusClass(post.status)}">${escapeHtml(post.status || 'Unknown')}</span>
+                        <span class="post-category-badge">${escapeHtml(post.category || post.petType || 'Pet')}</span>
+                    </div>
+                    <div class="user-post-body">
+                        <div class="user-post-title">${escapeHtml(post.petName || 'Unnamed pet')}</div>
+                        <div class="user-post-meta">Case: ${escapeHtml(formatCaseType(post.caseType))}</div>
+                        <div class="user-post-meta">Location: ${escapeHtml(post.location || post.eventLocation || 'Not specified')}</div>
+                        <div class="user-post-meta">Posted: ${formatDate(post.createdAt)}</div>
+                        <div class="user-post-meta">Tap to view all details and pictures</div>
+                    </div>
+                </div>`;
+        }
+
+        function openUserPostDetail(userId, postIndex) {
+            const post = (userPostsCache[userId] || [])[postIndex];
+            if (!post) {
+                showToast('Post details are not available', 'error');
+                return;
+            }
+            document.getElementById('postDetailContent').innerHTML = renderPostDetail(post);
+            openModal('postDetailModal');
+        }
+
+        function renderPostDetail(post) {
+            const gallery = Array.isArray(post.imageUrls) && post.imageUrls.length
+                ? `<div class="gallery-grid">${post.imageUrls.map((url) => `<img src="${escapeAttribute(getFullImageUrl(url))}" alt="${escapeAttribute(post.petName || 'Pet image')}" onerror="this.style.display='none'">`).join('')}</div>`
+                : '<div class="detail-item"><strong>Pictures</strong><span>No photos uploaded for this case.</span></div>';
+
+            return `
+                <div class="detail-section"><div class="detail-grid">
+                    <div class="detail-item"><strong>Pet Name</strong><span>${escapeHtml(post.petName || 'Unnamed pet')}</span></div>
+                    <div class="detail-item"><strong>Status</strong><span>${escapeHtml(post.status || 'Unknown')}</span></div>
+                    <div class="detail-item"><strong>Category</strong><span>${escapeHtml(post.category || 'Not set')}</span></div>
+                    <div class="detail-item"><strong>Pet Type</strong><span>${escapeHtml(post.petType || 'Not set')}</span></div>
+                    <div class="detail-item"><strong>Gender</strong><span>${escapeHtml(post.gender || 'Unknown')}</span></div>
+                    <div class="detail-item"><strong>Age</strong><span>${escapeHtml(post.age || 'Not specified')}</span></div>
+                    <div class="detail-item"><strong>Weight</strong><span>${escapeHtml(post.weight || 'Not specified')}</span></div>
+                    <div class="detail-item"><strong>Reward</strong><span>${escapeHtml(post.reward || 'None')}</span></div>
+                </div></div>
+                <div class="detail-section"><div class="detail-grid">
+                    <div class="detail-item"><strong>Case Type</strong><span>${escapeHtml(formatCaseType(post.caseType))}</span></div>
+                    <div class="detail-item"><strong>Resolved Status</strong><span>${escapeHtml(post.resolvedStatus || (post.isResolved ? 'Resolved' : 'Open'))}</span></div>
+                    <div class="detail-item"><strong>Event Date</strong><span>${escapeHtml(post.eventDate || 'Not provided')}</span></div>
+                    <div class="detail-item"><strong>Event Location</strong><span>${escapeHtml(post.eventLocation || 'Not provided')}</span></div>
+                    <div class="detail-item"><strong>Current Care</strong><span>${escapeHtml(formatCareStatus(post.currentCareStatus))}</span></div>
+                    <div class="detail-item"><strong>Has Collar</strong><span>${post.hasCollar ? 'Yes' : 'No'}</span></div>
+                    <div class="detail-item"><strong>Likes</strong><span>${Number(post.likesCount || 0)}</span></div>
+                    <div class="detail-item"><strong>Posted</strong><span>${formatDate(post.createdAt)}</span></div>
+                </div></div>
+                <div class="detail-section"><div class="detail-grid">
+                    <div class="detail-item"><strong>Posted By</strong><span>${escapeHtml(post.userName || 'Unknown')}</span></div>
+                    <div class="detail-item"><strong>Location</strong><span>${escapeHtml(post.location || 'Not provided')}</span></div>
+                    <div class="detail-item"><strong>Coordinates</strong><span>${formatCoordinates(post.latitude, post.longitude)}</span></div>
+                    <div class="detail-item"><strong>Contact</strong><span>${escapeHtml(post.contactInfo || post.contact || 'Not provided')}</span></div>
+                    <div class="detail-item"><strong>Contact Preference</strong><span>${escapeHtml(formatContactPreference(post.contactPreference))}</span></div>
+                </div></div>
+                <div class="detail-section"><div class="detail-grid">
+                    <div class="detail-item"><strong>Identifying Marks</strong><div>${escapeHtml(post.identifyingMarks || 'None added')}</div></div>
+                    <div class="detail-item"><strong>Temperament</strong><div>${escapeHtml(post.temperament || 'Not provided')}</div></div>
+                    <div class="detail-item"><strong>Health Condition</strong><div>${escapeHtml(post.healthCondition || 'Not provided')}</div></div>
+                    <div class="detail-item"><strong>Description</strong><div>${escapeHtml(post.description || 'No description')}</div></div>
+                </div></div>
+                <div class="detail-section"><div class="detail-item"><strong>Pictures</strong>${gallery}</div></div>`;
         }
 
         async function viewUserReports(userId, userName) {
             try {
                 const token = localStorage.getItem('adminToken');
                 const response = await fetch(`/api/admin/users/${userId}/reports`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if(!response.ok) throw new Error('Failed');
+                if (!response.ok) throw new Error('Failed');
                 const reports = await response.json();
+
                 document.getElementById('reportedUserName').textContent = userName;
-                document.getElementById('reportsList').innerHTML = reports.length ? reports.map(r => `<div style="background:#fef3e8; padding:12px; border-radius:12px; margin-bottom:10px;"><strong>${r.reason}</strong><br><small>${new Date(r.createdAt).toLocaleDateString()}</small><br>Reported by: ${r.reporterName || 'Unknown'}</div>`).join('') : '<p>No reports</p>';
+                document.getElementById('reportsList').innerHTML = reports.length
+                    ? reports.map((report) => renderReportCard(report)).join('')
+                    : '<div class="empty-state">No reports for this account.</div>';
                 openModal('reportsModal');
-            } catch(error) { showToast('Failed to load reports', 'error'); }
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load reports', 'error');
+            }
+        }
+
+        function renderReportCard(report) {
+            const reporter = report.reporterName || report.reporter?.username || report.reporterUid || 'Unknown';
+            const status = report.status || 'pending';
+            return `
+                <div class="report-card">
+                    <div style="margin-bottom:8px;"><strong>${escapeHtml(report.reason || 'No reason')}</strong><span class="report-status status-${escapeHtml(status)}">${escapeHtml(status.toUpperCase())}</span></div>
+                    <div>Reporter: ${escapeHtml(reporter)}</div>
+                    <div>Date: ${formatDate(report.createdAt)}</div>
+                    <div>Target: ${report.postId ? `Post ${escapeHtml(report.postId)}` : 'Profile'}</div>
+                    ${report.description ? `<p style="margin-top:8px;">${escapeHtml(report.description)}</p>` : ''}
+                </div>`;
         }
 
         async function updateUserStatus(id, status) {
-            if(!confirm(`Are you sure you want to ${status.toLowerCase()} this user?`)) return;
+            if (!await AdminPopup.confirm(`Are you sure you want to ${status.toLowerCase()} this user?`, { title: 'Update User Status' })) return;
             try {
                 const token = localStorage.getItem('adminToken');
-                const response = await fetch(`/api/admin/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ status }) });
-                if(!response.ok) throw new Error('Failed');
+                const response = await fetch(`/api/admin/users/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status })
+                });
+                if (!response.ok) throw new Error('Failed');
                 showToast(`User ${status.toLowerCase()} successfully`, 'success');
                 loadUsers();
-            } catch(error) { showToast('Failed to update user', 'error'); }
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to update user', 'error');
+            }
         }
 
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        function showToast(msg, type) { let c=document.getElementById('toast-container'); if(!c){c=document.createElement('div');c.id='toast-container';document.body.appendChild(c);} const t=document.createElement('div'); t.style.cssText=`background:${type==='success'?'#22c55e':'#ef4444'};color:white;padding:10px 16px;border-radius:8px;margin-bottom:8px;animation:slideIn 0.3s ease;`; t.textContent=msg; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
-        document.addEventListener('DOMContentLoaded', loadUsers);
+        function getFullImageUrl(imagePath) {
+            if (!imagePath) return '';
+            if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
+            let filename = imagePath;
+            if (imagePath.includes('/')) filename = imagePath.split('/').pop();
+            filename = filename.split('?')[0];
+            return `${window.location.origin}/api/uploads/posts/${filename}`;
+        }
+
+        function getStatusClass(status) {
+            const value = String(status || '').toLowerCase();
+            if (value === 'lost') return 'status-lost';
+            if (value === 'found') return 'status-found';
+            if (value === 'adoption') return 'status-adoption';
+            if (value === 'reunited') return 'status-reunited';
+            if (value === 'returned') return 'status-returned';
+            return 'status-adopted';
+        }
+
+        function formatCaseType(caseType) {
+            const labels = { owner_lost: 'Owner lost pet', seen_lost_pet: 'Seen lost pet', found_in_care: 'Found and in care', adoption: 'For adoption' };
+            return labels[caseType] || 'Not specified';
+        }
+
+        function formatCareStatus(status) {
+            const labels = { in_my_care: 'In my care', sighting_only: 'Sighting only', owner: 'With owner' };
+            return labels[status] || 'Not specified';
+        }
+
+        function formatContactPreference(value) {
+            const labels = { call: 'Call', text: 'Text', in_app_chat: 'In-app chat' };
+            return labels[value] || 'Not specified';
+        }
+
+        function formatCoordinates(lat, lng) {
+            if (lat === null || lat === undefined || lng === null || lng === undefined) return 'Not provided';
+            return `${lat}, ${lng}`;
+        }
+
+        function formatDate(value) {
+            if (!value) return 'Unknown date';
+            return new Date(value).toLocaleString();
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, (match) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
+        }
+
+        function escapeAttribute(str) {
+            return escapeHtml(str);
+        }
+
+        function escapeJs(str) {
+            return String(str ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function showToast(msg, type) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? '#22c55e' : type === 'info' ? '#3b82f6' : '#ef4444';
+            toast.style.cssText = `background:${bg};color:white;padding:10px 16px;border-radius:10px;margin-bottom:8px;animation:slideIn 0.3s ease;box-shadow:0 10px 22px rgba(0,0,0,0.14);`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3200);
+        }
+
+        async function loadNotificationBell() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) return;
+                const response = await fetch('/api/admin/reports', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!response.ok) throw new Error('Failed');
+                const reports = await response.json();
+                const reportCount = reports.length;
+                const profileReports = reports.filter(report => report.reportedUid && !report.postId && !report.commentId).length;
+                const postReports = reports.filter(report => report.postId).length;
+                const badge = document.getElementById('notificationBadge');
+                badge.textContent = reportCount > 99 ? '99+' : reportCount;
+                badge.style.display = reportCount > 0 ? 'flex' : 'none';
+                document.getElementById('notificationTotalReports').textContent = reportCount;
+                document.getElementById('notificationProfileReports').textContent = profileReports;
+                document.getElementById('notificationPostReports').textContent = postReports;
+                renderNotificationItems(reports);
+            } catch (error) {
+                console.error('Notification bell error:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){ loadUsers(); loadNotificationBell(); });
         setInterval(loadUsers, 30000);
+        setInterval(loadNotificationBell, 30000);
     </script>
 </body>
 </html>

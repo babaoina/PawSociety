@@ -50,6 +50,155 @@
             gap: 20px;
         }
 
+        .notification-bell {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid #f0e4d4;
+            background: white;
+            color: #7A4F2B;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        .notification-dropdown {
+            position: relative;
+        }
+
+        .notification-menu {
+            position: absolute;
+            top: 46px;
+            right: 0;
+            width: 320px;
+            background: white;
+            border: 1px solid #f0e4d4;
+            border-radius: 16px;
+            box-shadow: 0 18px 35px rgba(90, 58, 31, 0.16);
+            padding: 16px;
+            display: none;
+            z-index: 1002;
+        }
+
+        .notification-menu.show {
+            display: block;
+        }
+
+        .notification-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            color: #5a3a1f;
+        }
+
+        .notification-menu-header strong {
+            font-size: 14px;
+        }
+
+        .notification-menu-header span {
+            font-size: 11px;
+            color: #9c856c;
+        }
+
+        .notification-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .notification-stat {
+            background: #fffaf3;
+            border: 1px solid #f0e4d4;
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .notification-stat span {
+            display: block;
+            font-size: 11px;
+            color: #9c856c;
+            margin-bottom: 4px;
+        }
+
+        .notification-stat strong {
+            font-size: 18px;
+            color: #7A4F2B;
+        }
+
+        .notification-list {
+            display: grid;
+            gap: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .notification-item {
+            background: #fffaf3;
+            border: 1px solid #f0e4d4;
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .notification-item-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #5a3a1f;
+            font-weight: 700;
+        }
+
+        .notification-item-meta {
+            font-size: 12px;
+            color: #7c6b5a;
+            line-height: 1.45;
+        }
+
+        .notification-empty {
+            text-align: center;
+            color: #9c856c;
+            font-size: 12px;
+            padding: 16px 8px;
+            background: #fffaf3;
+            border: 1px dashed #f0e4d4;
+            border-radius: 12px;
+        }
+
+        .notification-link {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            background: #7A4F2B;
+            color: white;
+            padding: 10px 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
         .admin-profile {
             display: flex;
             align-items: center;
@@ -353,17 +502,10 @@
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 11px;
-            cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
             font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .report-badge:hover {
-            background: #ffedd5;
-            transform: scale(0.98);
         }
 
         .action-icons {
@@ -572,6 +714,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="css/premium-admin.css">
 </head>
 <body>
     <div class="header">
@@ -579,6 +722,27 @@
             <h1>PawSociety <span>🐾 Admin</span></h1>
         </div>
         <div class="header-right">
+            <div class="notification-dropdown" id="notificationDropdown">
+                <button class="notification-bell" onclick="toggleNotificationMenu(event)" title="All reports received from the app">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadge"></span>
+                </button>
+                <div class="notification-menu" id="notificationMenu">
+                    <div class="notification-menu-header">
+                        <strong>Reports Overview</strong>
+                        <span>From your app</span>
+                    </div>
+                    <div class="notification-summary">
+                        <div class="notification-stat"><span>Total</span><strong id="notificationTotalReports">0</strong></div>
+                        <div class="notification-stat"><span>Profile</span><strong id="notificationProfileReports">0</strong></div>
+                        <div class="notification-stat"><span>Posts</span><strong id="notificationPostReports">0</strong></div>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">No reports received from the app yet.</div>
+                    </div>
+                    <button class="notification-link" onclick="window.location.href='reports.html'">Open Reports</button>
+                </div>
+            </div>
             <div class="admin-profile" id="adminProfile">
                 <div class="admin-name">
                     <div class="name" id="adminName">Admin User</div>
@@ -637,11 +801,28 @@
                     </div>
                 </div>
 
+                <div class="ops-banner ops-banner-users ops-banner-compact">
+                    <div class="ops-metrics">
+                        <div class="ops-stat">
+                            <span class="ops-label">Active</span>
+                            <strong id="activeUsersCount">0</strong>
+                        </div>
+                        <div class="ops-stat">
+                            <span class="ops-label">Suspended</span>
+                            <strong id="suspendedUsersCount">0</strong>
+                        </div>
+                        <div class="ops-stat">
+                            <span class="ops-label">Flagged Profiles</span>
+                            <strong id="flaggedUsersCount">0</strong>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="search-section">
                     <div class="search-row">
                         <div class="search-input-wrapper">
                             <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Search by name or email..." id="searchInput">
+                            <input type="text" placeholder="Search by name, email, or username..." id="searchInput">
                         </div>
                         <div class="filter-group">
                             <select class="filter-select" id="statusFilter">
@@ -675,7 +856,7 @@
                     </table>
                 </div>
                 <div class="footer">
-                    <p>© 2025 PawSociety. All rights reserved.</p>
+                    <p>© 2026 PawSociety. All rights reserved.</p>
                 </div>
             </div>
         </div>
@@ -741,16 +922,59 @@
         </div>
     </div>
 
+    <script src="js/popup.js"></script>
     <script>
         const avatarBtn = document.getElementById('avatarBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationMenu = document.getElementById('notificationMenu');
         let allUsers = [], currentUserId = null;
         const BACKEND_URL = window.location.origin;
 
-        avatarBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('show'); });
-        document.addEventListener('click', (e) => { if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) dropdownMenu.classList.remove('show'); });
+        avatarBtn.addEventListener('click', (e) => { e.stopPropagation(); notificationMenu.classList.remove('show'); dropdownMenu.classList.toggle('show'); });
+        document.addEventListener('click', (e) => {
+            if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) dropdownMenu.classList.remove('show');
+            if (!notificationDropdown.contains(e.target)) notificationMenu.classList.remove('show');
+        });
+
+        function toggleNotificationMenu(event) {
+            event.stopPropagation();
+            dropdownMenu.classList.remove('show');
+            notificationMenu.classList.toggle('show');
+        }
+
+        function getReportType(report) {
+            if (report.postId) return 'Post report';
+            if (report.reportedUid) return 'Profile report';
+            if (report.commentId) return 'Comment report';
+            return 'Report';
+        }
+
+        function renderNotificationItems(reports) {
+            const list = document.getElementById('notificationList');
+            if (!list) return;
+            if (!reports.length) {
+                list.innerHTML = '<div class="notification-empty">No reports received from the app yet.</div>';
+                return;
+            }
+            list.innerHTML = reports.slice(0, 4).map((report) => {
+                const reporterName = report.reporter?.username || report.reporterName || report.reporterUid || 'Unknown';
+                const targetName = report.reportedUser?.username || report.post?.userName || report.post?.petName || report.reportedUid || 'Unknown';
+                return `
+                    <div class="notification-item">
+                        <div class="notification-item-top">
+                            <span>${escapeHtml(getReportType(report))}</span>
+                            <span>${new Date(report.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div class="notification-item-meta">Reason: ${escapeHtml(report.reason || 'Not specified')}</div>
+                        <div class="notification-item-meta">Reporter: ${escapeHtml(reporterName)}</div>
+                        <div class="notification-item-meta">Target: ${escapeHtml(targetName)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
         
-        function logout() { if(confirm('Logout?')) { localStorage.removeItem('adminToken'); localStorage.removeItem('adminUser'); window.location.href='index.html'; } }
+        async function logout() { if(await AdminPopup.confirm('Logout from admin panel?', { title: 'Logout' })) { localStorage.removeItem('adminToken'); localStorage.removeItem('adminUser'); window.location.href='index.html'; } }
 
         let searchTimeout;
         const searchInput = document.getElementById('searchInput');
@@ -778,8 +1002,14 @@
                 
                 // Filter out admins from display
                 const nonAdminUsers = allUsers.filter(u => u.role !== 'admin');
+                const activeUsers = nonAdminUsers.filter(u => (u.status || 'Active') === 'Active').length;
+                const suspendedUsers = nonAdminUsers.filter(u => u.status === 'Suspended').length;
+                const flaggedUsers = nonAdminUsers.filter(u => (u.reportCount || 0) > 0).length;
                 document.getElementById('totalUsers').textContent = nonAdminUsers.length;
                 document.getElementById('resultCount').textContent = nonAdminUsers.length;
+                document.getElementById('activeUsersCount').textContent = activeUsers;
+                document.getElementById('suspendedUsersCount').textContent = suspendedUsers;
+                document.getElementById('flaggedUsersCount').textContent = flaggedUsers;
                 displayUsers(nonAdminUsers);
             } catch(error) { showToast('Failed to load users', 'error'); }
         }
@@ -806,7 +1036,7 @@
                     </td>
                     <td>${escapeHtml(user.email || 'No email')}</td>
                     <td>
-                        <span class="report-badge" onclick="viewUserReports('${user.firebaseUid || user.id}', '${escapeHtml(user.name || user.username)}')">
+                        <span class="report-badge">
                             <i class="fas fa-flag"></i> ${reportCount} report${reportCount !== 1 ? 's' : ''}
                         </span>
                     </td>
@@ -1052,8 +1282,32 @@
             setTimeout(()=>t.remove(),3200); 
         }
 
-        document.addEventListener('DOMContentLoaded', loadUsersData);
+        async function loadNotificationBell() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) return;
+                const response = await fetch('/api/admin/reports', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!response.ok) throw new Error('Failed');
+                const reports = await response.json();
+                const reportCount = reports.length;
+                const profileReports = reports.filter(report => report.reportedUid && !report.postId && !report.commentId).length;
+                const postReports = reports.filter(report => report.postId).length;
+                const badge = document.getElementById('notificationBadge');
+                badge.textContent = reportCount > 99 ? '99+' : reportCount;
+                badge.style.display = reportCount > 0 ? 'flex' : 'none';
+                document.getElementById('notificationTotalReports').textContent = reportCount;
+                document.getElementById('notificationProfileReports').textContent = profileReports;
+                document.getElementById('notificationPostReports').textContent = postReports;
+                renderNotificationItems(reports);
+            } catch (error) {
+                console.error('Notification bell error:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){ loadUsersData(); loadNotificationBell(); });
         setInterval(loadUsersData, 30000);
+        setInterval(loadNotificationBell, 30000);
     </script>
 </body>
 </html>
+

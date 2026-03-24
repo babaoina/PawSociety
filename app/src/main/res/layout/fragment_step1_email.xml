@@ -147,21 +147,12 @@
             android:layout_marginTop="4dp"
             android:layout_marginBottom="24dp" />
 
-        <!-- Password Requirements -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Password must be at least 6 characters"
-            android:textColor="#999999"
-            android:textSize="13sp"
-            android:layout_marginBottom="24dp" />
-
-        <!-- Password hint TextView - add ID -->
+        <!-- Password requirements -->
         <TextView
             android:id="@+id/tv_password_hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Password must be at least 6 characters"
+            android:text="Use at least 6 characters, 1 uppercase letter, and 1 number"
             android:textColor="#999999"
             android:textSize="13sp"
             android:layout_marginBottom="24dp" />

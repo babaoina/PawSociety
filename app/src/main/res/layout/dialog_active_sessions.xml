@@ -3,150 +3,54 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@drawable/bg_rounded_dialog">
+    android:padding="16dp">
 
-    <!-- Title -->
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Active Sessions"
-        android:textColor="#7A4F2B"
-        android:textSize="22sp"
+        android:textSize="18sp"
         android:textStyle="bold"
-        android:layout_marginBottom="20dp"
-        android:layout_gravity="center_horizontal" />
+        android:layout_marginBottom="16dp" />
 
-    <!-- Current Device -->
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@drawable/bg_rounded_edittext"
-        android:padding="16dp"
-        android:layout_marginBottom="12dp">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/phone"
-            android:tint="#7A4F2B"
-            android:layout_marginEnd="12dp" />
+        android:layout_height="wrap_content">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:id="@+id/sessions_container"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="This Device"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+    </ScrollView>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Current session"
-                android:textColor="#4CAF50"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Active Now"
-            android:textColor="#4CAF50"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <!-- Web Browser Session -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@drawable/bg_rounded_edittext"
-        android:padding="16dp"
-        android:layout_marginBottom="12dp">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/chrome"
-            android:tint="#666666"
-            android:layout_marginEnd="12dp" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Web Browser"
-                android:textColor="#000000"
-                android:textSize="16sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Chrome on Windows"
-                android:textColor="#666666"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="2 hours ago"
-            android:textColor="#666666"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <!-- Button Container -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_horizontal"
-        android:weightSum="2"
-        android:layout_marginTop="24dp">
+        android:gravity="end"
+        android:layout_marginTop="16dp">
 
         <TextView
             android:id="@+id/btn_cancel"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Close"
-            android:textColor="#666666"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:background="@drawable/bg_rounded_button_white"
-            android:clickable="true"
-            android:focusable="true" />
+            android:padding="12dp"
+            android:textColor="#7A4F2B"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/btn_logout_all"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:gravity="center"
-            android:text="Log Out All"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Logout All"
+            android:padding="12dp"
+            android:textColor="#FF0000"
             android:textStyle="bold"
-            android:background="@drawable/bg_rounded_button_red"
-            android:clickable="true"
-            android:focusable="true" />
+            android:layout_marginStart="16dp" />
+
     </LinearLayout>
+
 </LinearLayout>

@@ -19,6 +19,11 @@ const chatSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  // 🔥 ADDED: Track which users have accepted message requests from the other user
+  acceptedBy: [{
+    type: String, // firebaseUid of user who accepted
+    default: []
+  }],
   createdAt: {
     type: Date,
     default: Date.now

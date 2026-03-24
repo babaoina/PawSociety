@@ -60,7 +60,40 @@
         android:textColorHint="#999999"
         android:background="@drawable/bg_rounded_edittext"
         android:paddingHorizontal="16dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Password Label -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Confirm Password"
+        android:textColor="#666666"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp"
+        android:layout_marginStart="8dp" />
+
+    <!-- Password Input -->
+    <EditText
+        android:id="@+id/et_password"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Enter your password"
+        android:inputType="textPassword"
+        android:textColor="#000000"
+        android:textColorHint="#999999"
+        android:background="@drawable/bg_rounded_edittext"
+        android:paddingHorizontal="16dp"
         android:layout_marginBottom="24dp" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:indeterminate="true"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp" />
 
     <!-- Button Container -->
     <LinearLayout

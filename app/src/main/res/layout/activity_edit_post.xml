@@ -88,8 +88,99 @@
                 android:maxLength="10"
                 android:textSize="14sp" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Scenario"
+                android:textColor="#7A4F2B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:id="@+id/btn_case_owner_lost"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:background="@drawable/button_oval_brown"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Lost Pet"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_case_seen_lost_pet"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/button_oval_brown_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Seen Lost Pet"
+                    android:textColor="#7A4F2B"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_case_found_in_care"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/button_oval_brown_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Found Pet"
+                    android:textColor="#7A4F2B"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_case_adoption"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/button_oval_brown_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="For Adoption"
+                    android:textColor="#7A4F2B"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_event_date_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Event Date"
+                android:textColor="#7A4F2B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/et_event_date"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/input_oval"
+                android:clickable="true"
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:hint="Tap to choose a date"
+                android:padding="12dp"
+                android:layout_marginBottom="16dp"
+                android:textSize="14sp" />
+
             <!-- Location -->
             <TextView
+                android:id="@+id/tv_location_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Location"
@@ -103,9 +194,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:text="Select Location"
-                android:textColor="#7A4F2B"
-                android:background="@drawable/input_oval"
-                android:gravity="center|start"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/button_oval_brown"
+                android:gravity="center"
                 android:paddingLeft="16dp"
                 android:layout_marginBottom="16dp"
                 android:textSize="14sp" />
@@ -120,6 +211,63 @@
                 android:text="No location selected"
                 android:visibility="gone"
                 android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Contact Preference"
+                android:textColor="#7A4F2B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:id="@+id/btn_contact_call"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_oval_brown"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Call"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_contact_text"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_oval_brown_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Text"
+                    android:textColor="#7A4F2B"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_contact_chat"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_oval_brown_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="In-app chat"
+                    android:textColor="#7A4F2B"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <!-- Contact -->
             <TextView
@@ -154,6 +302,169 @@
                 android:layout_marginBottom="16dp"
                 android:layout_marginStart="4dp" />
 
+            <LinearLayout
+                android:id="@+id/layout_current_care"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Current Situation"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="6dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btn_care_in_my_care"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_brown"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="With me"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_care_sighting_only"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_oval_brown_outline"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="Sighting only"
+                        android:textColor="#7A4F2B"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Identifying Marks"
+                android:textColor="#7A4F2B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/et_identifying_marks"
+                android:layout_width="match_parent"
+                android:layout_height="88dp"
+                android:hint="Color patterns, scars, collar, unique features..."
+                android:inputType="textMultiLine"
+                android:gravity="top|start"
+                android:padding="16dp"
+                android:background="@drawable/input_oval"
+                android:layout_marginBottom="16dp"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Temperament"
+                android:textColor="#7A4F2B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/et_temperament"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:hint="Friendly, shy, calm..."
+                android:padding="12dp"
+                android:background="@drawable/input_oval"
+                android:layout_marginBottom="16dp"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:id="@+id/layout_health_condition"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Health / Condition"
+                    android:textColor="#7A4F2B"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="6dp" />
+
+                <EditText
+                    android:id="@+id/et_health_condition"
+                    android:layout_width="match_parent"
+                    android:layout_height="88dp"
+                    android:hint="Healthy, injured, vaccinated..."
+                    android:inputType="textMultiLine"
+                    android:gravity="top|start"
+                    android:padding="16dp"
+                    android:background="@drawable/input_oval"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Wearing a Collar?"
+                android:textColor="#7A4F2B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:id="@+id/btn_collar_yes"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_oval_brown_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Yes"
+                    android:textColor="#7A4F2B"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_collar_no"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_oval_brown"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="No"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
             <!-- Description -->
             <TextView
                 android:layout_width="wrap_content"
@@ -183,8 +494,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:text="Cancel"
-                android:textColor="#666666"
-                android:background="@drawable/button_oval_white"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/button_oval_brown"
                 android:layout_marginTop="8dp" />
 
         </LinearLayout>

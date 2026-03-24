@@ -62,8 +62,14 @@ router.get('/conversations/:firebaseUid', async (req, res) => {
       if (!latestMessage) continue;
 
       // 👇 CHECK IF THIS IS A PENDING REQUEST
+      // Only show as request if:
+      // 1. Latest message is pending AND
+      // 2. Current user is the receiver AND
+      // 3. Current user has NOT accepted this request yet
+      const hasUserAccepted = chat.acceptedBy && chat.acceptedBy.includes(userId);
       const isRequest = latestMessage.status === 'pending' && 
-                        latestMessage.receiverUid === userId;
+                        latestMessage.receiverUid === userId &&
+                        !hasUserAccepted;  // 🔥 KEY FIX
 
       // Count unread messages
       const unreadQuery = {
@@ -149,7 +155,25 @@ router.post('/accept-request/:chatId', async (req, res) => {
       });
     }
 
-    // Update all pending messages in this chat to 'delivered'
+    // 🔥 UPDATE: Mark this user as having accepted the request
+    const updateChatResult = await Chat.findOneAndUpdate(
+      { chatId: chatId },
+      { 
+        $addToSet: { acceptedBy: userId }  // Add userId to acceptedBy array if not already there
+      },
+      { new: true }
+    );
+
+    if (!updateChatResult) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found'
+      });
+    }
+
+    console.log(`📌 Marked as accepted for user ${userId} in chat ${chatId}`);
+
+    // Update all pending messages from the receiver to delivered
     const result = await Message.updateMany(
       { 
         chatId: chatId,
@@ -318,6 +342,19 @@ router.post('/send', async (req, res) => {
       
       // Remove any delete markers
       await ChatDelete.deleteMany({ chatId: chat.chatId });
+    }
+
+    // Restore deleted conversations when new activity happens.
+    // Messenger-style behavior: a fresh message should bring the thread back.
+    const restoredDeletes = await ChatDelete.deleteMany({
+      chatId: chat.chatId,
+      userId: { $in: [senderUid, receiverUid] }
+    });
+
+    if (restoredDeletes.deletedCount > 0) {
+      console.log(
+        `🔄 Restored ${restoredDeletes.deletedCount} deleted conversation marker(s) for chat ${chat.chatId}`
+      );
     }
 
     // 👇 CHECK IF THERE'S ALREADY AN ACCEPTED CONVERSATION

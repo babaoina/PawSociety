@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
@@ -38,6 +39,14 @@ import kotlin.math.max
 import android.net.Uri
 
 class PostViewActivity : AppCompatActivity() {
+
+    companion object {
+        private val RESOLVED_STATUS_LABELS = mapOf(
+            "Lost" to "Mark as Reunited",
+            "Found" to "Mark as Returned",
+            "Adoption" to "Mark as Adopted"
+        )
+    }
 
     private lateinit var recyclerView: RecyclerView
 
@@ -108,6 +117,8 @@ class PostViewActivity : AppCompatActivity() {
             val menuUsername = dialogView.findViewById<TextView>(R.id.menu_username)
             val menuPostInfo = dialogView.findViewById<TextView>(R.id.menu_post_info)
             val btnClose = dialogView.findViewById<TextView>(R.id.btn_close)
+            val menuAvatarImage = dialogView.findViewById<ImageView>(R.id.menu_avatar_image)
+            val menuAvatarFallback = dialogView.findViewById<TextView>(R.id.menu_avatar_fallback)
 
             val optionAddFavorites = dialogView.findViewById<LinearLayout>(R.id.option_add_favorites)
             val ivFavoriteIcon = dialogView.findViewById<ImageView>(R.id.iv_favorite_icon)
@@ -117,9 +128,10 @@ class PostViewActivity : AppCompatActivity() {
             val ivFollowIcon = dialogView.findViewById<ImageView>(R.id.iv_follow_icon)
             val tvFollowText = dialogView.findViewById<TextView>(R.id.tv_follow_text)
 
-            val optionWhySeeing = dialogView.findViewById<LinearLayout>(R.id.option_why_seeing)
+
             val optionHide = dialogView.findViewById<LinearLayout>(R.id.option_hide)
-            val optionAboutAccount = dialogView.findViewById<LinearLayout>(R.id.option_about_account)
+            val optionResolve = dialogView.findViewById<LinearLayout>(R.id.option_resolve)
+            val tvResolveText = dialogView.findViewById<TextView>(R.id.tv_resolve_text)
 
             val optionEdit = dialogView.findViewById<LinearLayout>(R.id.option_edit)
             val ivEditIcon = dialogView.findViewById<ImageView>(R.id.iv_edit_icon)
@@ -135,11 +147,15 @@ class PostViewActivity : AppCompatActivity() {
             menuUsername?.text = post.userName
             menuPostInfo?.text = "${post.petName} • ${post.status}"
 
+            bindPostMenuAvatar(post.userName, post.userImageUrl, menuAvatarImage, menuAvatarFallback)
+
             val user = currentUser
             val isOwnPost = (user != null && post.firebaseUid == user.firebaseUid)
 
             val dialog = Dialog(this, android.R.style.Theme_Translucent_NoTitleBar)
             dialog.setContentView(dialogView)
+            dialog.setCancelable(true)
+            dialog.setCanceledOnTouchOutside(true)
 
             dialog.window?.apply {
                 setGravity(android.view.Gravity.BOTTOM)
@@ -147,7 +163,8 @@ class PostViewActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 )
-                setBackgroundDrawable(null)
+                setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                attributes.windowAnimations = R.style.BottomMenuAnimation
             }
 
             btnClose?.setOnClickListener {
@@ -167,12 +184,26 @@ class PostViewActivity : AppCompatActivity() {
                     dialog.dismiss()
                 }
 
+                val resolveActionLabel = RESOLVED_STATUS_LABELS[post.status]
+                if (resolveActionLabel != null) {
+                    optionResolve?.visibility = View.VISIBLE
+                    tvResolveText?.text = resolveActionLabel
+                    optionResolve?.setOnClickListener {
+                        showResolveConfirmation(post, resolveActionLabel)
+                        dialog.dismiss()
+                    }
+                } else {
+                    optionResolve?.visibility = View.GONE
+                }
+
                 optionFollow?.visibility = View.GONE
                 optionBlock?.visibility = View.GONE
                 optionReport?.visibility = View.GONE
+                optionHide?.visibility = View.GONE
             } else {
                 optionEdit?.visibility = View.GONE
                 optionDelete?.visibility = View.GONE
+                optionResolve?.visibility = View.GONE
 
                 optionFollow?.visibility = View.VISIBLE
                 tvFollowText?.text = "Follow"
@@ -198,18 +229,9 @@ class PostViewActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
 
-            optionWhySeeing?.setOnClickListener {
-                showWhySeeingDialog(post)
-                dialog.dismiss()
-            }
 
             optionHide?.setOnClickListener {
                 showHideConfirmation(post)
-                dialog.dismiss()
-            }
-
-            optionAboutAccount?.setOnClickListener {
-                showAboutAccountDialog(post)
                 dialog.dismiss()
             }
 
@@ -235,7 +257,7 @@ class PostViewActivity : AppCompatActivity() {
                 • Similar content you've liked before
             """.trimIndent()
 
-            AlertDialog.Builder(this)
+            AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setTitle("Why you're seeing this post")
                 .setMessage(message)
                 .setPositiveButton("Got it", null)
@@ -254,7 +276,7 @@ class PostViewActivity : AppCompatActivity() {
                 📍 Location information not available
             """.trimIndent()
 
-            AlertDialog.Builder(this)
+            AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setTitle("About this account")
                 .setMessage(message)
                 .setPositiveButton("OK", null)
@@ -265,7 +287,7 @@ class PostViewActivity : AppCompatActivity() {
     }
 
     private fun showHideConfirmation(post: ApiPost) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Hide Post")
             .setMessage("This post will be hidden from your feed. You can unhide it later in Settings.")
             .setPositiveButton("Hide") { _, _ ->
@@ -286,7 +308,7 @@ class PostViewActivity : AppCompatActivity() {
     }
 
     private fun showBlockConfirmation(post: ApiPost) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Block User")
             .setMessage("Are you sure you want to block ${post.userName}?")
             .setPositiveButton("Block") { _, _ ->
@@ -308,7 +330,7 @@ class PostViewActivity : AppCompatActivity() {
 
     private fun showReportDialog(post: ApiPost) {
         val options = arrayOf("Spam", "Inappropriate", "False information", "Scam", "Harassment", "Other")
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Report Post")
             .setItems(options) { _, which ->
                 submitReport(post, options[which])
@@ -333,7 +355,7 @@ class PostViewActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmation(post: ApiPost) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Delete Post")
             .setMessage("Are you sure you want to delete this post?")
             .setPositiveButton("Delete") { _, _ ->
@@ -442,6 +464,7 @@ class PostViewActivity : AppCompatActivity() {
             val btnShareIcon: ImageView = itemView.findViewById(R.id.btn_share_icon)
             val btnFavorite: LinearLayout = itemView.findViewById(R.id.btn_favorite)
             val ivFavorite: ImageView = itemView.findViewById(R.id.iv_favorite)
+            val tvSaveLabel: TextView = itemView.findViewById(R.id.tv_save_label)
 
             // User role
             val tvUserRole: TextView = itemView.findViewById(R.id.tv_user_role)
@@ -462,7 +485,7 @@ class PostViewActivity : AppCompatActivity() {
 
         private fun bindPost(holder: PostViewHolder, post: ApiPost) {
             holder.tvUsername.text = post.userName
-            holder.tvLocation.text = post.location ?: "No location"
+            holder.tvLocation.text = "\uD83D\uDCCD ${post.location ?: "No location"}"
             holder.tvTime.text = getTimeAgo(post.createdAt)
             holder.tvPetName.text = post.petName
             holder.tvPetType.text = post.petType ?: "Unknown breed"
@@ -894,8 +917,12 @@ class PostViewActivity : AppCompatActivity() {
                     val isFavorited = result.getOrNull() ?: false
                     if (isFavorited) {
                         holder.ivFavorite.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                        holder.tvSaveLabel.text = "Unsave"
+                        holder.tvSaveLabel.setTextColor(Color.parseColor("#B88B4A"))
                     } else {
                         holder.ivFavorite.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
+                        holder.tvSaveLabel.text = "Save"
+                        holder.tvSaveLabel.setTextColor(Color.parseColor("#666666"))
                     }
                 }
             }
@@ -956,22 +983,39 @@ class PostViewActivity : AppCompatActivity() {
             }
 
             lifecycleScope.launch {
-                val isFavorited = holder.ivFavorite.colorFilter != null
-                val result = if (isFavorited) {
+                // Determine current state based on label text (more reliable than colorFilter)
+                val isCurrentlySaved = holder.tvSaveLabel.text.toString().equals("Unsave", ignoreCase = true)
+                
+                Log.d("FAVORITE_DEBUG", "Current state - isCurrentlySaved: $isCurrentlySaved, Label: ${holder.tvSaveLabel.text}")
+                
+                val result = if (isCurrentlySaved) {
+                    // Currently saved, so remove it
+                    Log.d("FAVORITE_DEBUG", "Calling removeFromFavorites")
                     favoriteRepository.removeFromFavorites(user.firebaseUid, post.postId)
                 } else {
+                    // Not saved, so add it
+                    Log.d("FAVORITE_DEBUG", "Calling addToFavorites")
                     favoriteRepository.addToFavorites(user.firebaseUid, post.postId)
                 }
 
                 if (result.isSuccess) {
-                    if (isFavorited) {
+                    Log.d("FAVORITE_DEBUG", "API call successful")
+                    if (isCurrentlySaved) {
+                        // Was saved, now unsave
                         holder.ivFavorite.setColorFilter(Color.parseColor("#666666"), PorterDuff.Mode.SRC_ATOP)
+                        holder.tvSaveLabel.text = "Save"
+                        holder.tvSaveLabel.setTextColor(Color.parseColor("#666666"))
+                        Toast.makeText(this@PostViewActivity, "Removed from favorites", Toast.LENGTH_SHORT).show()
                     } else {
+                        // Was not saved, now save
                         holder.ivFavorite.setColorFilter(Color.parseColor("#B88B4A"), PorterDuff.Mode.SRC_ATOP)
+                        holder.tvSaveLabel.text = "Unsave"
+                        holder.tvSaveLabel.setTextColor(Color.parseColor("#B88B4A"))
+                        Toast.makeText(this@PostViewActivity, "Added to favorites", Toast.LENGTH_SHORT).show()
                     }
-                    Toast.makeText(this@PostViewActivity,
-                        if (!isFavorited) "Added to favorites" else "Removed from favorites",
-                        Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.e("FAVORITE_DEBUG", "API call failed: ${result.exceptionOrNull()}")
+                    Toast.makeText(this@PostViewActivity, "Failed to update favorite", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -1138,6 +1182,84 @@ class PostViewActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             "Unknown"
+        }
+    }
+
+    private fun showResolveConfirmation(post: ApiPost, actionLabel: String) {
+        val dialog = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
+            .setTitle(actionLabel)
+            .setMessage("This will close the case and remove it from feed and search for other users.")
+            .setPositiveButton("Confirm") { _, _ ->
+                resolvePost(post)
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.parseColor("#7A4F2B"))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.parseColor("#666666"))
+        }
+
+        dialog.show()
+    }
+
+    private fun resolvePost(post: ApiPost) {
+        val user = currentUser ?: return
+        lifecycleScope.launch {
+            val result = postRepository.resolvePost(post.postId, user.firebaseUid)
+            if (result.isSuccess) {
+                val updatedPost = result.getOrNull() ?: post
+                val postIndex = allPosts.indexOfFirst { it.postId == post.postId }
+                if (postIndex != -1) {
+                    allPosts[postIndex] = updatedPost
+                    recyclerView.adapter?.notifyItemChanged(postIndex)
+                }
+
+                Toast.makeText(
+                    this@PostViewActivity,
+                    "Post updated to ${updatedPost.status}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Toast.makeText(
+                    this@PostViewActivity,
+                    result.exceptionOrNull()?.message ?: "Failed to update post",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun bindPostMenuAvatar(
+        userName: String?,
+        userImageUrl: String?,
+        avatarImage: ImageView?,
+        avatarFallback: TextView?
+    ) {
+        avatarFallback?.text = userName?.firstOrNull()?.uppercaseChar()?.toString() ?: "🐾"
+
+        if (!userImageUrl.isNullOrBlank()) {
+            val fullImageUrl = if (userImageUrl.startsWith("http")) {
+                userImageUrl
+            } else {
+                "${com.example.pawsociety.api.ApiClient.FULL_BASE_URL}$userImageUrl"
+            }
+
+            avatarImage?.visibility = View.VISIBLE
+            avatarFallback?.visibility = View.GONE
+
+            avatarImage?.let {
+                Glide.with(this)
+                    .load(fullImageUrl)
+                    .placeholder(R.drawable.paw)
+                    .error(R.drawable.paw)
+                    .circleCrop()
+                    .into(it)
+            }
+        } else {
+            avatarImage?.visibility = View.GONE
+            avatarFallback?.visibility = View.VISIBLE
         }
     }
 

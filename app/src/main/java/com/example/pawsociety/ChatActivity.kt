@@ -1,5 +1,7 @@
 package com.example.pawsociety
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -12,8 +14,12 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -50,11 +56,16 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var sendButton: ImageButton
     private lateinit var tvUsername: TextView
     private lateinit var tvUserStatus: TextView
-    private lateinit var typingIndicator: TextView
+    private lateinit var typingIndicator: LinearLayout
     private lateinit var onlineIndicator: View
     private lateinit var headerProfileImage: ImageView
     private lateinit var headerProfileIcon: TextView
     private lateinit var btnChatSettings: ImageView
+    private lateinit var messageContainer: LinearLayout
+    private lateinit var typingDot1: View
+    private lateinit var typingDot2: View
+    private lateinit var typingDot3: View
+    private val typingAnimators = mutableListOf<AnimatorSet>()
 
     private val messageList = mutableListOf<ApiMessage>()
     private lateinit var messageAdapter: ChatMessageAdapter
@@ -83,10 +94,11 @@ class ChatActivity : AppCompatActivity() {
 
     private var isMuted = false
     private var muteCheckJob: Job? = null
+    private var isMuteToggleInFlight = false
 
     private var isInForeground = false
 
-    // 🔥 ADDED: Auto-refresh variables
+    // Auto-refresh variables
     private var refreshHandler = Handler(Looper.getMainLooper())
     private var refreshRunnable: Runnable? = null
 
@@ -121,6 +133,7 @@ class ChatActivity : AppCompatActivity() {
         }
 
         initializeViews()
+        adjustKeyboardBehavior() // 🔥 ADD THIS - Only pushes message input, not header
         loadReceiverUser()
         setupRecyclerView()
         setupClickListeners()
@@ -135,6 +148,41 @@ class ChatActivity : AppCompatActivity() {
         loadMuteStatus()
     }
 
+    private fun adjustKeyboardBehavior() {
+        // Set window to resize when keyboard opens
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
+        // Find the message input container
+        messageContainer = findViewById(R.id.message_input_container)
+
+        // Add insets listener to only adjust the message input container
+        ViewCompat.setOnApplyWindowInsetsListener(messageContainer) { view, insets ->
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+
+            // Only add padding for keyboard (IME) and navigation bar
+            val bottomPadding = if (imeInsets.bottom > 0) {
+                // Keyboard is open - add padding above keyboard
+                imeInsets.bottom + 8
+            } else {
+                // Keyboard is closed - just add navigation bar padding
+                navBars.bottom + 8
+            }
+
+            view.updatePadding(bottom = bottomPadding)
+
+            // Also adjust recycler view padding when keyboard opens
+            val recyclerViewPadding = if (imeInsets.bottom > 0) {
+                imeInsets.bottom + 12
+            } else {
+                navBars.bottom + 12
+            }
+            recyclerView.updatePadding(bottom = recyclerViewPadding)
+
+            insets
+        }
+    }
+
     private fun initializeViews() {
         recyclerView = findViewById(R.id.chat_recycler_view)
         messageInput = findViewById(R.id.message_input)
@@ -146,6 +194,9 @@ class ChatActivity : AppCompatActivity() {
         headerProfileImage = findViewById(R.id.header_profile_image)
         headerProfileIcon = findViewById(R.id.header_profile_icon)
         btnChatSettings = findViewById(R.id.btn_chat_settings)
+        typingDot1 = findViewById(R.id.typing_dot_1)
+        typingDot2 = findViewById(R.id.typing_dot_2)
+        typingDot3 = findViewById(R.id.typing_dot_3)
 
         tvUsername.text = receiverUsername
         tvUserStatus.text = "Active now"
@@ -194,8 +245,10 @@ class ChatActivity : AppCompatActivity() {
     private fun updateOnlineStatus() {
         if (isReceiverOnline) {
             onlineIndicator.visibility = View.VISIBLE
-            tvUserStatus.text = "Active now"
-            tvUserStatus.setTextColor(Color.parseColor("#4CAF50"))
+            if (typingIndicator.visibility != View.VISIBLE) {
+                tvUserStatus.text = "Active now"
+                tvUserStatus.setTextColor(Color.parseColor("#D7F5D2"))
+            }
             statusRunnable?.let { statusHandler.removeCallbacks(it) }
         } else {
             onlineIndicator.visibility = View.GONE
@@ -229,7 +282,7 @@ class ChatActivity : AppCompatActivity() {
             days == 1L -> "Active yesterday"
             else -> "Active ${days} days ago"
         }
-        tvUserStatus.setTextColor(Color.parseColor("#999999"))
+        tvUserStatus.setTextColor(Color.parseColor("#F3E3D3"))
     }
 
     private fun checkIfBlocked() {
@@ -367,7 +420,7 @@ class ChatActivity : AppCompatActivity() {
                 }
             }
 
-            val dialog = AlertDialog.Builder(this)
+            val dialog = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
                 .setView(dialogView)
                 .setCancelable(true)
                 .create()
@@ -382,12 +435,14 @@ class ChatActivity : AppCompatActivity() {
             }
 
             optionMute.setOnClickListener {
-                switchMute.isChecked = !switchMute.isChecked
+                if (!isMuteToggleInFlight) {
+                    switchMute.isChecked = !switchMute.isChecked
+                }
             }
 
             switchMute.setOnCheckedChangeListener { _, isChecked ->
-                if (isChecked != isMuted) {
-                    toggleMuteWithSwitch(isChecked)
+                if (!isMuteToggleInFlight && isChecked != isMuted) {
+                    toggleMuteWithSwitch(isChecked, switchMute)
                 }
             }
 
@@ -416,7 +471,7 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun showBlockConfirmation() {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Block User")
             .setMessage("Are you sure you want to block $receiverUsername? You will no longer see their messages and they cannot contact you.")
             .setPositiveButton("Block") { _, _ ->
@@ -441,7 +496,7 @@ class ChatActivity : AppCompatActivity() {
     private fun showReportDialog() {
         val options = arrayOf("Spam", "Harassment", "Inappropriate", "Fake account", "Other")
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Report $receiverUsername")
             .setItems(options) { _, which ->
                 val reason = options[which]
@@ -468,7 +523,7 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun showClearChatConfirmation() {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Clear Chat")
             .setMessage("Are you sure you want to clear this conversation? This will only clear messages for you.")
             .setPositiveButton("Clear") { _, _ ->
@@ -522,7 +577,7 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        // 🔥 IMPROVED: Real-time message receiving with immediate UI update
+        // Real-time message receiving with immediate UI update
         SocketManager.on("new-message") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -548,7 +603,7 @@ class ChatActivity : AppCompatActivity() {
                                         markMessageAsRead(message.messageId)
                                     }
 
-                                    // 🔥 ADDED: Also refresh from server to be safe
+                                    // Also refresh from server to be safe
                                     refreshMessagesFromServer()
                                 }
                             }
@@ -560,7 +615,7 @@ class ChatActivity : AppCompatActivity() {
             }
         }
 
-        // 🔥 ADDED: Handle chat-message event (direct to chat room)
+        // Handle chat-message event (direct to chat room)
         SocketManager.on("chat-message") { args ->
             if (args.isNotEmpty()) {
                 try {
@@ -645,7 +700,7 @@ class ChatActivity : AppCompatActivity() {
 
                         runOnUiThread {
                             if (userId == receiverUid) {
-                                typingIndicator.visibility = if (typing) View.VISIBLE else View.GONE
+                                showTypingIndicator(typing)
                             }
                         }
                     }
@@ -691,14 +746,14 @@ class ChatActivity : AppCompatActivity() {
         )
     }
 
-    // 🔥 NEW: Refresh messages from server every 3 seconds when in foreground
+    // Refresh messages from server every 3 seconds when in foreground
     private fun startAutoRefresh() {
         stopAutoRefresh()
 
         refreshRunnable = Runnable {
             if (isInForeground && currentChatId.isNotEmpty()) {
                 refreshMessagesFromServer()
-                refreshHandler.postDelayed(refreshRunnable!!, 3000) // Refresh every 3 seconds
+                refreshHandler.postDelayed(refreshRunnable!!, 3000)
             }
         }
         refreshHandler.postDelayed(refreshRunnable!!, 3000)
@@ -711,7 +766,7 @@ class ChatActivity : AppCompatActivity() {
         Log.d(tag, "🔄 Auto-refresh stopped")
     }
 
-    // 🔥 NEW: Force refresh messages from server
+    // Force refresh messages from server
     private fun refreshMessagesFromServer() {
         if (currentChatId.isEmpty() || !isInForeground) return
 
@@ -896,6 +951,58 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
+    private fun showTypingIndicator(show: Boolean) {
+        if (show) {
+            typingIndicator.visibility = View.VISIBLE
+            tvUserStatus.text = "Typing..."
+            tvUserStatus.setTextColor(Color.parseColor("#FFF1C9"))
+            startTypingDotsAnimation()
+        } else {
+            typingIndicator.visibility = View.GONE
+            stopTypingDotsAnimation()
+            updateOnlineStatus()
+        }
+    }
+
+    private fun startTypingDotsAnimation() {
+        if (typingAnimators.isNotEmpty()) return
+
+        listOf(typingDot1, typingDot2, typingDot3).forEachIndexed { index, dot ->
+            dot.alpha = 0.35f
+            dot.translationY = 0f
+
+            val moveUp = ObjectAnimator.ofFloat(dot, View.TRANSLATION_Y, 0f, -10f, 0f).apply {
+                duration = 620
+                repeatCount = ObjectAnimator.INFINITE
+                startDelay = (index * 140).toLong()
+                interpolator = AccelerateDecelerateInterpolator()
+            }
+
+            val fade = ObjectAnimator.ofFloat(dot, View.ALPHA, 0.35f, 1f, 0.35f).apply {
+                duration = 620
+                repeatCount = ObjectAnimator.INFINITE
+                startDelay = (index * 140).toLong()
+                interpolator = AccelerateDecelerateInterpolator()
+            }
+
+            AnimatorSet().apply {
+                playTogether(moveUp, fade)
+                start()
+                typingAnimators.add(this)
+            }
+        }
+    }
+
+    private fun stopTypingDotsAnimation() {
+        typingAnimators.forEach { it.cancel() }
+        typingAnimators.clear()
+
+        listOf(typingDot1, typingDot2, typingDot3).forEach { dot ->
+            dot.alpha = 0.35f
+            dot.translationY = 0f
+        }
+    }
+
     private fun loadMessages() {
         val currentUser = sessionManager.getCurrentUser()
         if (currentUser == null) {
@@ -954,7 +1061,7 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    // ADD LIFECYCLE METHODS
+    // LIFECYCLE METHODS
     override fun onResume() {
         super.onResume()
         isInForeground = true
@@ -967,14 +1074,12 @@ class ChatActivity : AppCompatActivity() {
             loadMessagesForChat(currentChatId)
             markMessagesAsRead()
         }
-        // 🔥 START AUTO-REFRESH
         startAutoRefresh()
     }
 
     override fun onPause() {
         super.onPause()
         isInForeground = false
-        // 🔥 STOP AUTO-REFRESH
         stopAutoRefresh()
         if (currentChatId.isNotEmpty()) {
             SocketManager.leaveChatRoom(currentChatId)
@@ -1036,6 +1141,8 @@ class ChatActivity : AppCompatActivity() {
                     dataStore.edit { settings ->
                         settings[muteKey] = apiMuted
                     }
+                } else {
+                    Log.w(tag, "⚠️ Skipping mute sync overwrite because API did not return a valid mute list")
                 }
             } catch (e: Exception) {
                 Log.e(tag, "❌ Failed to sync mute status: ${e.message}")
@@ -1043,8 +1150,14 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    private fun toggleMuteWithSwitch(isChecked: Boolean) {
+    private fun toggleMuteWithSwitch(isChecked: Boolean, switchMute: Switch? = null) {
+        if (isMuteToggleInFlight) return
+
+        val previousMuteState = isMuted
         isMuted = isChecked
+        isMuteToggleInFlight = true
+        switchMute?.isEnabled = false
+
         lifecycleScope.launch {
             try {
                 val muteKey = booleanPreferencesKey("mute_$receiverUid")
@@ -1060,6 +1173,8 @@ class ChatActivity : AppCompatActivity() {
 
                 if (result.isSuccess) {
                     Log.d(tag, "✅ Mute status synced with server")
+                } else {
+                    throw result.exceptionOrNull() ?: Exception("Failed to update mute status")
                 }
 
                 runOnUiThread {
@@ -1071,6 +1186,35 @@ class ChatActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Log.e(tag, "Error saving mute status", e)
+                isMuted = previousMuteState
+
+                val muteKey = booleanPreferencesKey("mute_$receiverUid")
+                dataStore.edit { settings ->
+                    settings[muteKey] = previousMuteState
+                }
+
+                runOnUiThread {
+                    switchMute?.let {
+                        it.setOnCheckedChangeListener(null)
+                        it.isChecked = previousMuteState
+                        it.setOnCheckedChangeListener { _, checked ->
+                            if (!isMuteToggleInFlight && checked != isMuted) {
+                                toggleMuteWithSwitch(checked, it)
+                            }
+                        }
+                    }
+
+                    Toast.makeText(
+                        this@ChatActivity,
+                        "Couldn't update mute right now",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } finally {
+                isMuteToggleInFlight = false
+                runOnUiThread {
+                    switchMute?.isEnabled = true
+                }
             }
         }
     }

@@ -50,6 +50,155 @@
             gap: 20px;
         }
 
+        .notification-bell {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid #f0e4d4;
+            background: white;
+            color: #7A4F2B;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        .notification-dropdown {
+            position: relative;
+        }
+
+        .notification-menu {
+            position: absolute;
+            top: 46px;
+            right: 0;
+            width: 320px;
+            background: white;
+            border: 1px solid #f0e4d4;
+            border-radius: 16px;
+            box-shadow: 0 18px 35px rgba(90, 58, 31, 0.16);
+            padding: 16px;
+            display: none;
+            z-index: 1002;
+        }
+
+        .notification-menu.show {
+            display: block;
+        }
+
+        .notification-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            color: #5a3a1f;
+        }
+
+        .notification-menu-header strong {
+            font-size: 14px;
+        }
+
+        .notification-menu-header span {
+            font-size: 11px;
+            color: #9c856c;
+        }
+
+        .notification-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .notification-stat {
+            background: #fffaf3;
+            border: 1px solid #f0e4d4;
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .notification-stat span {
+            display: block;
+            font-size: 11px;
+            color: #9c856c;
+            margin-bottom: 4px;
+        }
+
+        .notification-stat strong {
+            font-size: 18px;
+            color: #7A4F2B;
+        }
+
+        .notification-list {
+            display: grid;
+            gap: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .notification-item {
+            background: #fffaf3;
+            border: 1px solid #f0e4d4;
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .notification-item-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #5a3a1f;
+            font-weight: 700;
+        }
+
+        .notification-item-meta {
+            font-size: 12px;
+            color: #7c6b5a;
+            line-height: 1.45;
+        }
+
+        .notification-empty {
+            text-align: center;
+            color: #9c856c;
+            font-size: 12px;
+            padding: 16px 8px;
+            background: #fffaf3;
+            border: 1px dashed #f0e4d4;
+            border-radius: 12px;
+        }
+
+        .notification-link {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            background: #7A4F2B;
+            color: white;
+            padding: 10px 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
         .admin-profile {
             display: flex;
             align-items: center;
@@ -554,6 +703,139 @@
             color: #475569;
         }
 
+        .view-sheet {
+            display: grid;
+            gap: 18px;
+        }
+
+        .view-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .view-photo {
+            min-height: 260px;
+            border-radius: 22px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f4dfbf, #e8d0b1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .view-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .view-summary {
+            background: #fff7ed;
+            border: 1px solid #f0e4d4;
+            border-radius: 22px;
+            padding: 18px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .view-title {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .view-title h4 {
+            font-size: 24px;
+            color: #5a3a1f;
+        }
+
+        .view-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .view-pill-soft {
+            background: #f5e6d3;
+            color: #7A4F2B;
+        }
+
+        .view-highlight-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .view-highlight {
+            background: white;
+            border: 1px solid #f0e4d4;
+            border-radius: 16px;
+            padding: 12px;
+        }
+
+        .view-highlight-label {
+            font-size: 11px;
+            color: #9c856c;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .view-highlight-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #5a3a1f;
+        }
+
+        .view-section {
+            background: #fffdfa;
+            border: 1px solid #f0e4d4;
+            border-radius: 20px;
+            padding: 18px;
+        }
+
+        .view-section h5 {
+            color: #7A4F2B;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 14px;
+        }
+
+        .view-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .view-description {
+            color: #475569;
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        .view-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .view-gallery img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 16px;
+            background: #f3e2cc;
+        }
+
         .close-btn {
             background: #7A4F2B;
             color: white;
@@ -616,8 +898,13 @@
             .search-input-wrapper, .filter-group {
                 width: 100%;
             }
+            .view-hero,
+            .view-highlight-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
+    <link rel="stylesheet" href="css/premium-admin.css">
 </head>
 <body>
     <div class="header">
@@ -625,6 +912,27 @@
             <h1>PawSociety <span>🐾 Admin</span></h1>
         </div>
         <div class="header-right">
+            <div class="notification-dropdown" id="notificationDropdown">
+                <button class="notification-bell" onclick="toggleNotificationMenu(event)" title="All reports received from the app">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadge"></span>
+                </button>
+                <div class="notification-menu" id="notificationMenu">
+                    <div class="notification-menu-header">
+                        <strong>Reports Overview</strong>
+                        <span>From your app</span>
+                    </div>
+                    <div class="notification-summary">
+                        <div class="notification-stat"><span>Total</span><strong id="notificationTotalReports">0</strong></div>
+                        <div class="notification-stat"><span>Profile</span><strong id="notificationProfileReports">0</strong></div>
+                        <div class="notification-stat"><span>Posts</span><strong id="notificationPostReports">0</strong></div>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">No reports received from the app yet.</div>
+                    </div>
+                    <button class="notification-link" onclick="window.location.href='reports.html'">Open Reports</button>
+                </div>
+            </div>
             <div class="admin-profile" id="adminProfile">
                 <div class="admin-name">
                     <div class="name" id="adminName">Admin User</div>
@@ -683,6 +991,35 @@
                     </div>
                 </div>
 
+                <div class="ops-banner ops-banner-posts ops-banner-posts-compact">
+                    <div class="ops-metrics ops-metrics-posts">
+                        <div class="ops-stat">
+                            <span class="ops-label">Lost</span>
+                            <strong id="lostPostsCount">0</strong>
+                        </div>
+                        <div class="ops-stat">
+                            <span class="ops-label">Found</span>
+                            <strong id="foundPostsCount">0</strong>
+                        </div>
+                        <div class="ops-stat">
+                            <span class="ops-label">Adoption</span>
+                            <strong id="adoptionPostsCount">0</strong>
+                        </div>
+                        <div class="ops-stat">
+                            <span class="ops-label">Reunited</span>
+                            <strong id="reunitedPostsCount">0</strong>
+                        </div>
+                        <div class="ops-stat">
+                            <span class="ops-label">Adopted</span>
+                            <strong id="adoptedPostsCount">0</strong>
+                        </div>
+                        <div class="ops-stat">
+                            <span class="ops-label">Reported</span>
+                            <strong id="reportedPostsCount">0</strong>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="search-section">
                     <div class="search-row">
                         <div class="search-input-wrapper">
@@ -695,6 +1032,9 @@
                                 <option value="Lost">Lost</option>
                                 <option value="Found">Found</option>
                                 <option value="Adoption">Adoption</option>
+                                <option value="Reunited">Reunited</option>
+                                <option value="Returned">Returned</option>
+                                <option value="Adopted">Adopted</option>
                             </select>
                             <button class="clear-btn" onclick="clearFilters()"><i class="fas fa-times"></i></button>
                         </div>
@@ -734,12 +1074,15 @@
     <script>
         const avatarBtn = document.getElementById('avatarBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationMenu = document.getElementById('notificationMenu');
         const BACKEND_URL = window.location.origin;
         let allPosts = [];
         let searchTimeout;
 
         avatarBtn.addEventListener('click', function(e) {
             e.stopPropagation();
+            notificationMenu.classList.remove('show');
             dropdownMenu.classList.toggle('show');
         });
 
@@ -747,10 +1090,50 @@
             if (!avatarBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
                 dropdownMenu.classList.remove('show');
             }
+            if (!notificationDropdown.contains(e.target)) {
+                notificationMenu.classList.remove('show');
+            }
         });
 
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
+        function toggleNotificationMenu(event) {
+            event.stopPropagation();
+            dropdownMenu.classList.remove('show');
+            notificationMenu.classList.toggle('show');
+        }
+
+        function getReportType(report) {
+            if (report.postId) return 'Post report';
+            if (report.reportedUid) return 'Profile report';
+            if (report.commentId) return 'Comment report';
+            return 'Report';
+        }
+
+        function renderNotificationItems(reports) {
+            const list = document.getElementById('notificationList');
+            if (!list) return;
+            if (!reports.length) {
+                list.innerHTML = '<div class="notification-empty">No reports received from the app yet.</div>';
+                return;
+            }
+            list.innerHTML = reports.slice(0, 4).map((report) => {
+                const reporterName = report.reporter?.username || report.reporterName || report.reporterUid || 'Unknown';
+                const targetName = report.reportedUser?.username || report.post?.userName || report.post?.petName || report.reportedUid || 'Unknown';
+                return `
+                    <div class="notification-item">
+                        <div class="notification-item-top">
+                            <span>${escapeHtml(getReportType(report))}</span>
+                            <span>${formatDate(report.createdAt)}</span>
+                        </div>
+                        <div class="notification-item-meta">Reason: ${escapeHtml(report.reason || 'Not specified')}</div>
+                        <div class="notification-item-meta">Reporter: ${escapeHtml(reporterName)}</div>
+                        <div class="notification-item-meta">Target: ${escapeHtml(targetName)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function logout() {
+            if (await AdminPopup.confirm('Are you sure you want to logout?', { title: 'Logout' })) {
                 localStorage.removeItem('adminToken');
                 localStorage.removeItem('adminUser');
                 window.location.href = 'index.html';
@@ -848,8 +1231,20 @@
                 }
                 
                 allPosts = posts;
+                const lostPosts = posts.filter(post => post.status === 'Lost').length;
+                const foundPosts = posts.filter(post => post.status === 'Found').length;
+                const adoptionPosts = posts.filter(post => post.status === 'Adoption').length;
+                const reunitedPosts = posts.filter(post => post.status === 'Reunited' || post.status === 'Returned').length;
+                const adoptedPosts = posts.filter(post => post.status === 'Adopted').length;
+                const reportedPosts = posts.filter(post => post.reported || (post.reportCount || 0) > 0).length;
                 document.getElementById('totalPosts').textContent = posts.length;
                 document.getElementById('resultCount').textContent = posts.length;
+                document.getElementById('lostPostsCount').textContent = lostPosts;
+                document.getElementById('foundPostsCount').textContent = foundPosts;
+                document.getElementById('adoptionPostsCount').textContent = adoptionPosts;
+                document.getElementById('reunitedPostsCount').textContent = reunitedPosts;
+                document.getElementById('adoptedPostsCount').textContent = adoptedPosts;
+                document.getElementById('reportedPostsCount').textContent = reportedPosts;
                 displayPosts(posts);
                 
             } catch (error) {
@@ -870,7 +1265,13 @@
             }
 
             grid.innerHTML = posts.map(post => {
-                const statusClass = post.status === 'Lost' ? 'status-lost' : post.status === 'Found' ? 'status-found' : 'status-adoption';
+                const statusClass =
+                    post.status === 'Lost' ? 'status-lost' :
+                    post.status === 'Found' ? 'status-found' :
+                    post.status === 'Adoption' ? 'status-adoption' :
+                    post.status === 'Reunited' ? 'status-reunited' :
+                    post.status === 'Returned' ? 'status-returned' :
+                    'status-adopted';
                 const statusText = post.status || 'Unknown';
                 const avatarLetter = post.userName?.charAt(0).toUpperCase() || '?';
                 
@@ -1038,7 +1439,7 @@
         }
 
         async function deletePost(id) {
-            if (!confirm('⚠️ Permanently delete this post? This action cannot be undone.')) return;
+            if (!await AdminPopup.confirm('Permanently delete this post? This action cannot be undone.', { title: 'Delete Post', confirmText: 'Delete', danger: true })) return;
             try {
                 const token = localStorage.getItem('adminToken');
                 const response = await fetch(`/api/admin/posts/${id}`, {
@@ -1174,11 +1575,271 @@
             setTimeout(() => toast.remove(), 3200);
         }
 
+        function formatCaseType(caseType) {
+            const labels = {
+                owner_lost: 'Owner lost pet',
+                seen_lost_pet: 'Seen lost pet',
+                found_in_care: 'Found and in care',
+                adoption: 'For adoption'
+            };
+            return labels[caseType] || 'Not specified';
+        }
+
+        function formatCareStatus(status) {
+            const labels = {
+                in_my_care: 'In my care',
+                sighting_only: 'Sighting only',
+                owner: 'With owner'
+            };
+            return labels[status] || 'Not specified';
+        }
+
+        function formatContactPreference(value) {
+            const labels = {
+                call: 'Call',
+                text: 'Text',
+                in_app_chat: 'In-app chat'
+            };
+            return labels[value] || 'Not specified';
+        }
+
+        async function loadNotificationBell() {
+            try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) return;
+                const response = await fetch('/api/admin/reports', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed');
+                const reports = await response.json();
+                const reportCount = reports.length;
+                const profileReports = reports.filter(report => report.reportedUid && !report.postId && !report.commentId).length;
+                const postReports = reports.filter(report => report.postId).length;
+                const badge = document.getElementById('notificationBadge');
+                badge.textContent = reportCount > 99 ? '99+' : reportCount;
+                badge.style.display = reportCount > 0 ? 'flex' : 'none';
+                document.getElementById('notificationTotalReports').textContent = reportCount;
+                document.getElementById('notificationProfileReports').textContent = profileReports;
+                document.getElementById('notificationPostReports').textContent = postReports;
+                renderNotificationItems(reports);
+            } catch (error) {
+                console.error('Notification bell error:', error);
+            }
+        }
+
+        async function viewPost(id) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/posts/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed to load post');
+                const post = await response.json();
+
+                const category = post.category || '';
+                const categoryLabel = getCategoryLabel(category);
+                const categoryClass = getCategoryClass(category);
+                const images = Array.isArray(post.imageUrls) ? post.imageUrls.filter(Boolean) : [];
+                const detail = (label, value) => `
+                    <div class="detail-item">
+                        <strong>${label}</strong>
+                        <span>${value}</span>
+                    </div>`;
+
+                const primaryImage = images.length
+                    ? `<img src="${getFullImageUrl(images[0])}" alt="${escapeHtml(post.petName || 'Pet')}" onerror="this.parentNode.innerHTML='<i class=&quot;fas fa-paw&quot; style=&quot;font-size:56px;color:#B88B4A;&quot;></i>'">`
+                    : '<i class="fas fa-paw" style="font-size:56px;color:#B88B4A;"></i>';
+
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="view-sheet">
+                        <div class="view-hero">
+                            <div class="view-photo">${primaryImage}</div>
+                            <div class="view-summary">
+                                <div class="view-title">
+                                    <h4>${escapeHtml(post.petName) || 'Unnamed Pet'}</h4>
+                                    <span class="view-pill view-pill-soft">${escapeHtml(post.status || 'Unknown')}</span>
+                                    ${categoryLabel ? `<span class="view-pill ${categoryClass}" style="position:static;">${categoryLabel}</span>` : ''}
+                                </div>
+                                <div class="view-highlight-grid">
+                                    <div class="view-highlight">
+                                        <div class="view-highlight-label">Posted By</div>
+                                        <div class="view-highlight-value">${escapeHtml(post.userName) || 'Anonymous'}</div>
+                                    </div>
+                                    <div class="view-highlight">
+                                        <div class="view-highlight-label">Case Type</div>
+                                        <div class="view-highlight-value">${escapeHtml(formatCaseType(post.caseType))}</div>
+                                    </div>
+                                    <div class="view-highlight">
+                                        <div class="view-highlight-label">Location</div>
+                                        <div class="view-highlight-value">${escapeHtml(post.location) || 'N/A'}</div>
+                                    </div>
+                                    <div class="view-highlight">
+                                        <div class="view-highlight-label">Resolved</div>
+                                        <div class="view-highlight-value">${escapeHtml(post.resolvedStatus || (post.isResolved ? 'Resolved' : 'Open'))}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="view-section">
+                            <h5>Pet Profile</h5>
+                            <div class="view-grid">
+                                ${detail('Pet Type', escapeHtml(post.petType) || 'Not specified')}
+                                ${detail('Gender', escapeHtml(post.gender) || 'Unknown')}
+                                ${detail('Age', escapeHtml(post.age) || 'Not specified')}
+                                ${detail('Weight', escapeHtml(post.weight) || 'Not specified')}
+                                ${detail('Reward', escapeHtml(post.reward) || 'None')}
+                                ${detail('Has Collar', post.hasCollar ? 'Yes' : 'No')}
+                                ${detail('Likes', String(post.likesCount || 0))}
+                            </div>
+                        </div>
+
+                        <div class="view-section">
+                            <h5>Case Details</h5>
+                            <div class="view-grid">
+                                ${detail('Event Date', escapeHtml(post.eventDate) || 'Not provided')}
+                                ${detail('Event Location', escapeHtml(post.eventLocation) || 'Not provided')}
+                                ${detail('Current Care', escapeHtml(formatCareStatus(post.currentCareStatus)))}
+                                ${detail('Coordinates', (post.latitude !== null && post.latitude !== undefined && post.longitude !== null && post.longitude !== undefined) ? `${post.latitude}, ${post.longitude}` : 'Not provided')}
+                                ${detail('Identifying Marks', escapeHtml(post.identifyingMarks) || 'None added')}
+                                ${detail('Temperament', escapeHtml(post.temperament) || 'Not provided')}
+                                ${detail('Health Condition', escapeHtml(post.healthCondition) || 'Not provided')}
+                            </div>
+                        </div>
+
+                        <div class="view-section">
+                            <h5>Contact</h5>
+                            <div class="view-grid">
+                                ${detail('Contact', escapeHtml(post.contactInfo) || escapeHtml(post.contact) || 'Not provided')}
+                                ${detail('Contact Preference', escapeHtml(formatContactPreference(post.contactPreference)))}
+                            </div>
+                        </div>
+
+                        <div class="view-section">
+                            <h5>Description</h5>
+                            <div class="view-description">${escapeHtml(post.description) || 'No description'}</div>
+                        </div>
+
+                        <div class="view-section">
+                            <h5>Pictures</h5>
+                            ${images.length ? `<div class="view-gallery">${images.map((imageUrl) => `<img src="${getFullImageUrl(imageUrl)}" alt="${escapeHtml(post.petName || 'Pet photo')}" onerror="this.style.display='none'">`).join('')}</div>` : '<div class="view-description">No images uploaded for this post.</div>'}
+                        </div>
+                    </div>
+                `;
+                openModal('viewPostModal');
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load post details', 'error');
+            }
+        }
+
+        async function showReportDetails(postId) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch('/api/admin/reports', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed');
+                const allReports = await response.json();
+                const postReports = allReports.filter((report) => report.postId === postId);
+
+                if (!postReports.length) {
+                    showToast('No reports found for this post', 'info');
+                    return;
+                }
+
+                let html = `
+                    <div style="font-family:Arial,sans-serif;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:2px solid #FF9800;padding-bottom:10px;">
+                            <h3 style="color:#FF9800;margin:0;"><i class="fas fa-flag"></i> Reports (${postReports.length})</h3>
+                            <button onclick="closeModal('reportModal')" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+                        </div>
+                        <div style="max-height:60vh;overflow-y:auto;">
+                `;
+
+                postReports.forEach((report, index) => {
+                    const reporterName = report.reporter?.username || report.reporterUid || 'Unknown User';
+                    const reportedName = report.reportedUser?.username || report.post?.userName || report.reportedUid || 'Unknown target';
+                    const caseInfo = report.post ? `${report.post.petName || 'Unnamed pet'} • ${report.post.status || 'Unknown'} • ${formatCaseType(report.post.caseType)}` : 'No linked case details';
+                    const reportDate = new Date(report.createdAt).toLocaleString();
+                    const reportId = report.reportId;
+
+                    let statusColor = '#f97316';
+                    let statusText = 'PENDING';
+                    if (report.status === 'reviewed') { statusColor = '#22c55e'; statusText = 'REVIEWED'; }
+                    if (report.status === 'dismissed') { statusColor = '#94a3b8'; statusText = 'DISMISSED'; }
+
+                    html += `
+                        <div style="background:#fef3e8;padding:12px;border-radius:12px;margin-bottom:12px;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                                <span style="font-weight:bold;">Report #${index + 1}</span>
+                                <span style="display:inline-block;background:${statusColor};color:white;padding:2px 8px;border-radius:12px;font-size:10px;">${statusText}</span>
+                            </div>
+                            <div><strong>Reporter:</strong> ${escapeHtml(reporterName)}</div>
+                            <div><strong>Reported:</strong> ${escapeHtml(reportedName)}</div>
+                            <div><strong>Case Info:</strong> ${escapeHtml(caseInfo)}</div>
+                            <div><strong>Reason:</strong> ${escapeHtml(report.reason)}</div>
+                            ${report.description ? `<div><strong>Description:</strong> ${escapeHtml(report.description)}</div>` : ''}
+                            <div><strong>Date:</strong> ${reportDate}</div>
+                            ${report.status === 'pending' ? `
+                                <div style="display:flex;gap:10px;margin-top:12px;">
+                                    <button onclick="updateReportStatus('${reportId}', 'reviewed', '${postId}')" style="flex:1;background:#22c55e;color:white;border:none;padding:8px;border-radius:8px;cursor:pointer;">Mark Reviewed</button>
+                                    <button onclick="updateReportStatus('${reportId}', 'dismissed', '${postId}')" style="flex:1;background:#94a3b8;color:white;border:none;padding:8px;border-radius:8px;cursor:pointer;">Dismiss</button>
+                                </div>
+                            ` : `
+                                <div style="margin-top:8px;padding:8px;background:#f7f7f7;border-radius:6px;text-align:center;color:#666;">
+                                    Notice already sent to reporter${report.status === 'reviewed' ? ' and reported account/post owner' : ''}.
+                                </div>
+                            `}
+                        </div>
+                    `;
+                });
+
+                html += `</div><button class="close-btn" onclick="closeModal('reportModal')">Close</button></div>`;
+                document.getElementById('reportModalContent').innerHTML = html;
+                openModal('reportModal');
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to load reports', 'error');
+            }
+        }
+
+        async function updateReportStatus(reportId, status, postId) {
+            try {
+                const token = localStorage.getItem('adminToken');
+                const response = await fetch(`/api/admin/reports/${reportId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status })
+                });
+                if (!response.ok) throw new Error('Failed');
+
+                showToast(
+                    status === 'reviewed'
+                        ? 'Report reviewed. Notice sent to the reporter and the reported post owner.'
+                        : 'Report dismissed. Notice sent to the reporter.',
+                    'success'
+                );
+                await loadPostsData();
+                if (postId) {
+                    await showReportDetails(postId);
+                } else {
+                    closeModal('reportModal');
+                }
+            } catch (error) {
+                console.error('Failed:', error);
+                showToast('Failed to update report', 'error');
+            }
+        }
+
         // Load posts on page load
-        document.addEventListener('DOMContentLoaded', loadPostsData);
+        document.addEventListener('DOMContentLoaded', function(){ loadPostsData(); loadNotificationBell(); });
         
         // Auto-refresh every 30 seconds
         setInterval(loadPostsData, 30000);
+        setInterval(loadNotificationBell, 30000);
     </script>
 </body>
 </html>
+
+

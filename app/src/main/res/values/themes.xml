@@ -46,6 +46,12 @@
         <!-- TextView colors -->
         <item name="android:textColorLink">#7A4F2B</item>
         <item name="android:textColorHighlight">#F5E6D3</item>
+
+        <!-- Force simple light popups across the app -->
+        <item name="alertDialogTheme">@style/Theme.PawSociety.Dialog</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.PawSociety.MaterialAlertDialog</item>
+        <item name="android:alertDialogTheme">@style/Theme.PawSociety.Dialog</item>
+        <item name="android:datePickerDialogTheme">@style/Theme.PawSociety.DatePickerDialog</item>
     </style>
 
     <!-- Custom EditText style -->
@@ -86,6 +92,32 @@
 
         <item name="android:windowMinWidthMajor">90%</item>
         <item name="android:windowMinWidthMinor">90%</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/Widget.PawSociety.DialogButton.Positive</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/Widget.PawSociety.DialogButton.Negative</item>
+        <item name="android:datePickerStyle">@style/Widget.PawSociety.DatePicker</item>
+    </style>
+
+    <style name="ThemeOverlay.PawSociety.MaterialAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="backgroundTint">@android:color/white</item>
+        <item name="colorSurface">@android:color/white</item>
+        <item name="colorOnSurface">#1F1F1F</item>
+        <item name="colorPrimary">#7A4F2B</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.PawSociety.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.PawSociety.DialogButton.Negative</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/TextAppearance.PawSociety.DialogTitle</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/TextAppearance.PawSociety.DialogBody</item>
+    </style>
+
+    <style name="Theme.PawSociety.DatePickerDialog" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:background">@android:color/white</item>
+        <item name="colorSurface">@android:color/white</item>
+        <item name="colorOnSurface">#1F1F1F</item>
+        <item name="colorPrimary">#7A4F2B</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="android:datePickerStyle">@style/Widget.PawSociety.DatePicker</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/Widget.PawSociety.DialogButton.Positive</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/Widget.PawSociety.DialogButton.Negative</item>
     </style>
 
     <!-- Dialog title style -->
@@ -93,6 +125,47 @@
         <item name="android:textColor">#000000</item>
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PawSociety.DialogTitle" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:textColor">#1F1F1F</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PawSociety.DialogBody" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">#4A4A4A</item>
+    </style>
+
+    <style name="Widget.PawSociety.DialogButton.Positive" parent="@android:style/Widget.Material.Button.Borderless">
+        <item name="android:textColor">#7A4F2B</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="Widget.PawSociety.DialogButton.Negative" parent="@android:style/Widget.Material.Button.Borderless">
+        <item name="android:textColor">#666666</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="Widget.PawSociety.DatePicker" parent="@android:style/Widget.Material.DatePicker">
+        <item name="android:calendarTextColor">#1F1F1F</item>
+        <item name="android:headerBackground">#7A4F2B</item>
+        <item name="android:dayOfWeekTextAppearance">@style/TextAppearance.PawSociety.DatePicker.DayOfWeek</item>
+        <item name="android:yearListItemTextAppearance">@style/TextAppearance.PawSociety.DatePicker.Day</item>
+    </style>
+
+    <style name="TextAppearance.PawSociety.DatePicker.DayOfWeek" parent="@android:style/TextAppearance.Material.Body2">
+        <item name="android:textColor">#7A4F2B</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PawSociety.DatePicker.Day" parent="@android:style/TextAppearance.Material.Body1">
+        <item name="android:textColor">#1F1F1F</item>
+    </style>
+
+    <style name="BottomMenuAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_in_up_menu</item>
+        <item name="android:windowExitAnimation">@anim/slide_out_down_menu</item>
     </style>
 
     <!-- ===== UCROP FULLSCREEN THEME ===== -->

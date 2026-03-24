@@ -11,6 +11,8 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Observer
 import androidx.viewpager2.widget.ViewPager2
 import com.example.pawsociety.adapters.RegistrationPagerAdapter
@@ -20,6 +22,8 @@ import com.example.pawsociety.viewmodels.RegistrationViewModel
 class RegisterWizardActivity : AppCompatActivity() {
 
     private lateinit var viewPager: ViewPager2
+    private lateinit var rootView: LinearLayout
+    private lateinit var headerContainer: View
     private lateinit var indicatorContainer: LinearLayout
     private lateinit var btnBack: ImageView
     private lateinit var tvStepTitle: TextView
@@ -84,11 +88,41 @@ class RegisterWizardActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
+        rootView = findViewById(R.id.register_wizard_root)
+        headerContainer = findViewById(R.id.register_header)
         viewPager = findViewById(R.id.view_pager)
         indicatorContainer = findViewById(R.id.indicator_container)
         btnBack = findViewById(R.id.btn_back)
         tvStepTitle = findViewById(R.id.tv_step_title)
         progressBar = findViewById(R.id.progress_bar)
+        applyTopInsets()
+    }
+
+    private fun applyTopInsets() {
+        val baseHeaderHeight = 56.dp
+        val baseIndicatorMarginTop = 6.dp
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { _, insets ->
+            val statusBarInset = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+            val headerTopPadding = (statusBarInset + 6.dp).coerceAtLeast(0)
+
+            headerContainer.layoutParams = headerContainer.layoutParams.apply {
+                height = baseHeaderHeight + statusBarInset + 8.dp
+            }
+            headerContainer.setPadding(
+                headerContainer.paddingLeft,
+                headerTopPadding,
+                headerContainer.paddingRight,
+                headerContainer.paddingBottom
+            )
+
+            (indicatorContainer.layoutParams as? LinearLayout.LayoutParams)?.let { params ->
+                params.topMargin = baseIndicatorMarginTop
+                indicatorContainer.layoutParams = params
+            }
+
+            insets
+        }
     }
 
     private fun setupViewPager() {

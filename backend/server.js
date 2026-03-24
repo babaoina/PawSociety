@@ -14,12 +14,12 @@ const petRoutes = require('./routes/pets');
 const favoriteRoutes = require('./routes/favorites');
 const uploadRoutes = require('./routes/upload');
 const notificationsRoutes = require('./routes/notifications');
-const highlightRoutes = require('./routes/highlights');
 const followRoutes = require('./routes/follow');
 const blockRoutes = require('./routes/blocks');
 const reportRoutes = require('./routes/reports');
 const settingsRoutes = require('./routes/settings');
 const publicSettingsRoutes = require('./routes/public-settings');
+const userSettingsRoutes = require('./routes/user-settings');
 
 // ===== WEB ADMIN ROUTES (NEW) =====
 const adminAuthRoutes = require('./routes/admin-auth');
@@ -39,6 +39,14 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 5000;
+
+// ===== FIREBASE CONFIGURATION =====
+// Set FIREBASE_API_KEY from environment or use the key from Firebase project
+process.env.FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyC0Nqi5hqfcg5vC8axwyzM8dvyjfXRihO0';
+process.env.FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'device-streaming-5f25c661';
+
+console.log(`🔐 Firebase API Key initialized: ${process.env.FIREBASE_API_KEY ? '✅ SET' : '❌ NOT SET'}`);
+console.log(`🔐 Firebase Project ID: ${process.env.FIREBASE_PROJECT_ID}`);
 
 app.set('io', io);
 
@@ -133,6 +141,9 @@ app.use(express.static(path.join(__dirname, 'admin-pawsociety')));
 // ===== SERVE IMAGES =====
 app.use('/api/uploads', express.static('uploads'));
 
+// ===== SERVE DIGITAL ASSET LINKS FOR APP LINK VERIFICATION =====
+app.use('/.well-known', express.static('.well-known'));
+
 // ===== ADMIN ROUTES (for web admin) =====
 app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/admin/users', adminUserRoutes);
@@ -150,10 +161,11 @@ app.use('/api/pets', petRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationsRoutes);
-app.use('/api/users', highlightRoutes);
 app.use('/api/follow', followRoutes);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/settings', userSettingsRoutes);
+app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/admin/settings', settingsRoutes);
 
 // ===== WEB ADMIN HTML ROUTES =====

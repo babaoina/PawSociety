@@ -11,6 +11,7 @@ import com.example.pawsociety.api.ApiPost
 import com.example.pawsociety.api.ApiUser
 import com.example.pawsociety.data.FavoritesManager
 import com.example.pawsociety.data.repository.*
+import com.example.pawsociety.util.PostFilteringUtil
 import com.example.pawsociety.util.SessionManager
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -271,7 +272,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 val category = _currentCategory.value ?: "All"
 
                 val result = if (forceRefresh) {
-                    postRepository.getPosts(limit = 100)
+                    postRepository.getPosts(limit = 100, viewerUid = _currentUser.value?.firebaseUid)
                 } else {
                     offlinePostRepository.loadPosts(false)
                 }
@@ -325,7 +326,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 Log.d("HomeViewModel", "🔄 Force refreshing all posts from server")
 
-                val result = postRepository.getPosts(limit = 100)
+                val result = postRepository.getPosts(limit = 100, viewerUid = _currentUser.value?.firebaseUid)
 
                 if (result.isSuccess) {
                     allPosts = result.getOrNull()!!
@@ -372,7 +373,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 Log.d("HomeViewModel", "🔄 FORCE REFRESHING for category: $category")
 
-                val result = postRepository.getPosts(limit = 100)
+                val result = postRepository.getPosts(limit = 100, viewerUid = _currentUser.value?.firebaseUid)
 
                 if (result.isSuccess) {
                     allPosts = result.getOrNull()!!
@@ -474,23 +475,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val currentUser = _currentUser.value ?: return@launch
 
+            // 🔥 FIXED: Only update like status map, NOT posts list
+            // This prevents triggering full view recreation in HomeActivity
             val newLikeStatus = !currentStatus
             val currentMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
             currentMap[post.postId] = newLikeStatus
             _likeStatus.value = currentMap
 
-            val currentPosts = _posts.value?.toMutableList() ?: return@launch
-            val index = currentPosts.indexOfFirst { it.postId == post.postId }
-            if (index >= 0) {
-                val updatedPost = if (newLikeStatus) {
-                    currentPosts[index].copy(likesCount = currentPosts[index].likesCount + 1)
-                } else {
-                    currentPosts[index].copy(likesCount = max(0, currentPosts[index].likesCount - 1))
-                }
-                currentPosts[index] = updatedPost
-                _posts.value = currentPosts
-            }
+            Log.d("LikeDebug", "Toggled like optimistically for ${post.postId}: $newLikeStatus")
 
+            // Call API to sync with server
             val result = postRepository.likePost(post.postId, currentUser.firebaseUid)
 
             if (result.isSuccess) {
@@ -498,27 +492,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 val serverLiked = response.isLiked ?: response.liked ?: newLikeStatus
                 val serverCount = response.likesCount
 
+                // 🔥 FIXED: Only update like status, NEVER touch posts list
+                // Updating posts list causes full feed refresh
                 val finalMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
                 finalMap[post.postId] = serverLiked
                 _likeStatus.value = finalMap
 
-                val finalPosts = _posts.value?.toMutableList() ?: return@launch
-                val finalIndex = finalPosts.indexOfFirst { it.postId == post.postId }
-                if (finalIndex >= 0) {
-                    finalPosts[finalIndex] = finalPosts[finalIndex].copy(likesCount = serverCount)
-                    _posts.value = finalPosts
-                }
+                Log.d("LikeDebug", "✅ Like synced for ${post.postId}: liked=$serverLiked, count=$serverCount")
             } else {
+                // Revert on error
                 val revertMap = _likeStatus.value?.toMutableMap() ?: mutableMapOf()
                 revertMap[post.postId] = currentStatus
                 _likeStatus.value = revertMap
-
-                val revertPosts = _posts.value?.toMutableList() ?: return@launch
-                val revertIndex = revertPosts.indexOfFirst { it.postId == post.postId }
-                if (revertIndex >= 0) {
-                    revertPosts[revertIndex] = post
-                    _posts.value = revertPosts
-                }
+                Log.e("LikeDebug", "Failed to like post: ${result.exceptionOrNull()?.message}")
             }
         }
     }

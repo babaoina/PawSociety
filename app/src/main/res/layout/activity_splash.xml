@@ -2,26 +2,54 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#8B5E3C"
-    android:gravity="center"
-    android:orientation="vertical">
+    android:background="#FFFFFF"
+    android:orientation="vertical"
+    android:gravity="center_horizontal">
 
-    <!-- App Name -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="PawSociety"
-        android:textColor="#FFFFFF"
-        android:textSize="48sp"
-        android:textStyle="bold" />
+    <!-- Top Section with App Name and Tagline -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="48dp"
+        android:layout_weight="0.4"
+        android:gravity="center"
+        android:orientation="vertical">
 
-    <!-- Tagline -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Because Every Pet Deserves a Home"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp" />
+        <!-- App Name -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PawSociety"
+            android:textColor="#8B5E3C"
+            android:textSize="48sp"
+            android:textStyle="bold" />
+
+        <!-- Tagline -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Because Every Pet Deserves a Home"
+            android:textColor="#8B5E3C"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+    <!-- Bottom Spacer with Image -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.2"
+        android:gravity="bottom|center_horizontal"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="498dp"
+            android:layout_height="227dp"
+            android:layout_gravity="center_horizontal"
+            android:contentDescription="Splash Image"
+            android:src="@drawable/splash" />
+
+    </LinearLayout>
 
 </LinearLayout>

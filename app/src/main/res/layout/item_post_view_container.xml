@@ -536,7 +536,7 @@
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
 
-                    <!-- Save -->
+                    <!-- Save/Unsave Button -->
                     <LinearLayout
                         android:id="@+id/btn_favorite"
                         android:layout_width="wrap_content"
@@ -555,6 +555,7 @@
                             android:tint="#7A4F2B" />
 
                         <TextView
+                            android:id="@+id/tv_save_label"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Save"

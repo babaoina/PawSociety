@@ -12,9 +12,11 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
@@ -22,9 +24,9 @@ import com.example.pawsociety.adapters.ImageCarouselAdapter
 import com.example.pawsociety.data.repository.AuthRepository
 import com.example.pawsociety.util.FCMTokenManager
 import com.example.pawsociety.util.FirebaseAuthHelper
+import com.example.pawsociety.util.KeyboardAwareScrollHelper
 import com.example.pawsociety.util.SessionManager
 import com.example.pawsociety.util.SocketManager
-import com.example.pawsociety.utils.FadePageTransformer
 // ✅ ADD THESE IMPORTS
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -43,17 +45,18 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var createAccountButton: TextView
     private lateinit var forgotPassword: TextView
     private lateinit var eyeIcon: ImageView
-    private lateinit var emailError: TextView
-    private lateinit var passwordError: TextView
+    private var emailError: TextView? = null  // Made nullable - may not exist in layout
+    private var passwordError: TextView? = null  // Made nullable - may not exist in layout
 
     // Social login containers
     private lateinit var googleLoginContainer: LinearLayout
     private lateinit var emailLoginContainer: LinearLayout
 
     // Hidden form container
-    private lateinit var emailFormContainer: LinearLayout
+    private lateinit var emailFormContainer: ScrollView
     private lateinit var mainContainer: LinearLayout
     private lateinit var btnBackFromEmail: TextView
+    private var scrollView: ScrollView? = null
 
     // Carousel
     private lateinit var imageCarousel: ViewPager2
@@ -100,8 +103,8 @@ class LoginActivity : AppCompatActivity() {
         createAccountButton = findViewById(R.id.btn_create_account)
         forgotPassword = findViewById(R.id.forgot_password)
         eyeIcon = findViewById(R.id.eye_icon)
-        emailError = findViewById(R.id.email_error)
-        passwordError = findViewById(R.id.password_error)
+        emailError = findViewById(R.id.email_error)  // May be null if not in layout
+        passwordError = findViewById(R.id.password_error)  // May be null if not in layout
 
         googleLoginContainer = findViewById(R.id.btn_continue_google)
         emailLoginContainer = findViewById(R.id.btn_continue_email)
@@ -109,9 +112,12 @@ class LoginActivity : AppCompatActivity() {
         emailFormContainer = findViewById(R.id.email_form_container)
         mainContainer = findViewById(R.id.main_container)
         btnBackFromEmail = findViewById(R.id.btn_back_from_email)
+        scrollView = emailFormContainer
 
         imageCarousel = findViewById(R.id.image_carousel)
         indicatorContainer = findViewById(R.id.indicator_container)
+
+        KeyboardAwareScrollHelper.attach(emailInput, passwordInput)
     }
 
     private fun setupGoogleSignIn() {
@@ -138,12 +144,12 @@ class LoginActivity : AppCompatActivity() {
                 R.drawable.fish2,
                 R.drawable.bird1,
                 R.drawable.bird2
-            ).shuffled()
+            ).distinct().shuffled()
         )
 
         carouselAdapter = ImageCarouselAdapter(imageList)
         imageCarousel.adapter = carouselAdapter
-        imageCarousel.setPageTransformer(FadePageTransformer())
+        imageCarousel.offscreenPageLimit = 1
 
         setupIndicators()
 
@@ -219,12 +225,8 @@ class LoginActivity : AppCompatActivity() {
         }
 
         forgotPassword.setOnClickListener {
-            val email = emailInput.text.toString().trim()
-            if (email.isEmpty()) {
-                Toast.makeText(this, "Please enter your email first", Toast.LENGTH_SHORT).show()
-            } else {
-                sendPasswordResetEmail(email)
-            }
+            startActivity(Intent(this, ForgotPasswordActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
 
         googleLoginContainer.setOnClickListener {
@@ -257,7 +259,8 @@ class LoginActivity : AppCompatActivity() {
                 val account = task.getResult(ApiException::class.java)!!
                 firebaseAuthWithGoogle(account.idToken!!, account)
             } catch (e: ApiException) {
-                Toast.makeText(this, "Google sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Google sign-in was not completed.", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
@@ -270,7 +273,11 @@ class LoginActivity : AppCompatActivity() {
                 val authResult = FirebaseAuthHelper.signInWithCredential(credential)
 
                 if (authResult.isFailure) {
-                    Toast.makeText(this@LoginActivity, "Authentication failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "We couldn't sign you in with Google.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@launch
                 }
 
@@ -289,18 +296,28 @@ class LoginActivity : AppCompatActivity() {
                     if (apiUser.fullName.isNotEmpty() &&
                         apiUser.username.isNotEmpty() &&
                         !apiUser.username.contains("temp") &&
-                        apiUser.phone?.isNotEmpty() == true) {
+                        apiUser.phone?.isNotEmpty() == true
+                    ) {
                         sessionManager.saveUserSession(apiUser)
                         navigateToHome()
                     } else {
                         goToRegistrationWizardWithGoogleData(account)
                     }
                 } else {
-                    goToRegistrationWizardWithGoogleData(account)
+                    Toast.makeText(
+                        this@LoginActivity,
+                        backendResult.exceptionOrNull()?.message ?: "We couldn't set up your account right now.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
 
             } catch (e: Exception) {
-                Toast.makeText(this@LoginActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this@LoginActivity,
+                    "Something went wrong while signing in with Google.",
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
             }
         }
     }
@@ -333,10 +350,12 @@ class LoginActivity : AppCompatActivity() {
             val cursorPosition = passwordInput.selectionStart
 
             if (isPasswordVisible) {
-                passwordInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                passwordInput.inputType =
+                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 eyeIcon.setImageResource(R.drawable.ic_eye_closed)
             } else {
-                passwordInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                passwordInput.inputType =
+                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
                 eyeIcon.setImageResource(R.drawable.ic_eye_open)
             }
 
@@ -348,20 +367,36 @@ class LoginActivity : AppCompatActivity() {
 
     private fun setupValidation() {
         emailInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int
+            ) {
+            }
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                emailInput.background = ContextCompat.getDrawable(this@LoginActivity, R.drawable.input_oval)
-                emailError.visibility = View.GONE
+                emailInput.background =
+                    ContextCompat.getDrawable(this@LoginActivity, R.drawable.input_oval)
+                emailError?.visibility = View.GONE  // Safe null call
             }
         })
 
         passwordInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int
+            ) {
+            }
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                passwordInput.background = ContextCompat.getDrawable(this@LoginActivity, R.drawable.input_oval)
-                passwordError.visibility = View.GONE
+                passwordInput.background =
+                    ContextCompat.getDrawable(this@LoginActivity, R.drawable.input_oval)
+                passwordError?.visibility = View.GONE  // Safe null call
             }
         })
     }
@@ -371,20 +406,27 @@ class LoginActivity : AppCompatActivity() {
 
         if (email.isEmpty()) {
             emailInput.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
-            emailError.text = "Email is required"
-            emailError.visibility = View.VISIBLE
+            emailError?.apply {
+                text = "Email is required"
+                visibility = View.VISIBLE
+            }
             isValid = false
         } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             emailInput.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
-            emailError.text = "Invalid email address"
-            emailError.visibility = View.VISIBLE
+            emailError?.apply {
+                text = "Invalid email address"
+                visibility = View.VISIBLE
+            }
             isValid = false
         }
 
         if (password.isEmpty()) {
-            passwordInput.background = ContextCompat.getDrawable(this, R.drawable.input_oval_error)
-            passwordError.text = "Password is required"
-            passwordError.visibility = View.VISIBLE
+            passwordInput.background =
+                ContextCompat.getDrawable(this, R.drawable.input_oval_error)
+            passwordError?.apply {
+                text = "Password is required"
+                visibility = View.VISIBLE
+            }
             isValid = false
         }
 
@@ -397,71 +439,114 @@ class LoginActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
+                Log.d("LoginActivity", "🔐 Starting email login for: $email")
+
                 val firebaseResult = FirebaseAuthHelper.loginWithEmail(email, password)
 
                 if (firebaseResult.isFailure) {
                     val error = firebaseResult.exceptionOrNull()?.message ?: "Login failed"
+                    Log.e("LoginActivity", "❌ Firebase login failed: $error")
                     showError(getFirebaseAuthErrorMessage(error))
                     resetLoginButton()
                     return@launch
                 }
 
-                val firebaseUser = firebaseResult.getOrNull()!!
+                val firebaseUser = firebaseResult.getOrNull()
+                if (firebaseUser == null) {
+                    Log.e("LoginActivity", "❌ Firebase user is null after successful login")
+                    showError("Login failed: Firebase user is null")
+                    resetLoginButton()
+                    return@launch
+                }
+
+                Log.d("LoginActivity", "✅ Firebase login successful. UID: ${firebaseUser.uid}")
 
                 val backendResult = authRepository.firebaseLogin(
                     firebaseUid = firebaseUser.uid,
                     email = firebaseUser.email ?: email
                 )
 
-                val apiUser = if (backendResult.isSuccess) {
-                    backendResult.getOrNull()!!
-                } else {
-                    com.example.pawsociety.api.ApiUser(
-                        firebaseUid = firebaseUser.uid,
-                        email = firebaseUser.email ?: email,
-                        username = email.split("@").first(),
-                        fullName = email.split("@").first()
-                    )
+                Log.d(
+                    "LoginActivity",
+                    "📡 Backend login result: ${if (backendResult.isSuccess) "SUCCESS" else "FAILED"}"
+                )
+
+                if (backendResult.isFailure) {
+                    val backendMessage = backendResult.exceptionOrNull()?.message
+                        ?: "We couldn't load your account right now."
+                    Log.e("LoginActivity", "Backend login failed: $backendMessage")
+                    FirebaseAuthHelper.signOut()
+                    showError(backendMessage)
+                    resetLoginButton()
+                    return@launch
                 }
 
-                sessionManager.saveUserSession(apiUser)
+                val apiUser = backendResult.getOrNull()
+                if (apiUser == null) {
+                    Log.e("LoginActivity", "Backend returned success but user is null")
+                    FirebaseAuthHelper.signOut()
+                    showError("We couldn't load your account right now.")
+                    resetLoginButton()
+                    return@launch
+                }
 
-                SocketManager.connect()
-                SocketManager.joinUserRoom(apiUser.firebaseUid)
-                FCMTokenManager.initialize(apiUser.firebaseUid)
+                    Log.d("LoginActivity", "💾 Saving user session for: ${apiUser.username}")
+                    sessionManager.saveUserSession(apiUser)
 
-                Toast.makeText(this@LoginActivity, "Welcome back, ${apiUser.username}!", Toast.LENGTH_SHORT).show()
-                navigateToHome()
+                    // 🔥 SEND EMAIL VERIFICATION after successful login
+                    sendEmailVerification(firebaseUser.uid, firebaseUser.email ?: "")
 
-            } catch (e: Exception) {
-                showError(e.message ?: "An unexpected error occurred")
-            } finally {
-                resetLoginButton()
+                    // Connect to Socket.io with error handling
+                    try {
+                        Log.d("LoginActivity", "🔌 Connecting to Socket.io")
+                        SocketManager.connect()
+
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                            try {
+                                SocketManager.joinUserRoom(apiUser.firebaseUid)
+                            } catch (e: Exception) {
+                                Log.e("LoginActivity", "❌ Failed to join user room: ${e.message}")
+                            }
+                        }, 500)
+                    } catch (e: Exception) {
+                        Log.e("LoginActivity", "❌ Socket.io connection failed: ${e.message}")
+                        e.printStackTrace()
+                        // Continue anyway, socket is not critical
+                    }
+
+                    // Initialize FCM with error handling
+                    try {
+                        Log.d("LoginActivity", "📲 Initializing FCM")
+                        FCMTokenManager.initialize(apiUser.firebaseUid)
+                    } catch (e: Exception) {
+                        Log.e("LoginActivity", "❌ FCM initialization failed: ${e.message}")
+                        e.printStackTrace()
+                        // Continue anyway, FCM is not critical
+                    }
+
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "Welcome, ${apiUser.username}!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    Log.d("LoginActivity", "✅ Login successful, navigating to Home")
+                    navigateToHome()
+
+                } catch (e: Exception) {
+                    Log.e("LoginActivity", "❌ Unexpected error during login", e)
+                    showError(e.message ?: "An unexpected error occurred")
+                } finally {
+                    resetLoginButton()
+                }
             }
         }
-    }
 
-    private fun resetLoginButton() {
-        loginButton.isEnabled = true
-        loginButton.text = "Log In"
-    }
-
-    private fun sendPasswordResetEmail(email: String) {
-        lifecycleScope.launch {
-            val result = FirebaseAuthHelper.sendPasswordResetEmail(email)
-
-            if (result.isSuccess) {
-                Toast.makeText(
-                    this@LoginActivity,
-                    "Password reset link sent to $email",
-                    Toast.LENGTH_LONG
-                ).show()
-            } else {
-                val error = result.exceptionOrNull()?.message ?: "Failed to send reset email"
-                Toast.makeText(this@LoginActivity, error, Toast.LENGTH_SHORT).show()
-            }
+        private fun resetLoginButton() {
+            loginButton.isEnabled = true
+            loginButton.text = "Log In"
         }
-    }
+
+
 
     private fun getFirebaseAuthErrorMessage(firebaseError: String): String {
         return when {
@@ -471,6 +556,86 @@ class LoginActivity : AppCompatActivity() {
             firebaseError.contains("ERROR_USER_DISABLED") -> "This account has been disabled"
             firebaseError.contains("ERROR_TOO_MANY_REQUESTS") -> "Too many failed attempts. Please try again later."
             else -> firebaseError
+        }
+    }
+
+    // 🔥 NEW: Send email verification after login
+    private fun sendEmailVerification(firebaseUid: String, email: String) {
+        lifecycleScope.launch {
+            try {
+                Log.d("LoginActivity", "📧 Sending email verification to: $email")
+                
+                val result = FirebaseAuthHelper.sendEmailVerification()
+                
+                if (result.isSuccess) {
+                    Log.d("LoginActivity", "✅ Email verification sent successfully")
+                    
+                    // Show verification dialog
+                    showEmailVerificationDialog(email)
+                } else {
+                    Log.e("LoginActivity", "❌ Failed to send email verification: ${result.exceptionOrNull()?.message}")
+                    // Don't block login if email fails, just log it
+                }
+            } catch (e: Exception) {
+                Log.e("LoginActivity", "❌ Error sending verification email: ${e.message}", e)
+            }
+        }
+    }
+
+    // 🔥 NEW: Show email verification dialog
+    private fun showEmailVerificationDialog(email: String) {
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
+            .setTitle("Verify Your Email")
+            .setMessage("We've sent a verification link to $email. Please check your email and click the link to verify your account.")
+            .setPositiveButton("I've Verified My Email") { _, _ ->
+                checkEmailVerification()
+            }
+            .setNegativeButton("Resend Email") { _, _ ->
+                resendEmailVerification()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    // 🔥 NEW: Check if email is verified
+    private fun checkEmailVerification() {
+        lifecycleScope.launch {
+            try {
+                Log.d("LoginActivity", "🔍 Checking email verification status...")
+                
+                val isVerified = FirebaseAuthHelper.isEmailVerified()
+                
+                if (isVerified) {
+                    Log.d("LoginActivity", "✅ Email verified!")
+                    Toast.makeText(this@LoginActivity, "Email verified successfully!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.w("LoginActivity", "⚠️ Email not yet verified")
+                    Toast.makeText(this@LoginActivity, "Please verify your email", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("LoginActivity", "Error checking verification: ${e.message}")
+            }
+        }
+    }
+
+    // 🔥 NEW: Resend verification email
+    private fun resendEmailVerification() {
+        lifecycleScope.launch {
+            try {
+                Log.d("LoginActivity", "📧 Resending verification email...")
+                
+                val result = FirebaseAuthHelper.sendEmailVerification()
+                
+                if (result.isSuccess) {
+                    Log.d("LoginActivity", "✅ Verification email resent")
+                    Toast.makeText(this@LoginActivity, "Verification email resent! Check your inbox.", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.e("LoginActivity", "❌ Failed to resend: ${result.exceptionOrNull()?.message}")
+                    Toast.makeText(this@LoginActivity, "Failed to resend verification email", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("LoginActivity", "Error resending: ${e.message}")
+            }
         }
     }
 

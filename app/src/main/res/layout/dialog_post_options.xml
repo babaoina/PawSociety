@@ -100,34 +100,6 @@
         android:background="#F0F0F0"
         android:layout_marginVertical="8dp" />
 
-    <!-- Why you're seeing this post - using information.png -->
-    <LinearLayout
-        android:id="@+id/option_why_seeing"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/information"
-            android:tint="#000000" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Why you're seeing this post"
-            android:textColor="#000000"
-            android:textSize="16sp"
-            android:layout_marginStart="12dp" />
-
-    </LinearLayout>
-
     <!-- Hide Option - using ic_eye_closed.png -->
     <LinearLayout
         android:id="@+id/option_hide"

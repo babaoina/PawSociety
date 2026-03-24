@@ -106,7 +106,7 @@ class Step4PhotoFragment : Fragment() {
 
             viewModel.registrationComplete.observe(viewLifecycleOwner) { complete ->
                 if (complete) {
-                    Toast.makeText(requireContext(), "Registration complete!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Your account is ready.", Toast.LENGTH_SHORT).show()
                     (activity as? RegisterWizardActivity)?.finishRegistration()
                 }
             }
@@ -119,7 +119,7 @@ class Step4PhotoFragment : Fragment() {
 
             viewModel.registrationComplete.observe(viewLifecycleOwner) { complete ->
                 if (complete) {
-                    Toast.makeText(requireContext(), "Registration complete!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Your account is ready.", Toast.LENGTH_SHORT).show()
                     (activity as? RegisterWizardActivity)?.finishRegistration()
                 }
             }
@@ -129,7 +129,7 @@ class Step4PhotoFragment : Fragment() {
     private fun showImagePickerDialog() {
         val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
 
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.Theme_PawSociety_Dialog)
             .setTitle("Add Profile Photo")
             .setItems(options) { _, which ->
                 when (which) {
@@ -142,6 +142,13 @@ class Step4PhotoFragment : Fragment() {
     }
 
     private fun checkCameraPermissionAndOpen() {
+        // Check if device has camera hardware
+        val hasCamera = requireContext().packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY)
+        if (!hasCamera) {
+            Toast.makeText(requireContext(), "This device doesn't have a camera", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         if (androidx.core.content.ContextCompat.checkSelfPermission(
                 requireContext(),
                 android.Manifest.permission.CAMERA
@@ -165,17 +172,32 @@ class Step4PhotoFragment : Fragment() {
 
     private fun openCamera() {
         try {
+            // Check if fragment is still attached
+            if (!isAdded) {
+                Toast.makeText(context ?: return, "Fragment not ready", Toast.LENGTH_SHORT).show()
+                return
+            }
+
             val photoFile = createImageFile()
-            val uri = FileProvider.getUriForFile(
-                requireContext(),
-                "${requireContext().packageName}.fileprovider",
-                photoFile
-            )
+            val context = requireContext()
+            val authority = "${context.packageName}.fileprovider"
+            
+            val uri = try {
+                FileProvider.getUriForFile(context, authority, photoFile)
+            } catch (e: IllegalArgumentException) {
+                e.printStackTrace()
+                Toast.makeText(context, "FileProvider authority mismatch: $authority", Toast.LENGTH_LONG).show()
+                return
+            }
+            
             selectedImageUri = uri
             takePictureLauncher.launch(uri)
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+            Toast.makeText(context ?: return, "Camera permission denied: ${e.message}", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(requireContext(), "Failed to open camera: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context ?: return, "Failed to open camera: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 

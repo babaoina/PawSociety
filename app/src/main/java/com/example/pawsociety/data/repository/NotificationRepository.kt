@@ -130,4 +130,22 @@ class NotificationRepository {
             Result.failure(e)
         }
     }
+
+    /**
+     * Clear all notifications for a user
+     */
+    suspend fun clearAllNotifications(userId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.clearAllNotifications(userId)
+
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorMsg = response.errorBody()?.string() ?: "Failed to clear notifications"
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

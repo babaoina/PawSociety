@@ -16,6 +16,7 @@ import com.example.pawsociety.api.ApiConversation
 import com.example.pawsociety.api.ApiUser
 import java.text.SimpleDateFormat
 import java.util.*
+import android.widget.LinearLayout
 
 // Interface for long click listener
 interface OnItemLongClickListener {
@@ -58,6 +59,7 @@ class InboxAdapter(
         val redPing: View = itemView.findViewById(R.id.red_ping)
 
         // Request tab buttons
+        val buttonContainer: LinearLayout = itemView.findViewById(R.id.button_container)
         val btnAccept: Button = itemView.findViewById(R.id.btn_accept)
         val btnReject: Button = itemView.findViewById(R.id.btn_reject)
         val requestBadge: TextView = itemView.findViewById(R.id.request_badge)
@@ -103,6 +105,7 @@ class InboxAdapter(
         // Handle different states based on tab type
         if (isRequestTab) {
             // REQUEST TAB - Show accept/reject buttons
+            holder.buttonContainer.visibility = View.VISIBLE  // 🔥 SHOW BUTTON CONTAINER
             holder.btnAccept.visibility = View.VISIBLE
             holder.btnReject.visibility = View.VISIBLE
             holder.redPing.visibility = View.GONE
@@ -149,6 +152,7 @@ class InboxAdapter(
 
         } else {
             // MESSAGES TAB - Hide accept/reject buttons, show message details
+            holder.buttonContainer.visibility = View.GONE  // 🔥 HIDE BUTTON CONTAINER
             holder.btnAccept.visibility = View.GONE
             holder.btnReject.visibility = View.GONE
             holder.requestBadge.visibility = View.GONE

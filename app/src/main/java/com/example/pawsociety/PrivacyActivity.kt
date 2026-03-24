@@ -1,25 +1,30 @@
 package com.example.pawsociety
 
+import android.content.Intent
 import android.os.Bundle
-import android.view.View
-import android.widget.*
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import androidx.lifecycle.lifecycleScope
+import com.example.pawsociety.data.repository.PrivacyRepository
 import com.example.pawsociety.util.SessionManager
-import android.content.Intent
-import androidx.appcompat.app.AlertDialog
+import kotlinx.coroutines.launch
+
 class PrivacyActivity : AppCompatActivity() {
 
     private lateinit var sessionManager: SessionManager
     private lateinit var btnBack: ImageView
     private lateinit var switchPrivateAccount: SwitchCompat
-    private lateinit var switchShowActivity: SwitchCompat
-    private lateinit var switchTagApproval: SwitchCompat
-    private lateinit var spinnerDataSharing: Spinner
-    private lateinit var btnSave: Button
     private lateinit var btnPrivacyPolicy: LinearLayout
     private lateinit var btnTermsOfService: LinearLayout
     private lateinit var btnDataDownload: LinearLayout
+    private lateinit var btnSave: Button
+
+    private val privacyRepository = PrivacyRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,32 +40,15 @@ class PrivacyActivity : AppCompatActivity() {
     private fun initViews() {
         btnBack = findViewById(R.id.btn_back)
         switchPrivateAccount = findViewById(R.id.switch_private_account)
-        switchShowActivity = findViewById(R.id.switch_show_activity)
-        switchTagApproval = findViewById(R.id.switch_tag_approval)
-        spinnerDataSharing = findViewById(R.id.spinner_data_sharing)
-        btnSave = findViewById(R.id.btn_save)
         btnPrivacyPolicy = findViewById(R.id.btn_privacy_policy)
         btnTermsOfService = findViewById(R.id.btn_terms_of_service)
         btnDataDownload = findViewById(R.id.btn_data_download)
-
-        // Setup spinner
-        ArrayAdapter.createFromResource(
-            this,
-            R.array.data_sharing_options,
-            android.R.layout.simple_spinner_item
-        ).also { adapter ->
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            spinnerDataSharing.adapter = adapter
-        }
+        btnSave = findViewById(R.id.btn_save)
     }
 
     private fun setupClickListeners() {
         btnBack.setOnClickListener {
             finish()
-        }
-
-        btnSave.setOnClickListener {
-            savePrivacySettings()
         }
 
         btnPrivacyPolicy.setOnClickListener {
@@ -74,28 +62,74 @@ class PrivacyActivity : AppCompatActivity() {
         btnDataDownload.setOnClickListener {
             requestDataDownload()
         }
+
+        btnSave.setOnClickListener {
+            savePrivacySettings()
+        }
     }
 
     private fun loadPrivacySettings() {
+        val currentUser = sessionManager.getCurrentUser()
+        if (currentUser == null) {
+            loadLocalPrivacyFallback()
+            return
+        }
+
+        lifecycleScope.launch {
+            val result = privacyRepository.getPrivateAccountSetting(currentUser.firebaseUid)
+            if (result.isSuccess) {
+                val isPrivate = result.getOrNull() ?: false
+                switchPrivateAccount.isChecked = isPrivate
+                savePrivacySettingLocally(isPrivate)
+            } else {
+                loadLocalPrivacyFallback()
+            }
+        }
+    }
+
+    private fun loadLocalPrivacyFallback() {
         val prefs = getSharedPreferences("privacy_settings", MODE_PRIVATE)
         switchPrivateAccount.isChecked = prefs.getBoolean("private_account", false)
-        switchShowActivity.isChecked = prefs.getBoolean("show_activity", true)
-        switchTagApproval.isChecked = prefs.getBoolean("tag_approval", true)
-        spinnerDataSharing.setSelection(prefs.getInt("data_sharing", 0))
+    }
+
+    private fun savePrivacySettingLocally(isPrivate: Boolean) {
+        val prefs = getSharedPreferences("privacy_settings", MODE_PRIVATE)
+        prefs.edit().putBoolean("private_account", isPrivate).apply()
     }
 
     private fun savePrivacySettings() {
-        val prefs = getSharedPreferences("privacy_settings", MODE_PRIVATE)
-        prefs.edit().apply {
-            putBoolean("private_account", switchPrivateAccount.isChecked)
-            putBoolean("show_activity", switchShowActivity.isChecked)
-            putBoolean("tag_approval", switchTagApproval.isChecked)
-            putInt("data_sharing", spinnerDataSharing.selectedItemPosition)
-            apply()
+        val currentUser = sessionManager.getCurrentUser()
+        val isPrivate = switchPrivateAccount.isChecked
+
+        savePrivacySettingLocally(isPrivate)
+
+        if (currentUser == null) {
+            Toast.makeText(this, "Privacy saved on this device", Toast.LENGTH_SHORT).show()
+            finish()
+            return
         }
 
-        Toast.makeText(this, "Privacy settings saved", Toast.LENGTH_SHORT).show()
-        finish()
+        btnSave.isEnabled = false
+
+        lifecycleScope.launch {
+            val result = privacyRepository.updatePrivateAccountSetting(currentUser.firebaseUid, isPrivate)
+            btnSave.isEnabled = true
+
+            if (result.isSuccess) {
+                Toast.makeText(
+                    this@PrivacyActivity,
+                    if (isPrivate) "Account is now private" else "Account is now public",
+                    Toast.LENGTH_SHORT
+                ).show()
+                finish()
+            } else {
+                Toast.makeText(
+                    this@PrivacyActivity,
+                    "Saved locally, but failed to sync to server",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 
     private fun showPrivacyPolicy() {
@@ -114,7 +148,6 @@ class PrivacyActivity : AppCompatActivity() {
 
     private fun requestDataDownload() {
         AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
-            .setTitle("Title")
             .setTitle("Download Your Data")
             .setMessage("We'll prepare a file with all your data and send it to your email when ready.")
             .setPositiveButton("Request") { _, _ ->

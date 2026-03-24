@@ -43,17 +43,19 @@ router.get('/:firebaseUid', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { userUid, postId } = req.body;
+    // Accept both userUid and firebaseUid from client
+    const { userUid, postId, firebaseUid } = req.body;
+    const actualUserUid = userUid || firebaseUid;
 
-    if (!userUid || !postId) {
+    if (!actualUserUid || !postId) {
       return res.status(400).json({
         success: false,
-        message: 'userUid and postId are required'
+        message: 'userUid (or firebaseUid) and postId are required'
       });
     }
 
     // Check if already favorited
-    const existing = await Favorite.findOne({ userUid, postId });
+    const existing = await Favorite.findOne({ userUid: actualUserUid, postId });
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -70,7 +72,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const favorite = new Favorite({ userUid, postId });
+    const favorite = new Favorite({ userUid: actualUserUid, postId });
     await favorite.save();
 
     res.status(201).json({

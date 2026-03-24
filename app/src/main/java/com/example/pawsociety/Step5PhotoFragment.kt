@@ -150,7 +150,7 @@ class Step5PhotoFragment : Fragment() {
                     }
                 }
             } else {
-                android.app.AlertDialog.Builder(requireContext())
+                android.app.AlertDialog.Builder(requireContext(), R.style.Theme_PawSociety_Dialog)
                     .setTitle("No Photo")
                     .setMessage("You haven't selected a profile photo. Do you want to continue anyway?")
                     .setPositiveButton("Continue") { _, _ ->
@@ -181,7 +181,7 @@ class Step5PhotoFragment : Fragment() {
             if (isProcessing) return@setOnClickListener
             isProcessing = true
 
-            android.app.AlertDialog.Builder(requireContext())
+            android.app.AlertDialog.Builder(requireContext(), R.style.Theme_PawSociety_Dialog)
                 .setTitle("Skip Photo")
                 .setMessage("Are you sure you want to skip adding a profile photo? You can add one later in settings.")
                 .setPositiveButton("Skip") { _, _ ->
@@ -211,7 +211,7 @@ class Step5PhotoFragment : Fragment() {
     private fun showImagePickerDialog() {
         val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
 
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.Theme_PawSociety_Dialog)
             .setTitle("Add Profile Photo")
             .setItems(options) { _, which ->
                 when (which) {
@@ -224,6 +224,14 @@ class Step5PhotoFragment : Fragment() {
     }
 
     private fun checkCameraPermissionAndOpen() {
+        // Check if device has camera hardware
+        val hasCamera = requireContext().packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY)
+        if (!hasCamera) {
+            Toast.makeText(requireContext(), "This device doesn't have a camera", Toast.LENGTH_SHORT).show()
+            isProcessing = false
+            return
+        }
+
         if (androidx.core.content.ContextCompat.checkSelfPermission(
                 requireContext(),
                 android.Manifest.permission.CAMERA
@@ -247,17 +255,35 @@ class Step5PhotoFragment : Fragment() {
 
     private fun openCamera() {
         try {
+            // Check if fragment is still attached
+            if (!isAdded) {
+                Toast.makeText(context ?: return, "Fragment not ready", Toast.LENGTH_SHORT).show()
+                isProcessing = false
+                return
+            }
+
             val photoFile = createImageFile()
-            val uri = FileProvider.getUriForFile(
-                requireContext(),
-                "${requireContext().packageName}.fileprovider",
-                photoFile
-            )
+            val context = requireContext()
+            val authority = "${context.packageName}.fileprovider"
+            
+            val uri = try {
+                FileProvider.getUriForFile(context, authority, photoFile)
+            } catch (e: IllegalArgumentException) {
+                e.printStackTrace()
+                Toast.makeText(context, "FileProvider authority mismatch: $authority", Toast.LENGTH_LONG).show()
+                isProcessing = false
+                return
+            }
+            
             selectedImageUri = uri
             takePictureLauncher.launch(uri)
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+            Toast.makeText(context ?: return, "Camera permission denied: ${e.message}", Toast.LENGTH_LONG).show()
+            isProcessing = false
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(requireContext(), "Failed to open camera: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context ?: return, "Failed to open camera: ${e.message}", Toast.LENGTH_LONG).show()
             isProcessing = false
         }
     }

@@ -9,6 +9,18 @@ interface PawSocietyApi {
     @POST("auth/firebase-login")
     suspend fun firebaseLogin(@Body request: FirebaseLoginRequest): Response<ApiResponse<ApiUser>>
 
+    @POST("auth/register-unverified")
+    suspend fun registerUnverified(@Body request: RegisterUnverifiedRequest): Response<RegisterUnverifiedResponse>
+
+    @POST("auth/check-email-verified")
+    suspend fun checkEmailVerified(@Body request: CheckEmailVerifiedRequest): Response<CheckEmailVerifiedResponse>
+
+    @POST("auth/finalize-account")
+    suspend fun finalizeAccount(@Body request: FinalizeAccountRequest): Response<FinalizeAccountResponse>
+
+    @POST("auth/forgot-password")
+    suspend fun forgotPassword(@Body request: Map<String, String>): Response<ForgotPasswordResponse>
+
     @GET("users")
     suspend fun getUsers(
         @Query("limit") limit: Int = 50,
@@ -76,6 +88,7 @@ interface PawSocietyApi {
     suspend fun getPosts(
         @Query("status") status: String? = null,
         @Query("firebaseUid") firebaseUid: String? = null,
+        @Query("viewerUid") viewerUid: String? = null,
         @Query("petCategory") petCategory: String? = null,
         @Query("limit") limit: Int = 50,
         @Query("skip") skip: Int = 0
@@ -89,6 +102,12 @@ interface PawSocietyApi {
 
     @PUT("posts/{postId}")
     suspend fun updatePost(
+        @Path("postId") postId: String,
+        @Body request: Map<String, @JvmSuppressWildcards Any>
+    ): Response<ApiResponse<ApiPost>>
+
+    @PUT("posts/{postId}/resolve")
+    suspend fun resolvePost(
         @Path("postId") postId: String,
         @Body request: Map<String, String>
     ): Response<ApiResponse<ApiPost>>
@@ -212,11 +231,15 @@ interface PawSocietyApi {
     @PUT("notifications/{userId}/read-all")
     suspend fun markAllNotificationsAsRead(@Path("userId") userId: String): Response<ApiResponse<Unit>>
 
+    @DELETE("notifications/{userId}/all")
+    suspend fun clearAllNotifications(@Path("userId") userId: String): Response<ApiResponse<Unit>>
+
     // ==================== SEARCH ====================
     @GET("posts/search")
     suspend fun searchPosts(
         @Query("q") query: String,
         @Query("status") status: String? = null,
+        @Query("viewerUid") viewerUid: String? = null,
         @Query("limit") limit: Int = 50,
         @Query("skip") skip: Int = 0
     ): Response<ApiListResponse<ApiPost>>
@@ -227,32 +250,6 @@ interface PawSocietyApi {
         @Query("limit") limit: Int = 50,
         @Query("skip") skip: Int = 0
     ): Response<ApiListResponse<ApiUser>>
-
-    // ==================== HIGHLIGHTS ====================
-    @GET("users/{userId}/highlights")
-    suspend fun getHighlights(
-        @Path("userId") userId: String
-    ): Response<ApiListResponse<ApiHighlight>>
-
-    @POST("users/{userId}/highlights")
-    suspend fun createHighlight(
-        @Path("userId") userId: String,
-        @Body request: CreateHighlightRequest
-    ): Response<ApiResponse<ApiHighlight>>
-
-    @PUT("users/{userId}/highlights/{highlightId}")
-    suspend fun updateHighlight(
-        @Path("userId") userId: String,
-        @Path("highlightId") highlightId: String,
-        @Body request: UpdateHighlightRequest
-    ): Response<ApiResponse<ApiHighlight>>
-
-    @DELETE("users/{userId}/highlights/{highlightId}")
-    suspend fun deleteHighlight(
-        @Path("userId") userId: String,
-        @Path("highlightId") highlightId: String,
-        @Query("userId") queryUserId: String
-    ): Response<ApiResponse<Unit>>
 
     // ==================== FOLLOW ====================
     @POST("follow/follow")
@@ -339,4 +336,67 @@ interface PawSocietyApi {
     suspend fun getHiddenCount(
         @Query("userUid") userUid: String
     ): Response<ApiResponse<Int>>
+
+    // ==================== ACCOUNT DELETION ====================
+    @POST("auth/delete-account-with-password")
+    suspend fun deleteAccountWithPassword(
+        @Body request: DeleteAccountRequest
+    ): Response<DeleteAccountResponse>
+
+    // ==================== SETTINGS ====================
+    @GET("settings/notifications/{firebaseUid}")
+    suspend fun getNotificationSettings(
+        @Path("firebaseUid") firebaseUid: String
+    ): Response<UserNotificationSettingsResponse>
+
+    @POST("settings/update")
+    suspend fun updateSettings(
+        @Body updateData: Map<String, Any>
+    ): Response<SettingsUpdateResponse>
+
+    @POST("settings/change-password")
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequest
+    ): Response<ChangePasswordResponse>
+
+    @POST("settings/change-email")
+    suspend fun changeEmail(
+        @Body request: ChangeEmailRequest
+    ): Response<ChangeEmailResponse>
+
+    @POST("settings/update-phone")
+    suspend fun updatePhone(
+        @Body request: UpdatePhoneRequest
+    ): Response<UpdatePhoneResponse>
+
+    @GET("settings/security/{firebaseUid}")
+    suspend fun getSecurityCooldowns(
+        @Path("firebaseUid") firebaseUid: String
+    ): Response<SecurityCooldownResponse>
+
+    @GET("settings/privacy/{firebaseUid}")
+    suspend fun getPrivacySettings(
+        @Path("firebaseUid") firebaseUid: String
+    ): Response<UserPrivacySettingsResponse>
+
+    @POST("settings/privacy/update")
+    suspend fun updatePrivacySettings(
+        @Body request: Map<String, Any>
+    ): Response<SettingsUpdateResponse>
+
+    // ==================== SESSIONS ====================
+    @GET("auth/active-sessions/{firebaseUid}")
+    suspend fun getActiveSessions(
+        @Path("firebaseUid") firebaseUid: String
+    ): Response<SessionsResponse>
+
+    @POST("auth/logout-session")
+    suspend fun logoutSession(
+        @Body logoutData: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+
+    @POST("auth/logout-all-sessions")
+    suspend fun logoutAllSessions(
+        @Body logoutData: Map<String, String>
+    ): Response<ApiResponse<Unit>>
 }

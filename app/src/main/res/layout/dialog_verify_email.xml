@@ -54,9 +54,9 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:text="Resend email"
-        android:textColor="#7A4F2B"
+        android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:background="@drawable/button_rounded_white_border" />
+        android:background="@drawable/button_rounded_brown" />
 
 </LinearLayout>

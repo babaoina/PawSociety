@@ -418,4 +418,36 @@ router.delete('/:notificationId', async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/notifications/:userId/all
+ * Delete all notifications for a user
+ */
+router.delete('/:userId/all', async (req, res) => {
+  try {
+    const result = await Notification.deleteMany({
+      userId: req.params.userId
+    });
+
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.to(req.params.userId).emit('notifications-cleared', {
+        deletedCount: result.deletedCount
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `${result.deletedCount} notifications cleared`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Clear all notifications error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

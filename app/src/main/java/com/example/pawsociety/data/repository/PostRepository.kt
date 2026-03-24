@@ -11,12 +11,13 @@ class PostRepository {
     suspend fun getPosts(
         status: String? = null,
         firebaseUid: String? = null,
+        viewerUid: String? = null,
         petCategory: String? = null,
         limit: Int = 50,
         skip: Int = 0
     ): Result<List<ApiPost>> = withContext(Dispatchers.IO) {
         try {
-            val response = apiService.getPosts(status, firebaseUid, petCategory, limit, skip)
+            val response = apiService.getPosts(status, firebaseUid, viewerUid, petCategory, limit, skip)
 
             if (response.isSuccessful) {
                 val body = response.body()
@@ -50,6 +51,7 @@ class PostRepository {
             getPosts(
                 status = null,
                 firebaseUid = null,
+                viewerUid = null,
                 petCategory = petCategory,
                 limit = limit,
                 skip = skip
@@ -84,7 +86,7 @@ class PostRepository {
         firebaseUid: String,
         petName: String,
         petType: String,
-        category: String? = null,  // 🔥 ADD THIS
+        category: String? = null,
         age: String? = "",
         weight: String? = "",
         gender: String? = "Unknown",
@@ -92,7 +94,20 @@ class PostRepository {
         description: String,
         contactInfo: String,
         location: String? = null,
+        latitude: Double? = null,
+        longitude: Double? = null,
         reward: String? = null,
+        caseType: String? = null,
+        resolvedStatus: String? = null,
+        isResolved: Boolean = false,
+        eventDate: String? = null,
+        eventLocation: String? = null,
+        currentCareStatus: String? = null,
+        identifyingMarks: String? = null,
+        temperament: String? = null,
+        healthCondition: String? = null,
+        hasCollar: Boolean = false,
+        contactPreference: String? = "call",
         imageUrls: List<String>? = null
     ): Result<ApiPost> = withContext(Dispatchers.IO) {
         try {
@@ -100,7 +115,7 @@ class PostRepository {
                 firebaseUid = firebaseUid,
                 petName = petName,
                 petType = petType,
-                category = category,  // 🔥 ADD THIS
+                category = category,
                 age = age,
                 weight = weight,
                 gender = gender,
@@ -108,11 +123,24 @@ class PostRepository {
                 description = description,
                 contactInfo = contactInfo,
                 location = location,
+                latitude = latitude,
+                longitude = longitude,
                 reward = reward,
+                caseType = caseType,
+                resolvedStatus = resolvedStatus,
+                isResolved = isResolved,
+                eventDate = eventDate,
+                eventLocation = eventLocation,
+                currentCareStatus = currentCareStatus,
+                identifyingMarks = identifyingMarks,
+                temperament = temperament,
+                healthCondition = healthCondition,
+                hasCollar = hasCollar,
+                contactPreference = contactPreference,
                 imageUrls = imageUrls
             )
 
-            println("📤 Creating post with category: $category, age: $age, weight: $weight")
+            println("📤 Creating post with location: $location, lat: $latitude, lon: $longitude")
             val response = apiService.createPost(request)
 
             if (response.isSuccessful) {
@@ -173,6 +201,26 @@ class PostRepository {
             }
         }
 
+    suspend fun resolvePost(postId: String, firebaseUid: String): Result<ApiPost> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.resolvePost(postId, mapOf("firebaseUid" to firebaseUid))
+
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body != null && body.success && body.data != null) {
+                        Result.success(body.data)
+                    } else {
+                        Result.failure(Exception(body?.message ?: "Failed to resolve post"))
+                    }
+                } else {
+                    Result.failure(Exception(response.errorBody()?.string() ?: "Failed to resolve post"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
     suspend fun likePost(postId: String, firebaseUid: String): Result<LikeResponse> = withContext(Dispatchers.IO) {
         try {
             println("📤 Like post request - postId: $postId, user: $firebaseUid")
@@ -200,7 +248,7 @@ class PostRepository {
 
     suspend fun updatePost(
         postId: String,
-        updates: Map<String, String>,
+        updates: Map<String, Any>,
         firebaseUid: String
     ): Result<ApiPost> = withContext(Dispatchers.IO) {
         try {
@@ -244,6 +292,50 @@ class PostRepository {
                 } else {
                     val errorMsg = response.errorBody()?.string() ?: "Failed to check like status"
                     Result.failure(Exception(errorMsg))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    /**
+     * Add post to favorites
+     */
+    suspend fun createFavorite(postId: String, firebaseUid: String): Result<Unit> = 
+        withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.addToFavorites(mapOf(
+                    "postId" to postId,
+                    "firebaseUid" to firebaseUid
+                ))
+
+                if (response.isSuccessful) {
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception(response.errorBody()?.string() ?: "Failed to save favorite"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    /**
+     * Report a post
+     */
+    suspend fun reportPost(postId: String, firebaseUid: String, reason: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val reportRequest = ReportRequest(
+                    reporterUid = firebaseUid,
+                    postId = postId,
+                    reason = reason
+                )
+                val response = apiService.createReport(reportRequest)
+
+                if (response.isSuccessful) {
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception(response.errorBody()?.string() ?: "Failed to report post"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

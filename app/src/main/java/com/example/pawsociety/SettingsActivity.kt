@@ -35,17 +35,6 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
 
-        // Follow and invite friends
-        findViewById<View>(R.id.option_follow_friends).setOnClickListener {
-            Toast.makeText(this, "Follow friends feature coming soon", Toast.LENGTH_SHORT).show()
-        }
-
-        // Notifications
-        findViewById<View>(R.id.option_notifications).setOnClickListener {
-            val intent = Intent(this, NotificationsSettingsActivity::class.java)
-            startActivity(intent)
-        }
-
         // Privacy
         findViewById<View>(R.id.option_privacy).setOnClickListener {
             val intent = Intent(this, PrivacyActivity::class.java)
@@ -111,53 +100,63 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showDeleteAccountConfirmation() {
-        AlertDialog.Builder(this)
-            .setTitle("Delete Account")
-            .setMessage("Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.")
-            .setPositiveButton("Delete") { _, _ ->
-                performDeleteAccount()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+        val builder = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
+        builder.setTitle("Delete Account")
+        builder.setMessage("Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.")
+        builder.setPositiveButton("Delete") { _, _ ->
+            performDeleteAccount()
+        }
+        builder.setNegativeButton("Cancel", null)
+        val dialog = builder.show()
+        
+        // Style the buttons
+        val deleteButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        val cancelButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+        
+        deleteButton?.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
+        deleteButton?.setBackgroundColor(android.graphics.Color.parseColor("#7A4F2B"))
+        
+        cancelButton?.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
+        cancelButton?.setBackgroundColor(android.graphics.Color.parseColor("#999999"))
+        
+        // Style the title and message
+        val title = dialog.findViewById<android.widget.TextView>(android.R.id.title)
+        val message = dialog.findViewById<android.widget.TextView>(android.R.id.message)
+        title?.setTextColor(android.graphics.Color.parseColor("#333333"))
+        message?.setTextColor(android.graphics.Color.parseColor("#333333"))
     }
 
     private fun performDeleteAccount() {
-        val currentUser = sessionManager.getCurrentUser() ?: return
-
-        // Show loading
-        Toast.makeText(this, "Deleting account...", Toast.LENGTH_SHORT).show()
-
-        lifecycleScope.launch {
-            try {
-                // Call your API to delete account
-                // val result = userRepository.deleteAccount(currentUser.firebaseUid)
-
-                // For now, just clear session and logout
-                sessionManager.clearSession()
-
-                Toast.makeText(this@SettingsActivity, "Account deleted successfully", Toast.LENGTH_SHORT).show()
-
-                // Redirect to login
-                val intent = Intent(this@SettingsActivity, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
-
-            } catch (e: Exception) {
-                Toast.makeText(this@SettingsActivity, "Failed to delete account: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // Launch the full delete account flow with password verification
+        val intent = Intent(this, DeleteAccountActivity::class.java)
+        startActivity(intent)
     }
 
     private fun showLogoutConfirmation() {
-        AlertDialog.Builder(this)
-            .setTitle("Log Out")
-            .setMessage("Are you sure you want to log out?")
-            .setPositiveButton("Log Out") { _, _ ->
-                performLogout()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+        val builder = AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
+        builder.setTitle("Log Out")
+        builder.setMessage("Are you sure you want to log out?")
+        builder.setPositiveButton("Log Out") { _, _ ->
+            performLogout()
+        }
+        builder.setNegativeButton("Cancel", null)
+        val dialog = builder.show()
+        
+        // Style the buttons
+        val logoutButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        val cancelButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+        
+        logoutButton?.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
+        logoutButton?.setBackgroundColor(android.graphics.Color.parseColor("#7A4F2B"))
+        
+        cancelButton?.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
+        cancelButton?.setBackgroundColor(android.graphics.Color.parseColor("#999999"))
+        
+        // Style the title and message
+        val title = dialog.findViewById<android.widget.TextView>(android.R.id.title)
+        val message = dialog.findViewById<android.widget.TextView>(android.R.id.message)
+        title?.setTextColor(android.graphics.Color.parseColor("#333333"))
+        message?.setTextColor(android.graphics.Color.parseColor("#333333"))
     }
 
     private fun performLogout() {

@@ -39,13 +39,13 @@ class UserProfileActivity : AppCompatActivity() {
     private lateinit var tvFullName: TextView
     private lateinit var tvUsernameBio: TextView
     private lateinit var tvLocationBio: TextView
+    private lateinit var ivPetParentBadge: ImageView  // 🔥 ADDED
     private lateinit var postsContainer: FrameLayout
     private lateinit var postsGrid: LinearLayout
     private lateinit var emptyState: LinearLayout
     private lateinit var progressBar: ProgressBar
-    private lateinit var highlightsContainer: LinearLayout
-    private lateinit var highlightsScroll: HorizontalScrollView
     private lateinit var scrollView: ScrollView
+    private lateinit var tvFurParentBadge: TextView
 
     private lateinit var sessionManager: SessionManager
     private val userRepository = UserRepository()
@@ -105,12 +105,12 @@ class UserProfileActivity : AppCompatActivity() {
         tvFullName = findViewById(R.id.tv_full_name)
         tvUsernameBio = findViewById(R.id.tv_username_bio)
         tvLocationBio = findViewById(R.id.tv_location_bio)
+        tvFurParentBadge = findViewById(R.id.tv_fur_parent_badge)
+        ivPetParentBadge = findViewById(R.id.iv_pet_parent_badge)  // 🔥 ADDED
         postsContainer = findViewById(R.id.posts_container)
         postsGrid = findViewById(R.id.posts_grid)
         emptyState = findViewById(R.id.empty_state)
         progressBar = findViewById(R.id.progress_bar)
-        highlightsContainer = findViewById(R.id.highlights_container)
-        highlightsScroll = findViewById(R.id.highlights_scroll)
         scrollView = findViewById(R.id.profile_scroll_view)
 
         tvUsername.text = targetUserName
@@ -184,7 +184,7 @@ class UserProfileActivity : AppCompatActivity() {
     private fun showUserOptions() {
         val options = arrayOf("Report User", "Cancel")
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("More Options")
             .setItems(options) { _, which ->
                 when (which) {
@@ -205,7 +205,7 @@ class UserProfileActivity : AppCompatActivity() {
             "Other"
         )
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.Theme_PawSociety_Dialog)
             .setTitle("Report ${targetUserName}")
             .setItems(reportReasons) { _, which ->
                 val reason = reportReasons[which].lowercase(Locale.getDefault()).replace(" ", "_")
@@ -263,7 +263,6 @@ class UserProfileActivity : AppCompatActivity() {
                     checkFollowStatus()
                     loadFollowersCount()
                     loadUserPosts(targetUserId)
-                    loadUserHighlights()
                 } else {
                     Toast.makeText(this@UserProfileActivity, "User not found", Toast.LENGTH_SHORT).show()
                     finish()
@@ -324,6 +323,10 @@ class UserProfileActivity : AppCompatActivity() {
             tvUsernameBio.text = "@${user.username}"
 
             tvBio.text = user.bio ?: ""
+
+            // 🔥 ADDED: Show pet parent badge
+            ivPetParentBadge.visibility = View.VISIBLE
+            tvFurParentBadge.visibility = View.VISIBLE
 
             if (!user.location.isNullOrEmpty()) {
                 tvLocationBio.visibility = View.VISIBLE
@@ -458,17 +461,40 @@ class UserProfileActivity : AppCompatActivity() {
     private fun loadUserPosts(userId: String) {
         lifecycleScope.launch {
             try {
-                val result = postRepository.getPosts(firebaseUid = userId)
+                val result = postRepository.getPosts(
+                    firebaseUid = userId,
+                    viewerUid = currentUser?.firebaseUid
+                )
 
                 if (result.isSuccess) {
-                    val posts = result.getOrNull()!!
+                    var posts = result.getOrNull()!!
 
                     if (posts.isNotEmpty()) {
-                        postsGrid.removeAllViews()
-                        postsGrid.visibility = View.VISIBLE
-                        emptyState.visibility = View.GONE
-                        createPostsGrid(posts)
-                        tvPostCount.text = posts.size.toString()
+                        // 🔥 APPLY POST FILTERING UTILITY - Filter by hidden posts AND blocked users
+                        try {
+                            val currentUserUid = currentUser?.firebaseUid
+                            if (currentUserUid != null) {
+                                posts = com.example.pawsociety.util.PostFilteringUtil.filterPosts(
+                                    posts,
+                                    currentUserUid
+                                )
+                                android.util.Log.d("UserProfile", "Posts after filtering: ${posts.size}")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("UserProfile", "Error filtering posts: ${e.message}", e)
+                            // Continue with unfiltered posts as fallback
+                        }
+
+                        if (posts.isNotEmpty()) {
+                            postsGrid.removeAllViews()
+                            postsGrid.visibility = View.VISIBLE
+                            emptyState.visibility = View.GONE
+                            createPostsGrid(posts)
+                            tvPostCount.text = posts.size.toString()
+                        } else {
+                            tvPostCount.text = "0"
+                            showEmptyState()
+                        }
                     } else {
                         tvPostCount.text = "0"
                         showEmptyState()
@@ -622,6 +648,24 @@ class UserProfileActivity : AppCompatActivity() {
                                 statusBadge.background.setTint(Color.parseColor("#2196F3"))
                                 statusBadge.visibility = View.VISIBLE
                             }
+                            "reunited" -> {
+                                statusBadge.text = "REUNITED"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#8E6E53"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            "returned" -> {
+                                statusBadge.text = "RETURNED"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#8E6E53"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
+                            "adopted" -> {
+                                statusBadge.text = "ADOPTED"
+                                statusBadge.setBackgroundResource(R.drawable.status_badge_oval)
+                                statusBadge.background.setTint(Color.parseColor("#8E6E53"))
+                                statusBadge.visibility = View.VISIBLE
+                            }
                             else -> {
                                 statusBadge.visibility = View.GONE
                             }
@@ -695,69 +739,7 @@ class UserProfileActivity : AppCompatActivity() {
     }
 
     private fun loadUserHighlights() {
-        highlightsContainer.removeAllViews()
-
-        lifecycleScope.launch {
-            try {
-                val result = postRepository.getPosts(firebaseUid = targetUserId, limit = 10)
-
-                if (result.isSuccess) {
-                    val posts = result.getOrNull() ?: emptyList()
-
-                    if (posts.isEmpty()) {
-                        highlightsScroll.visibility = View.GONE
-                        findViewById<TextView>(R.id.tv_highlights_title).visibility = View.GONE
-                    } else {
-                        findViewById<TextView>(R.id.tv_highlights_title).visibility = View.VISIBLE
-                        highlightsScroll.visibility = View.VISIBLE
-                        val highlights = posts.take(5)
-                        for (post in highlights) {
-                            addHighlightView(post)
-                        }
-                    }
-                } else {
-                    highlightsScroll.visibility = View.GONE
-                    findViewById<TextView>(R.id.tv_highlights_title).visibility = View.GONE
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                highlightsScroll.visibility = View.GONE
-                findViewById<TextView>(R.id.tv_highlights_title).visibility = View.GONE
-            }
-        }
-    }
-
-    private fun addHighlightView(post: ApiPost) {
-        val highlightView = layoutInflater.inflate(R.layout.item_highlight, highlightsContainer, false)
-
-        val circleBackground = highlightView.findViewById<View>(R.id.highlight_circle_background)
-        val circleText = highlightView.findViewById<TextView>(R.id.highlight_circle_text)
-        val titleText = highlightView.findViewById<TextView>(R.id.highlight_title)
-
-        val emoji = when {
-            post.petType.contains("dog", ignoreCase = true) -> "🐶"
-            post.petType.contains("cat", ignoreCase = true) -> "🐱"
-            post.petType.contains("bird", ignoreCase = true) -> "🐦"
-            post.petType.contains("rabbit", ignoreCase = true) -> "🐰"
-            post.petType.contains("fish", ignoreCase = true) -> "🐟"
-            else -> "🐾"
-        }
-
-        val colors = listOf("#FF6B35", "#4CAF50", "#2196F3", "#9C27B0", "#F44336")
-        val colorIndex = Math.abs(post.postId.hashCode()) % colors.size
-
-        val backgroundDrawable = ContextCompat.getDrawable(this, R.drawable.circle_solid_highlight)
-        backgroundDrawable?.setColorFilter(Color.parseColor(colors[colorIndex]), PorterDuff.Mode.SRC_ATOP)
-        circleBackground.background = backgroundDrawable
-
-        circleText.text = emoji
-        titleText.text = post.petName
-
-        highlightView.setOnClickListener {
-            showPostPreview(post)
-        }
-
-        highlightsContainer.addView(highlightView)
+        // Highlights feature removed - please use posts instead
     }
 
     private fun showPostPreview(post: ApiPost) {

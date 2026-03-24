@@ -45,7 +45,8 @@
             <FrameLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/margin_medium">
+                android:layout_marginEnd="@dimen/margin_medium"
+                android:clipChildren="false">
 
                 <ImageView
                     android:id="@+id/btn_notifications"
@@ -438,8 +439,23 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/paw"
-                android:layout_gravity="center" />
+            android:layout_gravity="center" />
         </FrameLayout>
     </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/fab_gps_map"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="88dp"
+        android:background="@drawable/bg_pawgps_button"
+        android:contentDescription="Open map view"
+        android:elevation="10dp"
+        android:padding="9dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/pawgps"
+        android:tint="#000000" />
 
 </FrameLayout>

@@ -15,9 +15,9 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="#FFFFFF"
+            android:background="#FBF2E7"
             android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
+            android:paddingHorizontal="18dp"
             android:gravity="center_vertical"
             android:elevation="0dp">
 
@@ -36,8 +36,8 @@
                 android:layout_weight="1"
                 android:layout_marginStart="12dp"
                 android:text=""
-                android:textColor="#000000"
-                android:textSize="20sp"
+                android:textColor="#20170F"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <!-- 🔥 ADD THIS 3-DOTS MENU BUTTON -->
@@ -46,7 +46,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/menu"
-                android:tint="#000000"
+                android:tint="#7A4F2B"
                 android:contentDescription="Menu"
                 android:visibility="gone" />
         </LinearLayout>
@@ -80,14 +80,19 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:background="#FFFFFF">
+                    android:background="@drawable/bg_profile_header_panel"
+                    android:paddingBottom="10dp">
 
                     <!-- Profile Header Row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="16dp"
+                        android:padding="14dp"
+                        android:background="@drawable/bg_profile_stat_card">
 
                         <!-- Profile Picture -->
                         <LinearLayout
@@ -287,7 +292,7 @@
                             android:layout_height="wrap_content"
                             android:text=""
                             android:textColor="#000000"
-                            android:textSize="14sp"
+                            android:textSize="20sp"
                             android:textStyle="bold"
                             android:visibility="gone" />
 
@@ -302,7 +307,6 @@
                             android:layout_marginTop="2dp"
                             android:visibility="gone" />
 
-                        <!-- Bio Text -->
                         <TextView
                             android:id="@+id/tv_bio"
                             android:layout_width="wrap_content"
@@ -310,7 +314,39 @@
                             android:text=""
                             android:textColor="#000000"
                             android:textSize="13sp"
-                            android:layout_marginTop="4dp" />
+                            android:layout_marginTop="6dp" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:background="@drawable/bg_fur_parent_chip"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="10dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="5dp">
+
+                            <ImageView
+                                android:id="@+id/iv_pet_parent_badge"
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:src="@drawable/pawbadge"
+                                android:visibility="gone"
+                                android:contentDescription="Fur Parent Badge" />
+
+                            <TextView
+                                android:id="@+id/tv_fur_parent_badge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="Fur Parent"
+                                android:textColor="#7A4F2B"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+                        </LinearLayout>
 
                         <!-- Location -->
                         <TextView
@@ -323,39 +359,6 @@
                             android:layout_marginTop="2dp"
                             android:visibility="gone" />
                     </LinearLayout>
-
-                    <!-- ===== HIGHLIGHTS SECTION ===== -->
-                    <TextView
-                        android:id="@+id/tv_highlights_title"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Story Highlights"
-                        android:textColor="#7A4F2B"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:paddingHorizontal="16dp"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="4dp"
-                        android:visibility="gone" />
-
-                    <!-- Highlights Container -->
-                    <HorizontalScrollView
-                        android:id="@+id/highlights_scroll"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:scrollbars="none"
-                        android:paddingLeft="12dp"
-                        android:paddingRight="12dp"
-                        android:paddingBottom="12dp"
-                        android:visibility="gone">
-
-                        <LinearLayout
-                            android:id="@+id/highlights_container"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:paddingVertical="4dp" />
-                    </HorizontalScrollView>
 
                     <!-- POSTS TAB ONLY -->
                     <FrameLayout
